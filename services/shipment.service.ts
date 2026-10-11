@@ -182,6 +182,17 @@ export async function createShipment(
 export async function getShipment(actor: AuthenticatedUser, id: string) {
   const shipment = await prisma.shipment.findFirst({
     where: { ...scope(actor), id },
+    include: {
+      events: {
+        orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true, type: true, fromStatus: true, toStatus: true,
+          publicNote: true, occurredAt: true,
+          // Customers must never receive internal notes or operator identities.
+          ...(actor.role !== "CUSTOMER" ? { internalNote: true, actorId: true } : {}),
+        },
+      },
+    },
   });
   if (!shipment) throw missing();
   return shipment;

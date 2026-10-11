@@ -163,7 +163,14 @@ try {
   assert.equal(await prisma.shipmentEvent.count({ where: { shipmentId: shipment.id, toStatus: "PICKED_UP" } }), 1);
   const confirmation = await prisma.shipmentEvent.findFirst({ where: { shipmentId: shipment.id, toStatus: "DELIVERED" } });
   assert.equal(confirmation.internalNote, "Confirmed receipt by recipient");
-  assert.equal((await request(`shipments/${shipment.id}`, customer)).body.data.shipment.internalNote, undefined);
+  const customerDetail = (await request(`shipments/${shipment.id}`, customer)).body.data.shipment;
+  assert.equal(customerDetail.internalNote, undefined);
+  assert.ok(customerDetail.events.length > 0);
+  assert.ok(customerDetail.events.every(event => !("internalNote" in event) && !("actorId" in event)));
+  const times = customerDetail.events.map(event => Date.parse(event.occurredAt));
+  assert.deepEqual(times, [...times].sort((a, b) => a - b));
+  const operatorDetail = (await request(`shipments/${shipment.id}`, assigned)).body.data.shipment;
+  assert.equal(operatorDetail.events.find(event => event.toStatus === "DELIVERED").internalNote, "Confirmed receipt by recipient");
 
   const cancelled = await create();
   assert.equal((await status(cancelled.id, customer, "CREATED", "CANCELLED")).status, 200);

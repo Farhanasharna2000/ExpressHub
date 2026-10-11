@@ -1,12 +1,5 @@
-import { PageShell } from "@/components/layout/page-shell";
+import { Suspense } from "react";
+import { ShipmentListView } from "@/features/shipments/list";
+import { LoadingState } from "@/components/ui/primitives";
 export const metadata = { title: "My shipments" };
-export default function Page() {
-  return (
-    <PageShell
-      title={"My shipments"}
-      description={"Find and follow your shipments."}
-      kind={"list"}
-      action={{ href: "/customer/shipments/new", label: "Book a shipment" }}
-    />
-  );
-}
+export default function Page() { return <Suspense fallback={<LoadingState label="Loading shipments…" />}><ShipmentListView /></Suspense>; }

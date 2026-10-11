@@ -1,14 +1,6 @@
-import { PageShell } from "@/components/layout/page-shell";
+import { ShipmentDetails } from "@/features/shipments/detail";
 export const metadata = { title: "Shipment details" };
-export default function Page() {
-  return (
-    <PageShell
-      title={"Shipment details"}
-      description={
-        "Shipment information, delivery history, and payment status."
-      }
-      kind={"detail"}
-      back={{ href: "/customer/shipments", label: "My shipments" }}
-    />
-  );
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <ShipmentDetails key={id} id={id} />;
 }

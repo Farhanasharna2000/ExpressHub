@@ -1736,7 +1736,7 @@
                 "{{shipmentId}}"
               ]
             },
-            "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404."
+            "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404. Events are ordered by occurredAt ascending, then ID. Customers receive public event fields only; internalNote and actorId are included only for assigned Couriers/Admins."
           },
           "response": [
             {
@@ -1756,7 +1756,7 @@
                     "{{shipmentId}}"
                   ]
                 },
-                "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404."
+                "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404. Events are ordered by occurredAt ascending, then ID. Customers receive public event fields only; internalNote and actorId are included only for assigned Couriers/Admins."
               },
               "status": "OK",
               "code": 200,
@@ -1770,7 +1770,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Shipment fetched successfully\",\n  \"data\": {\n    \"shipment\": {\n      \"pickupContactName\": \"Example Sender\",\n      \"pickupContactPhone\": \"01700000000\",\n      \"pickupAddress\": \"Dhaka pickup address\",\n      \"deliveryContactName\": \"Example Recipient\",\n      \"deliveryContactPhone\": \"01800000000\",\n      \"deliveryAddress\": \"Chattogram delivery address\",\n      \"parcelWeightKg\": \"1\",\n      \"id\": \"cm123456789012345678901234\",\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"customerId\": \"cm123456789012345678901234\",\n      \"courierId\": null,\n      \"originHubId\": null,\n      \"destinationHubId\": null,\n      \"currentHubId\": null,\n      \"packageDescription\": null,\n      \"parcelLengthCm\": null,\n      \"parcelWidthCm\": null,\n      \"parcelHeightCm\": null,\n      \"price\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"CREATED\",\n      \"paymentStatus\": \"PENDING\",\n      \"pickupScheduledAt\": null,\n      \"deliveredAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deletedAt\": null\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipment fetched successfully\",\n  \"data\": {\n    \"shipment\": {\n      \"pickupContactName\": \"Example Sender\",\n      \"pickupContactPhone\": \"01700000000\",\n      \"pickupAddress\": \"Dhaka pickup address\",\n      \"deliveryContactName\": \"Example Recipient\",\n      \"deliveryContactPhone\": \"01800000000\",\n      \"deliveryAddress\": \"Chattogram delivery address\",\n      \"parcelWeightKg\": \"1\",\n      \"id\": \"cm123456789012345678901234\",\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"customerId\": \"cm123456789012345678901234\",\n      \"courierId\": null,\n      \"originHubId\": null,\n      \"destinationHubId\": null,\n      \"currentHubId\": null,\n      \"packageDescription\": null,\n      \"parcelLengthCm\": null,\n      \"parcelWidthCm\": null,\n      \"parcelHeightCm\": null,\n      \"price\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"CREATED\",\n      \"paymentStatus\": \"PENDING\",\n      \"pickupScheduledAt\": null,\n      \"deliveredAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deletedAt\": null,\n      \"events\": [\n        {\n          \"id\": \"cm123456789012345678901234\",\n          \"type\": \"CREATED\",\n          \"fromStatus\": null,\n          \"toStatus\": \"CREATED\",\n          \"publicNote\": null,\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\"\n        }\n      ]\n    }\n  }\n}"
             }
           ],
           "event": []

@@ -5470,7 +5470,7 @@
           "shipments"
         ],
         "summary": "Read shipment",
-        "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404.",
+        "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404. Events are ordered by occurredAt ascending, then ID. Customers receive public event fields only; internalNote and actorId are included only for assigned Couriers/Admins.",
         "parameters": [
           {
             "name": "id",
@@ -5605,6 +5605,89 @@
                             "deletedAt": {
                               "type": "string",
                               "nullable": true
+                            },
+                            "events": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "CREATED",
+                                      "COURIER_ASSIGNED",
+                                      "STATUS_CHANGED",
+                                      "CUSTOMER_CANCELLED",
+                                      "HUB_TRANSFER",
+                                      "DELIVERY_ATTEMPT",
+                                      "ADMIN_CORRECTION"
+                                    ]
+                                  },
+                                  "fromStatus": {
+                                    "type": "string",
+                                    "enum": [
+                                      "CREATED",
+                                      "PICKED_UP",
+                                      "IN_TRANSIT",
+                                      "OUT_FOR_DELIVERY",
+                                      "DELIVERED",
+                                      "FAILED",
+                                      "RETURNED",
+                                      "CANCELLED"
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "toStatus": {
+                                    "type": "string",
+                                    "enum": [
+                                      "CREATED",
+                                      "PICKED_UP",
+                                      "IN_TRANSIT",
+                                      "OUT_FOR_DELIVERY",
+                                      "DELIVERED",
+                                      "FAILED",
+                                      "RETURNED",
+                                      "CANCELLED"
+                                    ],
+                                    "nullable": true
+                                  },
+                                  "publicNote": {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000,
+                                    "nullable": true
+                                  },
+                                  "occurredAt": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "internalNote": {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000,
+                                    "nullable": true,
+                                    "description": "Omitted for customers."
+                                  },
+                                  "actorId": {
+                                    "type": "string",
+                                    "pattern": "^c[a-z0-9]{24}$",
+                                    "example": "cm123456789012345678901234",
+                                    "nullable": true,
+                                    "description": "Omitted for customers."
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "type",
+                                  "fromStatus",
+                                  "toStatus",
+                                  "publicNote",
+                                  "occurredAt"
+                                ]
+                              }
                             }
                           },
                           "required": [
@@ -5634,7 +5717,8 @@
                             "deliveredAt",
                             "createdAt",
                             "updatedAt",
-                            "deletedAt"
+                            "deletedAt",
+                            "events"
                           ]
                         }
                       },
@@ -5680,7 +5764,17 @@
                       "deliveredAt": null,
                       "createdAt": "2026-10-10T06:00:00.000Z",
                       "updatedAt": "2026-10-10T06:00:00.000Z",
-                      "deletedAt": null
+                      "deletedAt": null,
+                      "events": [
+                        {
+                          "id": "cm123456789012345678901234",
+                          "type": "CREATED",
+                          "fromStatus": null,
+                          "toStatus": "CREATED",
+                          "publicNote": null,
+                          "occurredAt": "2026-10-10T06:00:00.000Z"
+                        }
+                      ]
                     }
                   }
                 }
