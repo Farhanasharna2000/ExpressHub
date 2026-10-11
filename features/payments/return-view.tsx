@@ -49,6 +49,7 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
   // Initialize payment identification
   useEffect(() => {
     const fromQuery = searchParams.get("paymentId");
+    const sessionId = searchParams.get("session_id");
     const pending = getPendingPayment();
 
     if (fromQuery) {
@@ -59,10 +60,27 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
     } else if (pending?.paymentId) {
       setPaymentId(pending.paymentId);
       setShipmentId(pending.shipmentId);
+    } else if (sessionId) {
+      if (authStatus === "authenticated") {
+        void store.api
+          .request<{ payments: Payment[] }>("/payments?limit=1")
+          .then((res) => {
+            const latest = res?.payments?.[0];
+            if (latest) {
+              setPaymentId(latest.id);
+              setShipmentId(latest.shipmentId);
+            } else {
+              setLoading(false);
+            }
+          })
+          .catch(() => setLoading(false));
+      } else if (authStatus === "anonymous" || authStatus === "error") {
+        setLoading(false);
+      }
     } else {
       setLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, authStatus, store]);
 
   // Fetch and poll payment verification
   async function fetchStatus(id: string) {
