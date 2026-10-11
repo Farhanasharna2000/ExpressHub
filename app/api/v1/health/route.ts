@@ -9,10 +9,14 @@ export async function GET() {
   try {
     await prisma.$queryRaw`SELECT 1`;
     return successResponse("API is healthy", {
-      status: "ok", database: "connected", timestamp: new Date().toISOString(),
+      status: "ok",
+      database: "connected",
+      timestamp: new Date().toISOString(),
     });
   } catch {
     console.error("Health check database connection failed");
-    return errorResponse(new AppError(503, "Service is not ready", "DATABASE_UNAVAILABLE"));
+    return errorResponse(
+      new AppError(503, "Service is not ready", "DATABASE_UNAVAILABLE"),
+    );
   }
 }

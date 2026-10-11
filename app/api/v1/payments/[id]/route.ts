@@ -7,11 +7,16 @@ import { paymentIdSchema } from "@/validators/payment";
 
 export const runtime = "nodejs";
 
-export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
   try {
     const actor = await requireUser(request);
     const id = paymentIdSchema.parse((await context.params).id);
-    return successResponse("Payment fetched successfully", { payment: await getPayment(actor, id) });
+    return successResponse("Payment fetched successfully", {
+      payment: await getPayment(actor, id),
+    });
   } catch (error) {
     return handleRouteError(error);
   }

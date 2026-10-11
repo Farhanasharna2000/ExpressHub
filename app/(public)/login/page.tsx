@@ -1,3 +1,5 @@
-import { AuthShell } from "@/components/layout/page-shell";
+import { AuthForm } from "@/features/auth/forms";
 export const metadata = { title: "Login" };
-export default function Page() { return <AuthShell />; }
+export default function Page() {
+  return <AuthForm />;
+}

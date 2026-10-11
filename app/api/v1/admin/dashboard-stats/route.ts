@@ -11,8 +11,13 @@ export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
   try {
     const actor = requireRole(await requireUser(request), "ADMIN");
-    dashboardQuerySchema.parse(uniqueQueryParameters(request.nextUrl.searchParams));
-    return successResponse("Dashboard statistics fetched successfully", await getDashboardStats(actor));
+    dashboardQuerySchema.parse(
+      uniqueQueryParameters(request.nextUrl.searchParams),
+    );
+    return successResponse(
+      "Dashboard statistics fetched successfully",
+      await getDashboardStats(actor),
+    );
   } catch (error) {
     return handleRouteError(error);
   }

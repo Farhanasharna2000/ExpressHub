@@ -9,8 +9,14 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const raw = await readWebhookBody(request);
-    const event = verifyStripeEvent(raw, request.headers.get("stripe-signature"));
-    const result = await processStripeEvent(event, createHash("sha256").update(raw).digest("hex"));
+    const event = verifyStripeEvent(
+      raw,
+      request.headers.get("stripe-signature"),
+    );
+    const result = await processStripeEvent(
+      event,
+      createHash("sha256").update(raw).digest("hex"),
+    );
     return successResponse("Webhook received", result);
   } catch (error) {
     return handleRouteError(error);

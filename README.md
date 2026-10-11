@@ -16,7 +16,7 @@ The backend provides secure authentication, role-based authorization, shipment m
 - **Payment Gateway:** Stripe Checkout
 - **Rate Limiting:** Upstash Redis
 - **API Testing:** Postman
-- **Styling:** Plain CSS with shared frontend components
+- **Styling:** shadcn/ui, Tailwind CSS v4, and ExpressHub layout styles
 
 ## Key Features
 
@@ -193,13 +193,13 @@ The backend will be available at:
 http://localhost:3000
 ```
 
-### Frontend foundation
+### Frontend
 
-The home page introduces ExpressHub and links to data-free workspace previews for Customers (`/customer`), Couriers (`/courier`), and Admins (`/admin`). Public `/login` and `/register`, shared `/profile`, all planned list/detail pages, and `/checkout/success` and `/checkout/cancel` have responsive shells.
+The frontend now includes shadcn/ui sign-in and customer registration, session restoration, profile editing, sign-out, and role-gated workspaces. Open `/register` or `/login`; authenticated users land at `/customer`, `/courier`, or `/admin`. Edit account details at `/profile`.
 
-Phase 1 supplies shared UI components and navigation. Forms are disabled; authentication, live records, booking, and payment actions will be connected in later phases. No private data is loaded by these previews. Existing API authentication and permissions remain authoritative.
+Access tokens stay in memory; the existing HttpOnly refresh cookie restores the session. Configure `ALLOWED_ORIGIN` to match the browser origin exactly. Production sign-in requires HTTPS for the Secure cookie. Shipment, payment, and admin data screens remain shells for later phases.
 
-See [the implementation flow](FRONTEND_IMPLEMENTATION_FLOW.md) and [foundation components and API contract notes](docs/frontend-foundation.md).
+See [the implementation flow](FRONTEND_IMPLEMENTATION_FLOW.md), [foundation notes](docs/frontend-foundation.md), and [authentication setup and tests](docs/frontend-auth.md). Run `npm run test:frontend` for the API/session tests and `npm run test:frontend:browser` for desktop/mobile browser coverage after installing Playwright's Chromium and building the app.
 
 ### Health Check
 

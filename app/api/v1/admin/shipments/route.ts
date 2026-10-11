@@ -11,8 +11,13 @@ export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
   try {
     const actor = requireRole(await requireUser(request), "ADMIN");
-    const input = listShipmentsSchema.parse(uniqueQueryParameters(request.nextUrl.searchParams));
-    return successResponse("Shipments fetched successfully", await listShipments(actor, input));
+    const input = listShipmentsSchema.parse(
+      uniqueQueryParameters(request.nextUrl.searchParams),
+    );
+    return successResponse(
+      "Shipments fetched successfully",
+      await listShipments(actor, input),
+    );
   } catch (error) {
     return handleRouteError(error);
   }

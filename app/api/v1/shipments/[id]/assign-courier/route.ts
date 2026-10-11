@@ -7,7 +7,10 @@ import { shipmentIdSchema, assignCourierSchema } from "@/validators/shipment";
 
 export const runtime = "nodejs";
 
-export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
   try {
     const actor = await requireUser(request);
     const id = shipmentIdSchema.parse((await context.params).id);

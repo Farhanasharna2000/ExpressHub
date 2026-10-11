@@ -1,10 +1,118 @@
 import Link from "next/link";
-import { Button, ButtonLink, Card, EmptyState, Input, Select } from "@/components/ui/primitives";
+import {
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  Input,
+  Select,
+} from "@/components/ui/primitives";
 
-export function PageShell({ title, description, kind = "detail", action, back }: { title: string; description: string; kind?: "list" | "detail" | "overview" | "booking" | "profile"; action?: { href: string; label: string }; back?: { href: string; label: string } }) {
-  return <div className="page-stack">{back && <Link className="back-link" href={back.href}>← {back.label}</Link>}<div className="page-heading"><div><p className="eyebrow">ExpressHub / Workspace</p><h1>{title}</h1><p>{description}</p></div>{action && <ButtonLink href={action.href}>{action.label}</ButtonLink>}</div>{kind === "overview" && <div className="grid-three">{["Plan your next step", "Follow the journey", "Stay up to date"].map((label, i) => <Card key={label}><span className="step-number">0{i + 1}</span><h2>{label}</h2><p>Your workspace will bring shipment activity and updates together.</p></Card>)}</div>}{kind === "list" && <Card><div className="filter-row"><Input id="search" label="Search records" placeholder="Search will be available soon" disabled /><Select id="status" label="Filter" disabled><option>All records</option></Select></div><EmptyState title="Records are not connected yet" description="Your authorized records will appear here once sign-in is available." /></Card>}{kind === "booking" && <Card><ol className="booking-steps"><li>Pickup</li><li>Delivery</li><li>Parcel</li><li>Review</li></ol><h2>Where should we pick up?</h2><p>The booking form will be available after sign-in is connected.</p><fieldset disabled className="form-grid"><legend className="sr-only">Pickup details preview</legend><Input id="pickup-name" label="Contact name" autoComplete="name" /><Input id="pickup-phone" label="Phone number" type="tel" autoComplete="tel" /><Input id="pickup-address" label="Pickup address" autoComplete="street-address" /><Button disabled>Continue to delivery</Button></fieldset></Card>}{kind === "profile" && <Card><h2>Your details</h2><p>Sign-in is not available in this preview. Your profile will appear here when connected.</p><fieldset disabled className="form-grid"><legend className="sr-only">Profile preview</legend><Input id="name" label="Full name" autoComplete="name" /><Input id="email" label="Email address" type="email" autoComplete="email" /><Input id="phone" label="Phone number" type="tel" autoComplete="tel" /><Button disabled>Save changes</Button></fieldset></Card>}{(kind === "detail" || kind === "overview") && <Card><EmptyState title={kind === "detail" ? "Details are not connected yet" : "Your activity will appear here"} description="This preview contains no account or shipment data. Live records will be available after sign-in is connected." /></Card>}</div>;
-}
-
-export function AuthShell({ register = false }: { register?: boolean }) {
-  return <div className="auth-layout"><div><p className="eyebrow">Your next delivery starts here</p><h1>{register ? "Make room for more possibilities." : "Good to see you again."}</h1><p>One place to book your parcels, follow their journey, and keep your deliveries organized.</p></div><Card><h2>{register ? "Create your customer account" : "Sign in to ExpressHub"}</h2><p className="preview-notice">Preview only · {register ? "Registration" : "Sign-in"} is not available yet.</p><fieldset disabled className="form-grid"><legend className="sr-only">{register ? "Registration" : "Sign-in"} preview</legend>{register && <Input id="name" label="Full name" autoComplete="name" />}<Input id="email" label="Email address" type="email" autoComplete="email" /><Input id="password" label="Password" type="password" autoComplete={register ? "new-password" : "current-password"} hint={register ? "At least 12 characters; no more than 72 UTF-8 bytes." : undefined} />{register && <Input id="phone" label="Phone number (optional)" type="tel" autoComplete="tel" />}<Button disabled>{register ? "Create account" : "Sign in"}</Button></fieldset><p>{register ? "Already have an account?" : "New to ExpressHub?"} <Link href={register ? "/login" : "/register"}>{register ? "Sign in" : "Create an account"}</Link></p></Card></div>;
+export function PageShell({
+  title,
+  description,
+  kind = "detail",
+  action,
+  back,
+}: {
+  title: string;
+  description: string;
+  kind?: "list" | "detail" | "overview" | "booking";
+  action?: { href: string; label: string };
+  back?: { href: string; label: string };
+}) {
+  return (
+    <div className="page-stack">
+      {back && (
+        <Link className="back-link" href={back.href}>
+          ← {back.label}
+        </Link>
+      )}
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">ExpressHub / Workspace</p>
+          <h1>{title}</h1>
+          <p>{description}</p>
+        </div>
+        {action && <ButtonLink href={action.href}>{action.label}</ButtonLink>}
+      </div>
+      {kind === "overview" && (
+        <div className="grid-three">
+          {["Plan your next step", "Follow the journey", "Stay up to date"].map(
+            (label, i) => (
+              <Card key={label}>
+                <span className="step-number">0{i + 1}</span>
+                <h2>{label}</h2>
+                <p>
+                  Your workspace will bring shipment activity and updates
+                  together.
+                </p>
+              </Card>
+            ),
+          )}
+        </div>
+      )}
+      {kind === "list" && (
+        <Card>
+          <div className="filter-row">
+            <Input
+              id="search"
+              label="Search records"
+              placeholder="Search will be available soon"
+              disabled
+            />
+            <Select id="status" label="Filter" disabled>
+              <option>All records</option>
+            </Select>
+          </div>
+          <EmptyState
+            title="Records are not connected yet"
+            description="Your authorized records will appear here in a later implementation phase."
+          />
+        </Card>
+      )}
+      {kind === "booking" && (
+        <Card>
+          <ol className="booking-steps">
+            <li>Pickup</li>
+            <li>Delivery</li>
+            <li>Parcel</li>
+            <li>Review</li>
+          </ol>
+          <h2>Where should we pick up?</h2>
+          <p>
+            The booking form will be available in a later implementation phase.
+          </p>
+          <fieldset disabled className="form-grid">
+            <legend className="sr-only">Pickup details preview</legend>
+            <Input id="pickup-name" label="Contact name" autoComplete="name" />
+            <Input
+              id="pickup-phone"
+              label="Phone number"
+              type="tel"
+              autoComplete="tel"
+            />
+            <Input
+              id="pickup-address"
+              label="Pickup address"
+              autoComplete="street-address"
+            />
+            <Button disabled>Continue to delivery</Button>
+          </fieldset>
+        </Card>
+      )}
+      {(kind === "detail" || kind === "overview") && (
+        <Card>
+          <EmptyState
+            title={
+              kind === "detail"
+                ? "Details are not connected yet"
+                : "Your activity will appear here"
+            }
+            description="Live shipment records will be connected in a later implementation phase."
+          />
+        </Card>
+      )}
+    </div>
+  );
 }

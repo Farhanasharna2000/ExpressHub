@@ -1,5 +1,7 @@
 # Frontend foundation (Phase 1)
 
+Historical Phase 1 notes: Phase 2 now adds authentication and profile APIs and migrates controls to shadcn/ui/Tailwind. Workspace shells are now role-gated. See [current implementation](frontend-auth.md).
+
 The public pages and workspace shells use the existing Next.js App Router, React, TypeScript, and plain CSS. No styling dependencies or external fonts are required. Start with `npm run dev` and open `/`.
 
 ## Scope

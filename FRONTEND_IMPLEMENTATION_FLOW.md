@@ -90,18 +90,18 @@ Route groups do not add URL segments. Keep one page per URL and retain the root 
 
 **Exit condition:** All planned page shells are reachable, responsive, and have shared loading, empty, and error presentations.
 
-Implemented as data-free workspace previews. Authentication and real API calls remain in Phase 2. See [foundation notes and contract review](docs/frontend-foundation.md).
+Originally implemented as data-free workspace previews. Phase 2 now protects the workspace and connects authentication/profile APIs. See [foundation notes and contract review](docs/frontend-foundation.md).
 
 ## 5. Phase 2 — API client and authentication
 
 ### API client
 
-- [ ] Use `/api/v1` as the same-origin base path.
-- [ ] Support the existing `{ success, message, data }` and `{ success, message, errors }` envelopes; preserve HTTP status and structured error information.
-- [ ] Send JSON request bodies and Bearer access tokens for protected APIs.
-- [ ] Centralize query serialization, cancellation of stale list requests, error mapping, and session expiry behavior.
-- [ ] Handle `401` with one coordinated refresh and at most one retry. Exclude login/refresh failures from recursive retries; clear session state when refresh fails.
-- [ ] Handle `403`, `404`, `409`, validation errors, `429`, network errors, and service failures with useful recovery actions. Honor retry timing when supplied.
+- [x] Use `/api/v1` as the same-origin base path.
+- [x] Support the existing `{ success, message, data }` and `{ success, message, errors }` envelopes; preserve HTTP status and structured error information.
+- [x] Send JSON request bodies and Bearer access tokens for protected APIs.
+- [x] Centralize query serialization, cancellation of stale list requests, error mapping, and session expiry behavior.
+- [x] Handle `401` with one coordinated refresh and at most one retry. Exclude login/refresh failures from recursive retries; clear session state when refresh fails.
+- [x] Handle `403`, `404`, `409`, validation errors, `429`, network errors, and service failures with useful recovery actions. Honor retry timing when supplied.
 
 ### Session flow
 
@@ -116,12 +116,14 @@ Use the existing cookie and origin policy. Cross-origin deployment requires revi
 
 ### Screens
 
-- [ ] Registration: name, email, password, optional phone; mirror server validation, including the password's 12-character minimum and 72-byte maximum.
-- [ ] Login: email/password, submission progress, invalid-credentials feedback.
-- [ ] Profile: prefilled current user fields, field errors, save confirmation.
-- [ ] Authentication loading and access-denied views without protected-content flashes.
+- [x] Registration: name, email, password, optional phone; mirror server validation, including the password's 12-character minimum and 72-byte maximum.
+- [x] Login: email/password, submission progress, invalid-credentials feedback.
+- [x] Profile: prefilled current user fields, field errors, save confirmation.
+- [x] Authentication loading and access-denied views without protected-content flashes.
 
 **Exit condition:** Each role lands in its own area, survives a reload through session restoration, and cannot access another role's data through the API.
+
+Implementation is complete; browser tests use controlled API responses. Live service-backed acceptance still requires the existing auth/authorization integration suites against a test database. See [Phase 2 implementation and verification](docs/frontend-auth.md).
 
 ## 6. Phase 3 — Customer shipment workflow
 

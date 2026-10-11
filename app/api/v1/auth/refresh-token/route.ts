@@ -23,7 +23,11 @@ export async function POST(request: NextRequest) {
     const currentToken = request.cookies.get(refreshTokenCookie.name)?.value;
 
     if (!currentToken) {
-      throw new AppError(401, "Refresh token is required", "MISSING_REFRESH_TOKEN");
+      throw new AppError(
+        401,
+        "Refresh token is required",
+        "MISSING_REFRESH_TOKEN",
+      );
     }
 
     const result = await rotateRefreshToken(currentToken);
