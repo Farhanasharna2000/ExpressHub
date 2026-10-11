@@ -1,0 +1,59 @@
+{
+  "name": "expresshub",
+  "version": "1.0.0",
+  "description": "Courier and logistics management API built with Next.js and Prisma",
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "prisma generate && next build",
+    "start": "next start --hostname 0.0.0.0",
+    "typecheck": "tsc --noEmit",
+    "test:auth": "node --test tests/auth.test.mjs",
+    "test:auth:integration": "node tests/auth.integration.mjs",
+    "test:users:integration": "node tests/users.integration.mjs",
+    "test:shipments:integration": "node tests/shipments.integration.mjs",
+    "test:payments": "node --test tests/payments.test.mjs",
+    "test:checkout-return": "node --test tests/checkout-return.test.mjs",
+    "stripe:check": "node scripts/check-stripe.mjs",
+    "test:payments:integration": "node tests/payments.integration.mjs",
+    "test:admin:integration": "node tests/admin.integration.mjs",
+    "test:lists:integration": "node tests/lists.integration.mjs",
+    "test:soft-delete:integration": "node tests/soft-delete.integration.mjs",
+    "test:errors": "node --test tests/errors.test.mjs",
+    "test:security": "node --test tests/security.test.mjs",
+    "test:errors:integration": "node tests/errors.integration.mjs",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:status": "prisma migrate status",
+    "prisma:seed": "node prisma/seed.mjs",
+    "prisma:seed:pricing": "node prisma/seed-pricing.mjs"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "prisma": "^5.22.0",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.39.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^18.0.5",
+    "jsonwebtoken": "^9.0.3",
+    "next": "^16.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "stripe": "^23.0.0",
+    "zod": "^4.6.5"
+  }
+}

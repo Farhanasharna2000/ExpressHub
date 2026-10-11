@@ -1,0 +1,4011 @@
+{
+  "info": {
+    "name": "ExpressHub API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "All implemented API routes. Set baseUrl (origin only), email and password in collection variables or an optional environment. See README.md for the workflow. Authentication saves tokens; shipment creation saves shipmentId; Checkout saves paymentId and checkoutUrl. Set userId and courierId explicitly before targeted operations. Stripe webhooks require genuine signed provider events. Send mutations individually. Run the Role access checks folder after logging in all three roles. Saved examples are illustrative."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "currentUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "currentRole",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "courierToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "courierId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shipmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "foreignShipmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idempotencyKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentAttemptShipmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "checkoutUrl",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "stripeSignature",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "auth",
+      "item": [
+        {
+          "name": "Register a Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Public registration always creates CUSTOMER. Rate limit: 5 per 15 minutes per configured anonymous bucket. Raw refresh token is cookie-only.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Example Customer\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "description": "Public registration always creates CUSTOMER. Rate limit: 5 per 15 minutes per configured anonymous bucket. Raw refresh token is cookie-only.",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Example Customer\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Account created successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"accessToken\": \"<access-jwt>\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Authentication succeeded', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json().data;",
+                  "  state.set('accessToken', data.accessToken);",
+                  "  const saveUser = (user) => {",
+                  "    state.set('currentUserId', user.id);",
+                  "    state.set('currentRole', user.role);",
+                  "    const role = user.role.toLowerCase();",
+                  "    state.set(role + 'Token', data.accessToken);",
+                  "    state.set(role + 'Id', user.id);",
+                  "  };",
+                  "  if (data.user) saveUser(data.user);",
+                  "  else pm.sendRequest({url: pm.variables.get('baseUrl') + '/api/v1/users/me', method: 'GET', header: {Authorization: 'Bearer ' + data.accessToken}}, (error, response) => {",
+                  "    pm.test('Refreshed account identified', () => { pm.expect(error).to.equal(null); pm.expect(response.code).to.equal(200); });",
+                  "    if (!error && response.code === 200) saveUser(response.json().data.user);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "10 attempts per 15 minutes. Generic credential errors. Customer/Courier/Admin accounts use the same login endpoint.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "10 attempts per 15 minutes. Generic credential errors. Customer/Courier/Admin accounts use the same login endpoint.",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"accessToken\": \"<access-jwt>\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Authentication succeeded', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json().data;",
+                  "  state.set('accessToken', data.accessToken);",
+                  "  const saveUser = (user) => {",
+                  "    state.set('currentUserId', user.id);",
+                  "    state.set('currentRole', user.role);",
+                  "    const role = user.role.toLowerCase();",
+                  "    state.set(role + 'Token', data.accessToken);",
+                  "    state.set(role + 'Id', user.id);",
+                  "  };",
+                  "  if (data.user) saveUser(data.user);",
+                  "  else pm.sendRequest({url: pm.variables.get('baseUrl') + '/api/v1/users/me', method: 'GET', header: {Authorization: 'Bearer ' + data.accessToken}}, (error, response) => {",
+                  "    pm.test('Refreshed account identified', () => { pm.expect(error).to.equal(null); pm.expect(response.code).to.equal(200); });",
+                  "    if (!error && response.code === 200) saveUser(response.json().data.user);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rotate refresh token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh-token"
+              ]
+            },
+            "description": "Uses expresshub_refresh cookie; previous token is revoked. Cookie-origin checks apply. 30 requests per 15 minutes.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/refresh-token",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "refresh-token"
+                  ]
+                },
+                "description": "Uses expresshub_refresh cookie; previous token is revoked. Cookie-origin checks apply. 30 requests per 15 minutes.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Token refreshed successfully\",\n  \"data\": {\n    \"accessToken\": \"<access-jwt>\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Authentication succeeded', () => pm.expect(pm.response.code).to.be.within(200, 299));",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json().data;",
+                  "  state.set('accessToken', data.accessToken);",
+                  "  const saveUser = (user) => {",
+                  "    state.set('currentUserId', user.id);",
+                  "    state.set('currentRole', user.role);",
+                  "    const role = user.role.toLowerCase();",
+                  "    state.set(role + 'Token', data.accessToken);",
+                  "    state.set(role + 'Id', user.id);",
+                  "  };",
+                  "  if (data.user) saveUser(data.user);",
+                  "  else pm.sendRequest({url: pm.variables.get('baseUrl') + '/api/v1/users/me', method: 'GET', header: {Authorization: 'Bearer ' + data.accessToken}}, (error, response) => {",
+                  "    pm.test('Refreshed account identified', () => { pm.expect(error).to.equal(null); pm.expect(response.code).to.equal(200); });",
+                  "    if (!error && response.code === 200) saveUser(response.json().data.user);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log out",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Revokes the supplied refresh cookie if present and clears it. Missing cookie is allowed; no bearer required. Cookie-origin checks apply. Existing access JWT expires normally.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/logout",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "logout"
+                  ]
+                },
+                "description": "Revokes the supplied refresh cookie if present and clears it. Missing cookie is allowed; no bearer required. Cookie-origin checks apply. Existing access JWT expires normally.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logged out successfully\",\n  \"data\": null\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (pm.response.code === 200) {",
+                  "  state.unset('accessToken');",
+                  "  state.unset('currentRole');",
+                  "  state.unset('currentUserId');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "item": [
+        {
+          "name": "Read own profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            },
+            "description": ""
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "users",
+                    "me"
+                  ]
+                },
+                "description": ""
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Profile fetched successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Update own profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ]
+            },
+            "description": "At least one field; unknown fields rejected; email conflicts return 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Customer\",\n  \"phone\": \"01700000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "users",
+                    "me"
+                  ]
+                },
+                "description": "At least one field; unknown fields rejected; email conflicts return 409.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated Customer\",\n  \"phone\": \"01700000000\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Profile updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "isActive",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "q",
+                  "value": "Dhaka",
+                  "disabled": true,
+                  "description": "Case-insensitive name/email/phone substring."
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN only; soft-deleted users excluded; no password or session fields."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "role",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "isActive",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "q",
+                      "value": "Dhaka",
+                      "disabled": true,
+                      "description": "Case-insensitive name/email/phone substring."
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "createdAt",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN only; soft-deleted users excluded; no password or session fields."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Users fetched successfully\",\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"name\": \"Example Customer\",\n        \"email\": \"customer@example.com\",\n        \"phone\": null,\n        \"role\": \"CUSTOMER\",\n        \"isActive\": true,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Read user profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Owner or ADMIN; other users receive 404."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "users",
+                    "{{userId}}"
+                  ]
+                },
+                "description": "Owner or ADMIN; other users receive 404."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User fetched successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Change user role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}",
+                "role"
+              ]
+            },
+            "description": "ADMIN only. Cannot change own role. Revokes refresh sessions and atomically audits a real change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"COURIER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/{{userId}}/role",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "users",
+                    "{{userId}}",
+                    "role"
+                  ]
+                },
+                "description": "ADMIN only. Cannot change own role. Revokes refresh sessions and atomically audits a real change.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role\": \"COURIER\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User role updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"COURIER\",\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Activate or deactivate user",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}",
+                "status"
+              ]
+            },
+            "description": "ADMIN only; cannot change own status. Deactivation revokes refresh sessions; reactivation does not restore them.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/{{userId}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "users",
+                    "{{userId}}",
+                    "status"
+                  ]
+                },
+                "description": "ADMIN only; cannot change own status. Deactivation revokes refresh sessions; reactivation does not restore them.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User status updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": false,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Archive user",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "ADMIN only. Blocks self-deletion, active owned/assigned shipments and unresolved payments/refunds. Revokes sessions; preserves history. Repeat deletion returns 404.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Archive resolved account\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "users",
+                    "{{userId}}"
+                  ]
+                },
+                "description": "ADMIN only. Blocks self-deletion, active owned/assigned shipments and unresolved payments/refunds. Revokes sessions; preserves history. Repeat deletion returns 404.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Archive resolved account\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User deleted successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"deletedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
+      "name": "shipments",
+      "item": [
+        {
+          "name": "Book shipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments"
+              ]
+            },
+            "description": "CUSTOMER only. Exactly one effective pricing rule must cover the weight, otherwise 503. Server controls customer, tracking number, status, currency and price. Dimensions must be all supplied or all omitted.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickupContactName\": \"Example Sender\",\n  \"pickupContactPhone\": \"01700000000\",\n  \"pickupAddress\": \"Dhaka pickup address\",\n  \"deliveryContactName\": \"Example Recipient\",\n  \"deliveryContactPhone\": \"01800000000\",\n  \"deliveryAddress\": \"Chattogram delivery address\",\n  \"parcelWeightKg\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments"
+                  ]
+                },
+                "description": "CUSTOMER only. Exactly one effective pricing rule must cover the weight, otherwise 503. Server controls customer, tracking number, status, currency and price. Dimensions must be all supplied or all omitted.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pickupContactName\": \"Example Sender\",\n  \"pickupContactPhone\": \"01700000000\",\n  \"pickupAddress\": \"Dhaka pickup address\",\n  \"deliveryContactName\": \"Example Recipient\",\n  \"deliveryContactPhone\": \"01800000000\",\n  \"deliveryAddress\": \"Chattogram delivery address\",\n  \"parcelWeightKg\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipment created successfully\",\n  \"data\": {\n    \"shipment\": {\n      \"pickupContactName\": \"Example Sender\",\n      \"pickupContactPhone\": \"01700000000\",\n      \"pickupAddress\": \"Dhaka pickup address\",\n      \"deliveryContactName\": \"Example Recipient\",\n      \"deliveryContactPhone\": \"01800000000\",\n      \"deliveryAddress\": \"Chattogram delivery address\",\n      \"parcelWeightKg\": \"1\",\n      \"id\": \"cm123456789012345678901234\",\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"customerId\": \"cm123456789012345678901234\",\n      \"courierId\": null,\n      \"originHubId\": null,\n      \"destinationHubId\": null,\n      \"currentHubId\": null,\n      \"packageDescription\": null,\n      \"parcelLengthCm\": null,\n      \"parcelWidthCm\": null,\n      \"parcelHeightCm\": null,\n      \"price\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"CREATED\",\n      \"paymentStatus\": \"PENDING\",\n      \"pickupScheduledAt\": null,\n      \"deliveredAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deletedAt\": null\n    }\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (pm.response.code === 201) state.set('shipmentId', pm.response.json().data.shipment.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List visible shipments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "paymentStatus",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "q",
+                  "value": "Dhaka",
+                  "disabled": true,
+                  "description": "Case-insensitive tracking number, contact name or address search."
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive createdAt lower bound; from must not exceed to."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive upper bound; encode timezone + as %2B."
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "paymentStatus",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "q",
+                      "value": "Dhaka",
+                      "disabled": true,
+                      "description": "Case-insensitive tracking number, contact name or address search."
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive createdAt lower bound; from must not exceed to."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive upper bound; encode timezone + as %2B."
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "createdAt",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipments fetched successfully\",\n  \"data\": {\n    \"shipments\": [\n      {\n        \"pickupContactName\": \"Example Sender\",\n        \"pickupContactPhone\": \"01700000000\",\n        \"pickupAddress\": \"Dhaka pickup address\",\n        \"deliveryContactName\": \"Example Recipient\",\n        \"deliveryContactPhone\": \"01800000000\",\n        \"deliveryAddress\": \"Chattogram delivery address\",\n        \"parcelWeightKg\": \"1\",\n        \"id\": \"cm123456789012345678901234\",\n        \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n        \"customerId\": \"cm123456789012345678901234\",\n        \"courierId\": null,\n        \"originHubId\": null,\n        \"destinationHubId\": null,\n        \"currentHubId\": null,\n        \"packageDescription\": null,\n        \"parcelLengthCm\": null,\n        \"parcelWidthCm\": null,\n        \"parcelHeightCm\": null,\n        \"price\": \"100\",\n        \"currency\": \"BDT\",\n        \"status\": \"CREATED\",\n        \"paymentStatus\": \"PENDING\",\n        \"pickupScheduledAt\": null,\n        \"deliveredAt\": null,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n        \"deletedAt\": null\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Search shipments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/search?q=Dhaka",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "paymentStatus",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "q",
+                  "value": "Dhaka",
+                  "disabled": false,
+                  "description": "Case-insensitive tracking number, contact name or address search."
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive createdAt lower bound; from must not exceed to."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive upper bound; encode timezone + as %2B."
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/search?q=Dhaka",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "search"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "paymentStatus",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "q",
+                      "value": "Dhaka",
+                      "disabled": false,
+                      "description": "Case-insensitive tracking number, contact name or address search."
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive createdAt lower bound; from must not exceed to."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive upper bound; encode timezone + as %2B."
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "createdAt",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipments fetched successfully\",\n  \"data\": {\n    \"shipments\": [\n      {\n        \"pickupContactName\": \"Example Sender\",\n        \"pickupContactPhone\": \"01700000000\",\n        \"pickupAddress\": \"Dhaka pickup address\",\n        \"deliveryContactName\": \"Example Recipient\",\n        \"deliveryContactPhone\": \"01800000000\",\n        \"deliveryAddress\": \"Chattogram delivery address\",\n        \"parcelWeightKg\": \"1\",\n        \"id\": \"cm123456789012345678901234\",\n        \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n        \"customerId\": \"cm123456789012345678901234\",\n        \"courierId\": null,\n        \"originHubId\": null,\n        \"destinationHubId\": null,\n        \"currentHubId\": null,\n        \"packageDescription\": null,\n        \"parcelLengthCm\": null,\n        \"parcelWidthCm\": null,\n        \"parcelHeightCm\": null,\n        \"price\": \"100\",\n        \"currency\": \"BDT\",\n        \"status\": \"CREATED\",\n        \"paymentStatus\": \"PENDING\",\n        \"pickupScheduledAt\": null,\n        \"deliveredAt\": null,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n        \"deletedAt\": null\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "List own or assigned shipments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/my-shipments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "my-shipments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "paymentStatus",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "q",
+                  "value": "Dhaka",
+                  "disabled": true,
+                  "description": "Case-insensitive tracking number, contact name or address search."
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive createdAt lower bound; from must not exceed to."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive upper bound; encode timezone + as %2B."
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/my-shipments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "my-shipments"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "paymentStatus",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "q",
+                      "value": "Dhaka",
+                      "disabled": true,
+                      "description": "Case-insensitive tracking number, contact name or address search."
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive createdAt lower bound; from must not exceed to."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive upper bound; encode timezone + as %2B."
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "createdAt",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipments fetched successfully\",\n  \"data\": {\n    \"shipments\": [\n      {\n        \"pickupContactName\": \"Example Sender\",\n        \"pickupContactPhone\": \"01700000000\",\n        \"pickupAddress\": \"Dhaka pickup address\",\n        \"deliveryContactName\": \"Example Recipient\",\n        \"deliveryContactPhone\": \"01800000000\",\n        \"deliveryAddress\": \"Chattogram delivery address\",\n        \"parcelWeightKg\": \"1\",\n        \"id\": \"cm123456789012345678901234\",\n        \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n        \"customerId\": \"cm123456789012345678901234\",\n        \"courierId\": null,\n        \"originHubId\": null,\n        \"destinationHubId\": null,\n        \"currentHubId\": null,\n        \"packageDescription\": null,\n        \"parcelLengthCm\": null,\n        \"parcelWidthCm\": null,\n        \"parcelHeightCm\": null,\n        \"price\": \"100\",\n        \"currency\": \"BDT\",\n        \"status\": \"CREATED\",\n        \"paymentStatus\": \"PENDING\",\n        \"pickupScheduledAt\": null,\n        \"deliveredAt\": null,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n        \"deletedAt\": null\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Read shipment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "{{shipmentId}}"
+              ]
+            },
+            "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "{{shipmentId}}"
+                  ]
+                },
+                "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipment fetched successfully\",\n  \"data\": {\n    \"shipment\": {\n      \"pickupContactName\": \"Example Sender\",\n      \"pickupContactPhone\": \"01700000000\",\n      \"pickupAddress\": \"Dhaka pickup address\",\n      \"deliveryContactName\": \"Example Recipient\",\n      \"deliveryContactPhone\": \"01800000000\",\n      \"deliveryAddress\": \"Chattogram delivery address\",\n      \"parcelWeightKg\": \"1\",\n      \"id\": \"cm123456789012345678901234\",\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"customerId\": \"cm123456789012345678901234\",\n      \"courierId\": null,\n      \"originHubId\": null,\n      \"destinationHubId\": null,\n      \"currentHubId\": null,\n      \"packageDescription\": null,\n      \"parcelLengthCm\": null,\n      \"parcelWidthCm\": null,\n      \"parcelHeightCm\": null,\n      \"price\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"CREATED\",\n      \"paymentStatus\": \"PENDING\",\n      \"pickupScheduledAt\": null,\n      \"deliveredAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deletedAt\": null\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Assign courier",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/assign-courier",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "{{shipmentId}}",
+                "assign-courier"
+              ]
+            },
+            "description": "ADMIN only. Active courier required. CREATED/FAILED only. expectedCourierId must match current assignment; null for first assignment. Concurrent change returns 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courierId\": \"{{courierId}}\",\n  \"expectedCourierId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/assign-courier",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "{{shipmentId}}",
+                    "assign-courier"
+                  ]
+                },
+                "description": "ADMIN only. Active courier required. CREATED/FAILED only. expectedCourierId must match current assignment; null for first assignment. Concurrent change returns 409.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"courierId\": \"{{courierId}}\",\n  \"expectedCourierId\": null\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Courier assigned successfully\",\n  \"data\": {\n    \"shipment\": {\n      \"pickupContactName\": \"Example Sender\",\n      \"pickupContactPhone\": \"01700000000\",\n      \"pickupAddress\": \"Dhaka pickup address\",\n      \"deliveryContactName\": \"Example Recipient\",\n      \"deliveryContactPhone\": \"01800000000\",\n      \"deliveryAddress\": \"Chattogram delivery address\",\n      \"parcelWeightKg\": \"1\",\n      \"id\": \"cm123456789012345678901234\",\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"customerId\": \"cm123456789012345678901234\",\n      \"courierId\": \"cm123456789012345678901234\",\n      \"originHubId\": null,\n      \"destinationHubId\": null,\n      \"currentHubId\": null,\n      \"packageDescription\": null,\n      \"parcelLengthCm\": null,\n      \"parcelWidthCm\": null,\n      \"parcelHeightCm\": null,\n      \"price\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"CREATED\",\n      \"paymentStatus\": \"PENDING\",\n      \"pickupScheduledAt\": null,\n      \"deliveredAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deletedAt\": null\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Transition shipment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "{{shipmentId}}",
+                "status"
+              ]
+            },
+            "description": "CREATED→PICKED_UP→IN_TRANSIT→OUT_FOR_DELIVERY→DELIVERED or FAILED. ADMIN retries FAILED→IN_TRANSIT or returns FAILED→RETURNED. Owner/ADMIN can cancel CREATED only. Operational transitions require PAID and an active assigned courier. DELIVERED/FAILED/RETURNED require a note. Terminal states cannot transition; pending checkout blocks cancellation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\",\n  \"expectedStatus\": \"CREATED\",\n  \"note\": \"Booking no longer needed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "{{shipmentId}}",
+                    "status"
+                  ]
+                },
+                "description": "CREATED→PICKED_UP→IN_TRANSIT→OUT_FOR_DELIVERY→DELIVERED or FAILED. ADMIN retries FAILED→IN_TRANSIT or returns FAILED→RETURNED. Owner/ADMIN can cancel CREATED only. Operational transitions require PAID and an active assigned courier. DELIVERED/FAILED/RETURNED require a note. Terminal states cannot transition; pending checkout blocks cancellation.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"CANCELLED\",\n  \"expectedStatus\": \"CREATED\",\n  \"note\": \"Booking no longer needed\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipment updated successfully\",\n  \"data\": {\n    \"shipment\": {\n      \"pickupContactName\": \"Example Sender\",\n      \"pickupContactPhone\": \"01700000000\",\n      \"pickupAddress\": \"Dhaka pickup address\",\n      \"deliveryContactName\": \"Example Recipient\",\n      \"deliveryContactPhone\": \"01800000000\",\n      \"deliveryAddress\": \"Chattogram delivery address\",\n      \"parcelWeightKg\": \"1\",\n      \"id\": \"cm123456789012345678901234\",\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"customerId\": \"cm123456789012345678901234\",\n      \"courierId\": null,\n      \"originHubId\": null,\n      \"destinationHubId\": null,\n      \"currentHubId\": null,\n      \"packageDescription\": null,\n      \"parcelLengthCm\": null,\n      \"parcelWidthCm\": null,\n      \"parcelHeightCm\": null,\n      \"price\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"CANCELLED\",\n      \"paymentStatus\": \"PENDING\",\n      \"pickupScheduledAt\": null,\n      \"deliveredAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deletedAt\": null\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Archive shipment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "{{shipmentId}}"
+              ]
+            },
+            "description": "ADMIN only. DELIVERED, RETURNED or CANCELLED only; unresolved payment/refund attempts block archival. Preserves events, payments and audits. Repeat returns 404.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Archive resolved shipment\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "{{shipmentId}}"
+                  ]
+                },
+                "description": "ADMIN only. DELIVERED, RETURNED or CANCELLED only; unresolved payment/refund attempts block archival. Preserves events, payments and audits. Repeat returns 404.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Archive resolved shipment\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipment deleted successfully\",\n  \"data\": {\n    \"shipment\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"deletedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
+      "name": "admin",
+      "item": [
+        {
+          "name": "Admin: List users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "isActive",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "q",
+                  "value": "Dhaka",
+                  "disabled": true,
+                  "description": "Case-insensitive name/email/phone substring."
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN only. Alias of GET /api/v1/users; same validation and response. ADMIN only; soft-deleted users excluded; no password or session fields."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "users"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "role",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "isActive",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "q",
+                      "value": "Dhaka",
+                      "disabled": true,
+                      "description": "Case-insensitive name/email/phone substring."
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "createdAt",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN only. Alias of GET /api/v1/users; same validation and response. ADMIN only; soft-deleted users excluded; no password or session fields."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Users fetched successfully\",\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"name\": \"Example Customer\",\n        \"email\": \"customer@example.com\",\n        \"phone\": null,\n        \"role\": \"CUSTOMER\",\n        \"isActive\": true,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Admin: Change user role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users/{{userId}}/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "users",
+                "{{userId}}",
+                "role"
+              ]
+            },
+            "description": "ADMIN only. Alias of PATCH /api/v1/users/{id}/role; same validation and response. ADMIN only. Cannot change own role. Revokes refresh sessions and atomically audits a real change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"COURIER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/users/{{userId}}/role",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "users",
+                    "{{userId}}",
+                    "role"
+                  ]
+                },
+                "description": "ADMIN only. Alias of PATCH /api/v1/users/{id}/role; same validation and response. ADMIN only. Cannot change own role. Revokes refresh sessions and atomically audits a real change.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role\": \"COURIER\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User role updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"COURIER\",\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Admin: List visible shipments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/shipments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "shipments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "paymentStatus",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "q",
+                  "value": "Dhaka",
+                  "disabled": true,
+                  "description": "Case-insensitive tracking number, contact name or address search."
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive createdAt lower bound; from must not exceed to."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive upper bound; encode timezone + as %2B."
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN only. Alias of GET /api/v1/shipments; same validation and response. CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/shipments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "shipments"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "paymentStatus",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "q",
+                      "value": "Dhaka",
+                      "disabled": true,
+                      "description": "Case-insensitive tracking number, contact name or address search."
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive createdAt lower bound; from must not exceed to."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive upper bound; encode timezone + as %2B."
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "createdAt",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN only. Alias of GET /api/v1/shipments; same validation and response. CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipments fetched successfully\",\n  \"data\": {\n    \"shipments\": [\n      {\n        \"pickupContactName\": \"Example Sender\",\n        \"pickupContactPhone\": \"01700000000\",\n        \"pickupAddress\": \"Dhaka pickup address\",\n        \"deliveryContactName\": \"Example Recipient\",\n        \"deliveryContactPhone\": \"01800000000\",\n        \"deliveryAddress\": \"Chattogram delivery address\",\n        \"parcelWeightKg\": \"1\",\n        \"id\": \"cm123456789012345678901234\",\n        \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n        \"customerId\": \"cm123456789012345678901234\",\n        \"courierId\": null,\n        \"originHubId\": null,\n        \"destinationHubId\": null,\n        \"currentHubId\": null,\n        \"packageDescription\": null,\n        \"parcelLengthCm\": null,\n        \"parcelWidthCm\": null,\n        \"parcelHeightCm\": null,\n        \"price\": \"100\",\n        \"currency\": \"BDT\",\n        \"status\": \"CREATED\",\n        \"paymentStatus\": \"PENDING\",\n        \"pickupScheduledAt\": null,\n        \"deliveredAt\": null,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n        \"deletedAt\": null\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Read dashboard statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/dashboard-stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "dashboard-stats"
+              ]
+            },
+            "description": "ADMIN only. No query parameters. One database snapshot. User/shipment counts exclude deletion; active shipments include FAILED. Payment history is retained; amounts are strings grouped by currency/status, not net revenue or refunded amounts."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/dashboard-stats",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "dashboard-stats"
+                  ]
+                },
+                "description": "ADMIN only. No query parameters. One database snapshot. User/shipment counts exclude deletion; active shipments include FAILED. Payment history is retained; amounts are strings grouped by currency/status, not net revenue or refunded amounts."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Read dashboard statistics\",\n  \"data\": {\n    \"users\": {\n      \"total\": 0,\n      \"active\": 0,\n      \"inactive\": 0,\n      \"byRole\": {\n        \"CUSTOMER\": 0,\n        \"COURIER\": 0,\n        \"ADMIN\": 0\n      }\n    },\n    \"shipments\": {\n      \"total\": 0,\n      \"active\": 0,\n      \"byStatus\": {\n        \"CREATED\": 0,\n        \"PICKED_UP\": 0,\n        \"IN_TRANSIT\": 0,\n        \"OUT_FOR_DELIVERY\": 0,\n        \"DELIVERED\": 0,\n        \"FAILED\": 0,\n        \"RETURNED\": 0,\n        \"CANCELLED\": 0\n      }\n    },\n    \"payments\": {\n      \"total\": 0,\n      \"byStatus\": {\n        \"PENDING\": 0,\n        \"PAID\": 0,\n        \"FAILED\": 0,\n        \"REFUND_PENDING\": 0,\n        \"REFUNDED\": 0\n      },\n      \"amounts\": [\n        {\n          \"currency\": \"BDT\",\n          \"status\": \"PAID\",\n          \"count\": 1,\n          \"amount\": \"100.00\"\n        }\n      ]\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Inspect audit history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/audit-logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "actorId",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "entityId",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "shipmentId",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "paymentId",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "entityType",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "action",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Exact action match."
+                },
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive createdAt lower bound; from must not exceed to."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive upper bound; encode timezone + as %2B."
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN only. Exact filters; historical deleted entities retained. actorId may be null for system events. details are action-dependent JSON; no mutation API."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/audit-logs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "audit-logs"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "actorId",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "entityId",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "shipmentId",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "paymentId",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "entityType",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "action",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Exact action match."
+                    },
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive createdAt lower bound; from must not exceed to."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive upper bound; encode timezone + as %2B."
+                    },
+                    {
+                      "key": "sortBy",
+                      "value": "createdAt",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN only. Exact filters; historical deleted entities retained. actorId may be null for system events. details are action-dependent JSON; no mutation API."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Audit logs fetched successfully\",\n  \"data\": {\n    \"auditLogs\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"actorId\": \"cm123456789012345678901234\",\n        \"entityType\": \"USER\",\n        \"entityId\": \"cm123456789012345678901234\",\n        \"shipmentId\": null,\n        \"paymentId\": null,\n        \"action\": \"USER_ROLE_UPDATED\",\n        \"details\": {\n          \"before\": {\n            \"role\": \"CUSTOMER\",\n            \"isActive\": true\n          },\n          \"after\": {\n            \"role\": \"COURIER\",\n            \"isActive\": true\n          }\n        },\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
+      "name": "health",
+      "item": [
+        {
+          "name": "Check database readiness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health"
+              ]
+            },
+            "description": "Read-only SELECT 1. Unversioned path is a compatibility alias. Database unavailable returns DATABASE_UNAVAILABLE.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "health"
+                  ]
+                },
+                "description": "Read-only SELECT 1. Unversioned path is a compatibility alias. Database unavailable returns DATABASE_UNAVAILABLE.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"API is healthy\",\n  \"data\": {\n    \"status\": \"ok\",\n    \"database\": \"connected\",\n    \"timestamp\": \"2026-10-10T06:00:00.000Z\"\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Check database readiness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "Read-only SELECT 1. Unversioned path is a compatibility alias. Database unavailable returns DATABASE_UNAVAILABLE.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "health"
+                  ]
+                },
+                "description": "Read-only SELECT 1. Unversioned path is a compatibility alias. Database unavailable returns DATABASE_UNAVAILABLE.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"API is healthy\",\n  \"data\": {\n    \"status\": \"ok\",\n    \"database\": \"connected\",\n    \"timestamp\": \"2026-10-10T06:00:00.000Z\"\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
+      "name": "payments",
+      "item": [
+        {
+          "name": "Prepare Stripe Checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "create"
+              ]
+            },
+            "description": "CUSTOMER owning an undeleted CREATED shipment only. Price and currency come from the server quote. create and initiate are aliases. Only one pending/accepted attempt per shipment. Reuse the same Idempotency-Key after network/provider errors. checkoutUrl can be null when Checkout is no longer pending/open. Initiation never confirms payment; a verified Stripe webhook settles it.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipmentId\": \"{{shipmentId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Idempotency-Key",
+                    "value": "{{idempotencyKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/payments/create",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments",
+                    "create"
+                  ]
+                },
+                "description": "CUSTOMER owning an undeleted CREATED shipment only. Price and currency come from the server quote. create and initiate are aliases. Only one pending/accepted attempt per shipment. Reuse the same Idempotency-Key after network/provider errors. checkoutUrl can be null when Checkout is no longer pending/open. Initiation never confirms payment; a verified Stripe webhook settles it.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"shipmentId\": \"{{shipmentId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment checkout prepared\",\n  \"data\": {\n    \"payment\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"shipmentId\": \"cm123456789012345678901234\",\n      \"payerId\": \"cm123456789012345678901234\",\n      \"provider\": \"STRIPE\",\n      \"amount\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"PENDING\",\n      \"paidAt\": null,\n      \"refundedAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"checkoutUrl\": \"https://checkout.stripe.com/example\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "const shipment = pm.variables.get('shipmentId');",
+                  "if (!shipment) throw new Error('Set shipmentId before starting Checkout');",
+                  "if (!state.get('idempotencyKey') || state.get('paymentAttemptShipmentId') !== shipment) {",
+                  "  state.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));",
+                  "  state.set('paymentAttemptShipmentId', shipment);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  " const data = pm.response.json().data;",
+                  " if (data.payment) state.set('paymentId', data.payment.id);",
+                  " if (data.checkoutUrl) state.set('checkoutUrl', data.checkoutUrl);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Prepare Stripe Checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "initiate"
+              ]
+            },
+            "description": "CUSTOMER owning an undeleted CREATED shipment only. Price and currency come from the server quote. create and initiate are aliases. Only one pending/accepted attempt per shipment. Reuse the same Idempotency-Key after network/provider errors. checkoutUrl can be null when Checkout is no longer pending/open. Initiation never confirms payment; a verified Stripe webhook settles it.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipmentId\": \"{{shipmentId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Idempotency-Key",
+                    "value": "{{idempotencyKey}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/payments/initiate",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments",
+                    "initiate"
+                  ]
+                },
+                "description": "CUSTOMER owning an undeleted CREATED shipment only. Price and currency come from the server quote. create and initiate are aliases. Only one pending/accepted attempt per shipment. Reuse the same Idempotency-Key after network/provider errors. checkoutUrl can be null when Checkout is no longer pending/open. Initiation never confirms payment; a verified Stripe webhook settles it.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"shipmentId\": \"{{shipmentId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment checkout prepared\",\n  \"data\": {\n    \"payment\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"shipmentId\": \"cm123456789012345678901234\",\n      \"payerId\": \"cm123456789012345678901234\",\n      \"provider\": \"STRIPE\",\n      \"amount\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"PENDING\",\n      \"paidAt\": null,\n      \"refundedAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"checkoutUrl\": \"https://checkout.stripe.com/example\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "const shipment = pm.variables.get('shipmentId');",
+                  "if (!shipment) throw new Error('Set shipmentId before starting Checkout');",
+                  "if (!state.get('idempotencyKey') || state.get('paymentAttemptShipmentId') !== shipment) {",
+                  "  state.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));",
+                  "  state.set('paymentAttemptShipmentId', shipment);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  " const data = pm.response.json().data;",
+                  " if (data.payment) state.set('paymentId', data.payment.id);",
+                  " if (data.checkoutUrl) state.set('checkoutUrl', data.checkoutUrl);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Read payment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "{{paymentId}}"
+              ]
+            },
+            "description": "Paying CUSTOMER or ADMIN; another customer receives 404, COURIER receives 403. Retains history for deleted shipments. Provider references and idempotency keys are not exposed."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/payments/{{paymentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments",
+                    "{{paymentId}}"
+                  ]
+                },
+                "description": "Paying CUSTOMER or ADMIN; another customer receives 404, COURIER receives 403. Retains history for deleted shipments. Provider references and idempotency keys are not exposed."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment fetched successfully\",\n  \"data\": {\n    \"payment\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"shipmentId\": \"cm123456789012345678901234\",\n      \"payerId\": \"cm123456789012345678901234\",\n      \"provider\": \"STRIPE\",\n      \"amount\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"PENDING\",\n      \"paidAt\": null,\n      \"refundedAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "List own payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "shipmentId",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "CUSTOMER or ADMIN only. Both aliases return only the caller's own payments, including retained history for deleted shipments. Sorted by createdAt descending and ID ascending."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/payments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "shipmentId",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "CUSTOMER or ADMIN only. Both aliases return only the caller's own payments, including retained history for deleted shipments. Sorted by createdAt descending and ID ascending."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payments fetched successfully\",\n  \"data\": {\n    \"payments\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"shipmentId\": \"cm123456789012345678901234\",\n        \"payerId\": \"cm123456789012345678901234\",\n        \"provider\": \"STRIPE\",\n        \"amount\": \"100\",\n        \"currency\": \"BDT\",\n        \"status\": \"PENDING\",\n        \"paidAt\": null,\n        \"refundedAt\": null,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "List own payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/my-payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "my-payments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "shipmentId",
+                  "value": "",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "CUSTOMER or ADMIN only. Both aliases return only the caller's own payments, including retained history for deleted shipments. Sorted by createdAt descending and ID ascending."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/payments/my-payments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments",
+                    "my-payments"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "shipmentId",
+                      "value": "",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "CUSTOMER or ADMIN only. Both aliases return only the caller's own payments, including retained history for deleted shipments. Sorted by createdAt descending and ID ascending."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payments fetched successfully\",\n  \"data\": {\n    \"payments\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"shipmentId\": \"cm123456789012345678901234\",\n        \"payerId\": \"cm123456789012345678901234\",\n        \"provider\": \"STRIPE\",\n        \"amount\": \"100\",\n        \"currency\": \"BDT\",\n        \"status\": \"PENDING\",\n        \"paidAt\": null,\n        \"refundedAt\": null,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Receive Stripe webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Stripe-Signature",
+                "value": "{{stripeSignature}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "webhook"
+              ]
+            },
+            "description": "Provider-only endpoint; no bearer token. Requires original signed JSON body (maximum 256 KiB), valid recent signature and matching account/mode. Server verifies payment metadata, amount and currency against Stripe. Duplicate events are acknowledged without repeating changes; unrelated events are ignored. A 503 requests a retry. Send real signed events through Stripe CLI; the Postman reference body alone cannot simulate a valid payment.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"evt_example\",\n  \"type\": \"checkout.session.completed\",\n  \"livemode\": false,\n  \"data\": {\n    \"object\": {\n      \"id\": \"cs_example\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Stripe-Signature",
+                    "value": "{{stripeSignature}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/payments/webhook",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments",
+                    "webhook"
+                  ]
+                },
+                "description": "Provider-only endpoint; no bearer token. Requires original signed JSON body (maximum 256 KiB), valid recent signature and matching account/mode. Server verifies payment metadata, amount and currency against Stripe. Duplicate events are acknowledged without repeating changes; unrelated events are ignored. A 503 requests a retry. Send real signed events through Stripe CLI; the Postman reference body alone cannot simulate a valid payment.",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"evt_example\",\n  \"type\": \"checkout.session.completed\",\n  \"livemode\": false,\n  \"data\": {\n    \"object\": {\n      \"id\": \"cs_example\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Webhook received\",\n  \"data\": {\n    \"received\": true\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Checkout return: success",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/return/success",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "return",
+                "success"
+              ],
+              "query": [
+                {
+                  "key": "session_id",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Optional Stripe redirect value; not used to confirm payment."
+                }
+              ]
+            },
+            "description": "Public informational response. Does not modify payments or shipments. Check authenticated payment detail for verified status; leaving Checkout does not expire its session.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/payments/return/success",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments",
+                    "return",
+                    "success"
+                  ],
+                  "query": [
+                    {
+                      "key": "session_id",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Optional Stripe redirect value; not used to confirm payment."
+                    }
+                  ]
+                },
+                "description": "Public informational response. Does not modify payments or shipments. Check authenticated payment detail for verified status; leaving Checkout does not expire its session.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Checkout returned. Check your authenticated payment status for confirmation.\",\n  \"data\": {\n    \"checkout\": \"returned\",\n    \"paymentConfirmed\": false\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Checkout return: cancel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/return/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "return",
+                "cancel"
+              ]
+            },
+            "description": "Public informational response. Does not modify payments or shipments. Check authenticated payment detail for verified status; leaving Checkout does not expire its session.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/payments/return/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments",
+                    "return",
+                    "cancel"
+                  ]
+                },
+                "description": "Public informational response. Does not modify payments or shipments. Check authenticated payment detail for verified status; leaving Checkout does not expire its session.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Checkout was left without confirmation. The payment session may still be open.\",\n  \"data\": {\n    \"checkout\": \"cancelled\",\n    \"paymentConfirmed\": false\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
+      "name": "Role access checks",
+      "description": "Read-only checks. Login CUSTOMER, COURIER and ADMIN first. Set foreignShipmentId to an undeleted shipment owned by another customer. Tokens must be unexpired.",
+      "item": [
+        {
+          "name": "CUSTOMER profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/users/me"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (!state.get('customerToken')) throw new Error('Login to populate customerToken first');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Expected HTTP 200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response envelope', () => pm.expect(body.success).to.equal(true));",
+                  "pm.test('Current database role', () => pm.expect(body.data.user.role).to.equal('CUSTOMER'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CUSTOMER dashboard access",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/admin/dashboard-stats"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (!state.get('customerToken')) throw new Error('Login to populate customerToken first');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Expected HTTP 403', () => pm.expect(pm.response.code).to.equal(403));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response envelope', () => pm.expect(body.success).to.equal(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CUSTOMER scoped shipments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/shipments"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (!state.get('customerToken')) throw new Error('Login to populate customerToken first');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Expected HTTP 200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response envelope', () => pm.expect(body.success).to.equal(true));",
+                  "pm.test('Every shipment belongs to this account', () => { for (const shipment of body.data.shipments) pm.expect(shipment.customerId).to.equal(state.get('customerId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "COURIER profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{courierToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/users/me"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (!state.get('courierToken')) throw new Error('Login to populate courierToken first');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Expected HTTP 200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response envelope', () => pm.expect(body.success).to.equal(true));",
+                  "pm.test('Current database role', () => pm.expect(body.data.user.role).to.equal('COURIER'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "COURIER dashboard access",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{courierToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/admin/dashboard-stats"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (!state.get('courierToken')) throw new Error('Login to populate courierToken first');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Expected HTTP 403', () => pm.expect(pm.response.code).to.equal(403));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response envelope', () => pm.expect(body.success).to.equal(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "COURIER scoped shipments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{courierToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/shipments"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (!state.get('courierToken')) throw new Error('Login to populate courierToken first');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Expected HTTP 200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response envelope', () => pm.expect(body.success).to.equal(true));",
+                  "pm.test('Every shipment belongs to this account', () => { for (const shipment of body.data.shipments) pm.expect(shipment.courierId).to.equal(state.get('courierId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/users/me"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (!state.get('adminToken')) throw new Error('Login to populate adminToken first');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Expected HTTP 200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response envelope', () => pm.expect(body.success).to.equal(true));",
+                  "pm.test('Current database role', () => pm.expect(body.data.user.role).to.equal('ADMIN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ADMIN dashboard access",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/admin/dashboard-stats"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (!state.get('adminToken')) throw new Error('Login to populate adminToken first');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Expected HTTP 200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response envelope', () => pm.expect(body.success).to.equal(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing token rejected",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": "{{baseUrl}}/api/v1/users/me"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  ""
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Expected HTTP 401', () => pm.expect(pm.response.code).to.equal(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response envelope', () => pm.expect(body.success).to.equal(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Customer cannot read another customer shipment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/shipments/{{foreignShipmentId}}"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "if (!state.get('customerToken')) throw new Error('Login to populate customerToken first');",
+                  "if (!state.get('foreignShipmentId')) throw new Error('Set foreignShipmentId to another customer shipment');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const state = pm.environment.id ? pm.environment : pm.collectionVariables;",
+                  "pm.test('Expected HTTP 404', () => pm.expect(pm.response.code).to.equal(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response envelope', () => pm.expect(body.success).to.equal(false));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
