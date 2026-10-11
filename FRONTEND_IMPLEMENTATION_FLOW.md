@@ -51,13 +51,13 @@ Complete a working customer booking-to-payment path before expanding administrat
 
 ### Tasks
 
-- [ ] Review request bodies, response shapes, pagination metadata, filters, and role restrictions in the API documentation and validators.
-- [ ] Follow the installed Next.js guides in `node_modules/next/dist/docs/` before implementation, especially layouts/pages and Server/Client Components.
-- [ ] Use the existing Next.js, React, and TypeScript setup. Start with CSS or CSS Modules; verify any styling dependency before adopting it.
-- [ ] Define consistent colors, spacing, typography, focus styles, and shipment/payment status badges.
-- [ ] Build reusable buttons, labeled inputs, selects, cards, tables, mobile list cards, dialogs, pagination, loading states, empty states, and error notices.
-- [ ] Create public and authenticated layouts with role-specific navigation and a mobile menu.
-- [ ] Use Server Components for static structure and Client Components for interactive forms, session state, and authenticated browser API calls.
+- [x] Review request bodies, response shapes, pagination metadata, filters, and role restrictions in the API documentation and validators.
+- [x] Follow the installed Next.js guides in `node_modules/next/dist/docs/` before implementation, especially layouts/pages and Server/Client Components.
+- [x] Use the existing Next.js, React, and TypeScript setup. Start with CSS or CSS Modules; verify any styling dependency before adopting it.
+- [x] Define consistent colors, spacing, typography, focus styles, and shipment/payment status badges.
+- [x] Build reusable buttons, labeled inputs, selects, cards, tables, mobile list cards, dialogs, pagination, loading states, empty states, and error notices.
+- [x] Create public and authenticated layouts with role-specific navigation and a mobile menu.
+- [x] Use Server Components for static structure and Client Components for interactive forms, session state, and authenticated browser API calls.
 
 ### Suggested organization
 
@@ -89,6 +89,8 @@ types/
 Route groups do not add URL segments. Keep one page per URL and retain the root layout. Do not import Prisma, token-signing code, or server-only services into client bundles.
 
 **Exit condition:** All planned page shells are reachable, responsive, and have shared loading, empty, and error presentations.
+
+Implemented as data-free workspace previews. Authentication and real API calls remain in Phase 2. See [foundation notes and contract review](docs/frontend-foundation.md).
 
 ## 5. Phase 2 — API client and authentication
 

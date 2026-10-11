@@ -1,21 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ExpressHub Backend",
-  description: "ExpressHub Backend API Server",
+  title: { default: "ExpressHub — Every delivery connected", template: "%s | ExpressHub" },
+  description: "Book, follow, and manage your courier deliveries with ExpressHub.",
 };
-
-export default function RootLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body >
-        {children}
-      </body>
-    </html>
-  );
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return <html lang="en"><body><a className="skip-link" href="#main-content">Skip to content</a>{children}</body></html>;
 }

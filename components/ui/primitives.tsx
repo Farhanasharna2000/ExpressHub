@@ -1,0 +1,42 @@
+import Link from "next/link";
+import type { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, ReactNode } from "react";
+import type { ShipmentStatus, PaymentStatus } from "@/types/api";
+
+export function Button({ variant = "primary", className = "", type = "button", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "danger" }) {
+  return <button type={type} className={`button button-${variant} ${className}`} {...props} />;
+}
+export function ButtonLink({ href, children, secondary = false }: { href: string; children: ReactNode; secondary?: boolean }) {
+  return <Link className={`button button-${secondary ? "secondary" : "primary"}`} href={href}>{children}</Link>;
+}
+export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <div className={`card ${className}`}>{children}</div>;
+}
+type Field = { id: string; label: string; hint?: string; error?: string };
+function descriptionIds(id: string, hint?: string, error?: string, extra?: string) {
+  return [extra, hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
+}
+export function Input({ id, label, hint, error, ...props }: InputHTMLAttributes<HTMLInputElement> & Field) {
+  return <div className="field"><label htmlFor={id}>{label}</label><input {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])} />{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{error}</small>}</div>;
+}
+export function Select({ id, label, hint, error, children, ...props }: SelectHTMLAttributes<HTMLSelectElement> & Field) {
+  return <div className="field"><label htmlFor={id}>{label}</label><select {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])}>{children}</select>{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{error}</small>}</div>;
+}
+const labels: Record<ShipmentStatus | PaymentStatus, string> = { CREATED: "Created", PICKED_UP: "Picked up", IN_TRANSIT: "In transit", OUT_FOR_DELIVERY: "Out for delivery", DELIVERED: "Delivered", FAILED: "Failed", RETURNED: "Returned", CANCELLED: "Cancelled", PENDING: "Pending", PAID: "Paid", REFUND_PENDING: "Refund pending", REFUNDED: "Refunded" };
+export function StatusBadge({ status }: { status: ShipmentStatus | PaymentStatus }) {
+  const tone = ["PAID", "DELIVERED"].includes(status) ? "success" : status === "FAILED" ? "danger" : ["PENDING", "REFUND_PENDING", "CREATED"].includes(status) ? "warning" : "neutral";
+  return <span className={`badge badge-${tone}`}>{labels[status]}</span>;
+}
+export function EmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
+  return <div className="empty-state"><span className="empty-symbol" aria-hidden="true">◇</span><h2>{title}</h2><p>{description}</p>{action}</div>;
+}
+export function ErrorNotice({ title = "Something went wrong", children, action }: { title?: string; children: ReactNode; action?: ReactNode }) {
+  return <div className="error-notice" role="alert"><h2>{title}</h2><p>{children}</p>{action}</div>;
+}
+export function LoadingState({ label = "Loading your workspace…" }: { label?: string }) {
+  return <div className="loading-state" role="status" aria-live="polite"><span className="spinner" aria-hidden="true" /><p>{label}</p></div>;
+}
+export type Column<T> = { key: string; label: string; render: (row: T) => ReactNode };
+export function ResponsiveTable<T>({ caption, columns, rows, rowKey, empty }: { caption: string; columns: Column<T>[]; rows: T[]; rowKey: (row: T) => string; empty: ReactNode }) {
+  if (!rows.length) return <>{empty}</>;
+  return <><div className="table-desktop"><table><caption>{caption}</caption><thead><tr>{columns.map(c => <th scope="col" key={c.key}>{c.label}</th>)}</tr></thead><tbody>{rows.map(row => <tr key={rowKey(row)}>{columns.map(c => <td key={c.key}>{c.render(row)}</td>)}</tr>)}</tbody></table></div><div className="table-mobile" aria-label={caption}>{rows.map(row => <Card key={rowKey(row)}><dl>{columns.map(c => <div key={c.key}><dt>{c.label}</dt><dd>{c.render(row)}</dd></div>)}</dl></Card>)}</div></>;
+}

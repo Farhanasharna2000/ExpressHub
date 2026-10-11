@@ -16,7 +16,7 @@ The backend provides secure authentication, role-based authorization, shipment m
 - **Payment Gateway:** Stripe Checkout
 - **Rate Limiting:** Upstash Redis
 - **API Testing:** Postman
-- **Styling:** Tailwind CSS (Homepage)
+- **Styling:** Plain CSS with shared frontend components
 
 ## Key Features
 
@@ -193,15 +193,13 @@ The backend will be available at:
 http://localhost:3000
 ```
 
-### Backend Homepage
+### Frontend foundation
 
-When the application starts successfully, the homepage displays:
+The home page introduces ExpressHub and links to data-free workspace previews for Customers (`/customer`), Couriers (`/courier`), and Admins (`/admin`). Public `/login` and `/register`, shared `/profile`, all planned list/detail pages, and `/checkout/success` and `/checkout/cancel` have responsive shells.
 
-```text
-ExpressHub Backend
+Phase 1 supplies shared UI components and navigation. Forms are disabled; authentication, live records, booking, and payment actions will be connected in later phases. No private data is loaded by these previews. Existing API authentication and permissions remain authoritative.
 
-Successfully Running!
-```
+See [the implementation flow](FRONTEND_IMPLEMENTATION_FLOW.md) and [foundation components and API contract notes](docs/frontend-foundation.md).
 
 ### Health Check
 
