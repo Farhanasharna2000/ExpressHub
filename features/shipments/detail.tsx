@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { z } from "zod";
-import { Clock3, Package, MapPin, Loader2, RefreshCw } from "lucide-react";
+import { Clock3, Package, MapPin, Loader2, RefreshCw, CheckCircle2 } from "lucide-react";
+import { PayWithStripeButton } from "@/features/payments/initiate-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -52,7 +53,43 @@ export function ShipmentDetails({ id }: { id: string }) {
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><Package className="size-5" />Parcel details</CardTitle></CardHeader><CardContent className="space-y-3 break-words"><p><strong>Weight:</strong> {shipment.parcelWeightKg} kg</p>{shipment.parcelLengthCm && <p><strong>Dimensions:</strong> {shipment.parcelLengthCm} × {shipment.parcelWidthCm} × {shipment.parcelHeightCm} cm</p>}<p>{shipment.packageDescription || "No parcel description provided."}</p><p><strong>Preferred pickup:</strong> {shipment.pickupScheduledAt ? dateTime(shipment.pickupScheduledAt) : "Not specified"}</p>{shipment.deliveredAt && <p><strong>Delivered:</strong> {dateTime(shipment.deliveredAt)}</p>}<p className="text-xs">Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p></CardContent></Card>
       </div>
       <Card><CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-5" />Shipment history</CardTitle></CardHeader><CardContent>{events.length ? <ol className="shipment-timeline">{events.map(event => <li key={event.id}><div className="flex flex-wrap items-center gap-3"><h3 className="text-base">{statusLabel(event.type)}</h3>{event.toStatus && <StatusBadge status={event.toStatus} />}</div><time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{dateTime(event.occurredAt)}</time>{event.publicNote && <p className="break-words">{event.publicNote}</p>}</li>)}</ol> : <EmptyState title="No history yet" description="Delivery updates will appear here as your shipment progresses." />}</CardContent></Card>
-      <Card><CardHeader><CardTitle>Next steps</CardTitle></CardHeader><CardContent className="space-y-4"><p>Online checkout will be available in the next release. Payment status here reflects the service’s current records.</p>{shipment.status === "CREATED" ? <><p>You can request cancellation before pickup. An open Checkout session may prevent cancellation. Cancelling does not automatically refund a payment.</p><Button variant="destructive" disabled={busy || delay > 0} onClick={() => setOpen(true)}>Cancel shipment</Button></> : <p>This shipment can no longer be cancelled by a customer.</p>}</CardContent></Card>
+      <Card><CardHeader><CardTitle>Next steps</CardTitle></CardHeader><CardContent className="space-y-4">
+        {shipment.status === "CREATED" && (shipment.paymentStatus === "PENDING" || shipment.paymentStatus === "FAILED") && (
+          <div className="p-4 rounded-xl border bg-muted/40 space-y-3">
+            <div>
+              <h4 className="font-semibold text-base">Payment Required</h4>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Complete online payment with Stripe Checkout to confirm your booking and enable courier dispatch.
+              </p>
+            </div>
+            <PayWithStripeButton
+              shipmentId={shipment.id}
+              trackingNumber={shipment.trackingNumber}
+              price={shipment.price}
+              currency={shipment.currency}
+            />
+          </div>
+        )}
+        {shipment.paymentStatus === "PAID" && (
+          <div className="p-4 rounded-xl border border-green-600/30 bg-green-600/10 text-green-950 space-y-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="size-5 text-green-700" />
+              <h4 className="font-semibold text-base">Payment Verified</h4>
+            </div>
+            <p className="text-sm text-green-800">
+              Payment of {money(shipment.price, shipment.currency)} has been verified and confirmed via Stripe.
+            </p>
+            <div className="pt-1">
+              <Button variant="outline" size="sm" asChild className="bg-white hover:bg-white/90">
+                <Link href={`/customer/payments?shipmentId=${shipment.id}`}>
+                  View Payment Record
+                </Link>
+              </Button>
+            </div>
+          </div>
+        )}
+        {shipment.status === "CREATED" ? <><p className="text-sm text-muted-foreground">You can request cancellation before pickup. An open Checkout session may prevent cancellation. Cancelling does not automatically refund a payment.</p><Button variant="destructive" disabled={busy || delay > 0} onClick={() => setOpen(true)}>Cancel shipment</Button></> : <p className="text-sm text-muted-foreground">This shipment can no longer be cancelled by a customer.</p>}
+      </CardContent></Card>
       <Dialog open={open} onOpenChange={value => { if (!pending.current) setOpen(value); }}><DialogContent onEscapeKeyDown={event => { if (pending.current) event.preventDefault(); }} onPointerDownOutside={event => { if (pending.current) event.preventDefault(); }} showCloseButton={!busy}><DialogHeader><DialogTitle>Cancel this shipment?</DialogTitle><DialogDescription>This action cannot be undone. An open Checkout session may block cancellation. Cancelling a shipment does not automatically refund any payment.</DialogDescription></DialogHeader><p className="break-all text-sm">{shipment.trackingNumber}</p><div className="flex flex-wrap justify-end gap-3"><Button variant="outline" disabled={busy} autoFocus onClick={() => setOpen(false)}>Keep shipment</Button><Button variant="destructive" disabled={busy || delay > 0} onClick={cancel}>{busy && <Loader2 className="animate-spin" />}{busy ? "Cancelling…" : "Confirm cancellation"}</Button></div></DialogContent></Dialog>
     </>}
   </div>;

@@ -1,11 +1,13 @@
-import { PageShell } from "@/components/layout/page-shell";
+import { Suspense } from "react";
+import { PaymentsListView } from "@/features/payments/list";
+import { LoadingState } from "@/components/ui/primitives";
+
 export const metadata = { title: "My payments" };
-export default function Page() {
+
+export default function CustomerPaymentsPage() {
   return (
-    <PageShell
-      title={"My payments"}
-      description={"Your payment history and verified payment details."}
-      kind={"list"}
-    />
+    <Suspense fallback={<LoadingState label="Loading payments…" />}>
+      <PaymentsListView />
+    </Suspense>
   );
 }

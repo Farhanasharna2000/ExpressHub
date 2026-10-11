@@ -27,7 +27,7 @@
     "prisma:migrate:status": "prisma migrate status",
     "prisma:seed": "node prisma/seed.mjs",
     "prisma:seed:pricing": "node prisma/seed-pricing.mjs",
-    "test:frontend": "node --test tests/frontend-auth.test.mjs tests/frontend-shipments.test.mjs",
+    "test:frontend": "node --test tests/frontend-auth.test.mjs tests/frontend-shipments.test.mjs tests/frontend-payments.test.mjs",
     "test:frontend:browser": "playwright test"
   },
   "prisma": {

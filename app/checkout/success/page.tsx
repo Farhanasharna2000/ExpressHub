@@ -1,3 +1,13 @@
-import { ButtonLink, Card, EmptyState } from "@/components/ui/primitives";
-export const metadata = { title: "You returned from Checkout" };
-export default function Page() { return <div className="narrow-page"><Card><EmptyState title="You returned from Checkout" description="This page does not confirm or change a payment. Payment verification is not connected in this preview. Your Checkout session may still be open." action={<ButtonLink href="/customer/payments">View payments</ButtonLink>} /></Card></div>; }
+import { Suspense } from "react";
+import { CheckoutReturnView } from "@/features/payments/return-view";
+import { LoadingState } from "@/components/ui/primitives";
+
+export const metadata = { title: "Payment returned" };
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<LoadingState label="Verifying payment session…" />}>
+      <CheckoutReturnView type="success" />
+    </Suspense>
+  );
+}

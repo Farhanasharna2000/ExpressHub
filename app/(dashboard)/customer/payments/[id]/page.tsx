@@ -1,14 +1,18 @@
-import { PageShell } from "@/components/layout/page-shell";
+import { Suspense } from "react";
+import { PaymentDetailsView } from "@/features/payments/detail";
+import { LoadingState } from "@/components/ui/primitives";
+
 export const metadata = { title: "Payment details" };
-export default function Page() {
+
+export default async function PaymentDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   return (
-    <PageShell
-      title={"Payment details"}
-      description={
-        "Payment status is confirmed by the service after provider verification."
-      }
-      kind={"detail"}
-      back={{ href: "/customer/payments", label: "My payments" }}
-    />
+    <Suspense fallback={<LoadingState label="Loading payment details…" />}>
+      <PaymentDetailsView id={id} />
+    </Suspense>
   );
 }

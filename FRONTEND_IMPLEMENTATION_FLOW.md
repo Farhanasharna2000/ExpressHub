@@ -125,31 +125,33 @@ Use the existing cookie and origin policy. Cross-origin deployment requires revi
 
 Implementation is complete; browser tests use controlled API responses. Live service-backed acceptance still requires the existing auth/authorization integration suites against a test database. See [Phase 2 implementation and verification](docs/frontend-auth.md).
 
-## 6. Phase 3 — Customer shipment workflow
+## 6. Phase 3 - Customer shipment workflow
 
 ### Booking flow
 
 `Shipment list → New shipment → Pickup details → Delivery details → Parcel details → Review → Create → Shipment detail → Pay`
 
-- [ ] Collect pickup and delivery contact names, phones, and addresses.
-- [ ] Collect positive parcel weight in kilograms, optional description, and optional dimensions in centimeters. Supply all three dimensions or omit them together.
-- [ ] Support an optional future pickup date/time; convert user input to an ISO timestamp with an explicit timezone.
-- [ ] Mirror field limits and numeric precision from `validators/shipment.ts`, while retaining server-side validation as authoritative.
-- [ ] Submit only accepted fields. Display the price and currency returned by the server after creation; no quote endpoint currently exists.
-- [ ] Prevent duplicate submissions while a request is pending. Do not blindly retry shipment creation after an ambiguous network failure; help the user check their shipment list first.
+- [x] Collect pickup and delivery contact names, phones, and addresses.
+- [x] Collect positive parcel weight in kilograms, optional description, and optional dimensions in centimeters. Supply all three dimensions or omit them together.
+- [x] Support an optional future pickup date/time; convert user input to an ISO timestamp with an explicit timezone.
+- [x] Mirror field limits and numeric precision from `validators/shipment.ts`, while retaining server-side validation as authoritative.
+- [x] Submit only accepted fields. Display the price and currency returned by the server after creation; no quote endpoint currently exists.
+- [x] Prevent duplicate submissions while a request is pending. Do not blindly retry shipment creation after an ambiguous network failure; help the user check their shipment list first.
 
 ### Lists and detail
 
-- [ ] Display tracking number, addresses or suitable summaries, shipment status, payment status, price, and creation date.
-- [ ] Add pagination, debounced search, status/payment filters, date filters, and supported sorting. Keep filter state in URL query parameters and reset the page when filters change.
-- [ ] Use server metadata for pagination; distinguish no shipments from no search results.
-- [ ] Show shipment events returned by the detail endpoint in chronological order, respecting the API's role-specific field visibility.
-- [ ] Offer cancellation only for an eligible `CREATED` shipment, using the status endpoint with `expectedStatus`.
-- [ ] Explain cancellation conflicts such as a pending Checkout session. Do not imply that cancelling a shipment automatically refunds a payment.
+- [x] Display tracking number, addresses or suitable summaries, shipment status, payment status, price, and creation date.
+- [x] Add pagination, debounced search, status/payment filters, date filters, and supported sorting. Keep filter state in URL query parameters and reset the page when filters change.
+- [x] Use server metadata for pagination; distinguish no shipments from no search results.
+- [x] Show shipment events returned by the detail endpoint in chronological order, respecting the API's role-specific field visibility.
+- [x] Offer cancellation only for an eligible `CREATED` shipment, using the status endpoint with `expectedStatus`.
+- [x] Explain cancellation conflicts such as a pending Checkout session. Do not imply that cancelling a shipment automatically refunds a payment.
 
 **Exit condition:** A Customer can book, find, inspect, and request cancellation of an eligible own shipment using real API data.
 
-## 7. Phase 4 — Stripe payment workflow
+Implementation completed with validation parity, scoped queries, and mutation conflict recovery.
+
+## 7. Phase 4 - Stripe payment workflow
 
 ```mermaid
 sequenceDiagram
@@ -165,20 +167,22 @@ sequenceDiagram
     A-->>C: Current verified status
 ```
 
-- [ ] Use `POST /payments/initiate`; preserve the same idempotency key for retries of the same attempt.
-- [ ] Store a non-secret payment ID for return recovery. Do not persist tokens or infer settlement from return-query parameters.
-- [ ] Navigate to the backend-returned Checkout URL; show progress and disable duplicate initiation.
-- [ ] Implement success/cancel return pages, then configure `STRIPE_SUCCESS_URL` and `STRIPE_CANCEL_URL` to those pages. Existing return endpoints produce informational JSON, so configuration is an explicit integration step.
-- [ ] Restore authentication after returning and fetch `/payments/:id`. If the local payment ID is missing, guide the user to authenticated payment history.
-- [ ] Show pending verification until the API reports settlement. Use bounded polling with backoff, then offer manual refresh if verification is delayed.
-- [ ] Display supported statuses: `PENDING`, `PAID`, `FAILED`, `REFUND_PENDING`, and `REFUNDED`.
-- [ ] A cancelled browser return is not evidence of a failed or cancelled payment. Fetch the actual status before offering the next action.
-- [ ] Start a fresh attempt only when the backend permits it; preserve idempotency behavior during retries and refreshes.
-- [ ] Display amount and currency from API data without floating-point recalculation.
+- [x] Use `POST /payments/initiate`; preserve the same idempotency key for retries of the same attempt.
+- [x] Store a non-secret payment ID for return recovery. Do not persist tokens or infer settlement from return-query parameters.
+- [x] Navigate to the backend-returned Checkout URL; show progress and disable duplicate initiation.
+- [x] Implement success/cancel return pages, then configure `STRIPE_SUCCESS_URL` and `STRIPE_CANCEL_URL` to those pages. Existing return endpoints produce informational JSON, so configuration is an explicit integration step.
+- [x] Restore authentication after returning and fetch `/payments/:id`. If the local payment ID is missing, guide the user to authenticated payment history.
+- [x] Show pending verification until the API reports settlement. Use bounded polling with backoff, then offer manual refresh if verification is delayed.
+- [x] Display supported statuses: `PENDING`, `PAID`, `FAILED`, `REFUND_PENDING`, and `REFUNDED`.
+- [x] A cancelled browser return is not evidence of a failed or cancelled payment. Fetch the actual status before offering the next action.
+- [x] Start a fresh attempt only when the backend permits it; preserve idempotency behavior during retries and refreshes.
+- [x] Display amount and currency from API data without floating-point recalculation.
 
 The browser never calls the webhook, sets a payment to paid, collects raw card details, or receives Stripe secret keys. Do not add Cash on Delivery, Pay Later, or manual paid-status controls.
 
 **Exit condition:** A genuine Stripe test-mode Checkout is reflected by verified backend status, including delayed-webhook, cancellation, retry, and expired-session scenarios.
+
+Implementation completed with active payment triggers on shipment detail, customer payment history, payment details, and Checkout success/cancel return recovery views.
 
 ## 8. Phase 5 — Assignment and courier operations
 
