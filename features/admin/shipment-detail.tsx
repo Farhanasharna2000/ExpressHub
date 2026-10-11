@@ -30,6 +30,7 @@ import {
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { AssignCourierControl } from "@/features/shipments/assign-courier";
 import { StatusTransitionControl } from "@/features/shipments/status-transition";
+import { ArchiveShipmentControl } from "@/features/shipments/archive-shipment";
 
 export function AdminShipmentDetailView({ id }: { id: string }) {
   const valid = z.cuid().safeParse(id).success;
@@ -144,6 +145,9 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
             role="ADMIN"
             onSuccess={reload}
           />
+
+          {/* Admin Soft-Delete Archival Card */}
+          <ArchiveShipmentControl shipment={shipment} onSuccess={reload} />
 
           {/* Route & Contact Cards */}
           <div className="shipment-detail-grid">

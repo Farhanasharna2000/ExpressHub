@@ -1,11 +1,7 @@
-import { PageShell } from "@/components/layout/page-shell";
-export const metadata = { title: "User management" };
+import { AdminUsersListView } from "@/features/admin/users-list";
+
+export const metadata = { title: "User Management" };
+
 export default function Page() {
-  return (
-    <PageShell
-      title={"User management"}
-      description={"Manage customer, courier, and administrator accounts."}
-      kind={"list"}
-    />
-  );
+  return <AdminUsersListView />;
 }

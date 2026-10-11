@@ -1,12 +1,12 @@
-import { PageShell } from "@/components/layout/page-shell";
-export const metadata = { title: "User details" };
-export default function Page() {
-  return (
-    <PageShell
-      title={"User details"}
-      description={"Account information, role, and active status."}
-      kind={"detail"}
-      back={{ href: "/admin/users", label: "Users" }}
-    />
-  );
+import { AdminUserDetailView } from "@/features/admin/user-detail";
+
+export const metadata = { title: "User Details" };
+
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <AdminUserDetailView key={id} id={id} />;
 }

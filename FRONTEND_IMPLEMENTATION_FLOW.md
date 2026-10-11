@@ -216,17 +216,19 @@ Implementation completed with active payment triggers on shipment detail, custom
 
 Implementation completed with Courier dashboard, assigned shipments list, delivery execution detail, Admin courier assignment control, and operational status transitions with concurrency recovery.
 
-## 9. Phase 6 — Administration
+## 9. Phase 6 - Administration
 
-- [ ] Populate overview cards only from `/admin/dashboard-stats`; use returned fields rather than inventing analytics.
-- [ ] Build user search, role/active filters, pagination, detail, role changes, and activation/deactivation.
-- [ ] Require confirmation for privileged or destructive actions and show backend restriction errors clearly.
-- [ ] Implement user and shipment archival with the required reason. Explain that archive is a soft delete and is distinct from shipment cancellation.
-- [ ] Show shipment archive controls only for terminal records, subject to backend payment and permission checks.
-- [ ] Build audit-log filtering and pagination from its supported contract; display actor, action, entity, and timestamp when provided.
-- [ ] Link to individual payment details where IDs and permissions permit. Existing payment history is caller-scoped, including for Admins; it is not a global payment ledger.
+- [x] Populate overview cards only from `/admin/dashboard-stats`; use returned fields rather than inventing analytics.
+- [x] Build user search, role/active filters, pagination, detail, role changes, and activation/deactivation.
+- [x] Require confirmation for privileged or destructive actions and show backend restriction errors clearly.
+- [x] Implement user and shipment archival with the required reason. Explain that archive is a soft delete and is distinct from shipment cancellation.
+- [x] Show shipment archive controls only for terminal records, subject to backend payment and permission checks.
+- [x] Build audit-log filtering and pagination from its supported contract; display actor, action, entity, and timestamp when provided.
+- [x] Link to individual payment details where IDs and permissions permit. Existing payment history is caller-scoped, including for Admins; it is not a global payment ledger.
 
 **Exit condition:** Admins can manage users and operations, and critical actions appear in backend audit records.
+
+Implementation completed with Admin overview dashboard telemetry, user directory, role and status management, soft-delete archival with reason prompts, and immutable audit logs ledger.
 
 ## 10. Screen-to-API mapping
 
