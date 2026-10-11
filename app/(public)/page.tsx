@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ButtonLink, Card, StatusBadge } from "@/components/ui/primitives";
 export default function Home() {
   return (
@@ -25,8 +26,21 @@ export default function Home() {
         </div>
         <div className="journey-card">
           <p className="eyebrow">The delivery journey</p>
-          <div className="parcel-art" aria-hidden="true">
-            <span>EH ↗</span>
+          <div className="journey-hero-stage">
+            <div className="journey-hero-ambient" aria-hidden="true" />
+            <Image
+              src="/delivery-hero.png"
+              alt="ExpressHub courier holding a package and clipboard"
+              width={540}
+              height={380}
+              sizes="(max-width: 768px) 100vw, 420px"
+              className="journey-hero-cutout"
+              priority
+            />
+            <div className="journey-hero-badge" aria-hidden="true">
+              <span className="journey-hero-pulse" />
+              Live Express Courier
+            </div>
           </div>
           <h2>
             From your doorstep
