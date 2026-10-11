@@ -1,12 +1,12 @@
-import { PageShell } from "@/components/layout/page-shell";
-export const metadata = { title: "Delivery details" };
-export default function Page() {
-  return (
-    <PageShell
-      title={"Delivery details"}
-      description={"Pickup, recipient information, and delivery progress."}
-      kind={"detail"}
-      back={{ href: "/courier/shipments", label: "Assigned shipments" }}
-    />
-  );
+import { CourierShipmentDetailView } from "@/features/courier/detail";
+
+export const metadata = { title: "Delivery Details" };
+
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <CourierShipmentDetailView key={id} id={id} />;
 }

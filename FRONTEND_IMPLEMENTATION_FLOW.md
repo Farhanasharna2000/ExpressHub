@@ -184,14 +184,14 @@ The browser never calls the webhook, sets a payment to paid, collects raw card d
 
 Implementation completed with active payment triggers on shipment detail, customer payment history, payment details, and Checkout success/cancel return recovery views.
 
-## 8. Phase 5 — Assignment and courier operations
+## 8. Phase 5 - Assignment and courier operations
 
 ### Admin assignment
 
-- [ ] List active Couriers using the user-list role/status filters.
-- [ ] Assign through `PATCH /shipments/:id/assign-courier`, sending both `courierId` and the current `expectedCourierId` (including `null` when unassigned).
-- [ ] Reflect backend assignment eligibility; assignment is currently restricted to `CREATED` or `FAILED` shipments.
-- [ ] On `409`, reload the record and explain the conflict before another submission.
+- [x] List active Couriers using the user-list role/status filters.
+- [x] Assign through `PATCH /shipments/:id/assign-courier`, sending both `courierId` and the current `expectedCourierId` (including `null` when unassigned).
+- [x] Reflect backend assignment eligibility; assignment is currently restricted to `CREATED` or `FAILED` shipments.
+- [x] On `409`, reload the record and explain the conflict before another submission.
 
 ### Courier delivery flow
 
@@ -206,13 +206,15 @@ Implementation completed with active payment triggers on shipment detail, custom
 | `FAILED` | `IN_TRANSIT`, `RETURNED` | Admin handles retry/return; require a return note |
 | `DELIVERED`, `RETURNED`, `CANCELLED` | None | Terminal states; no further status action |
 
-- [ ] Send `status`, `expectedStatus`, and any required `note` through the status API.
-- [ ] Enforce visible prerequisites: confirmed payment and an active assigned Courier for pickup/dispatch transitions; let the server validate every operation.
-- [ ] Keep customer cancellation separate from courier delivery controls.
-- [ ] Display the server-confirmed result and reload shipment details/history after mutation. Do not optimistically confirm delivery.
-- [ ] Support mobile operation with prominent actions, readable contact information, and accessible confirmation dialogs.
+- [x] Send `status`, `expectedStatus`, and any required `note` through the status API.
+- [x] Enforce visible prerequisites: confirmed payment and an active assigned Courier for pickup/dispatch transitions; let the server validate every operation.
+- [x] Keep customer cancellation separate from courier delivery controls.
+- [x] Display the server-confirmed result and reload shipment details/history after mutation. Do not optimistically confirm delivery.
+- [x] Support mobile operation with prominent actions, readable contact information, and accessible confirmation dialogs.
 
 **Exit condition:** Admin assignment and a Courier's delivery path work end to end; stale updates and unauthorized transitions are rejected and recoverable.
+
+Implementation completed with Courier dashboard, assigned shipments list, delivery execution detail, Admin courier assignment control, and operational status transitions with concurrency recovery.
 
 ## 9. Phase 6 — Administration
 

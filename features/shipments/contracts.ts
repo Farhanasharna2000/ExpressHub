@@ -53,15 +53,66 @@ export function bookingPayload(draft: BookingDraft) {
 }
 export interface Shipment extends Omit<BookingInput, "parcelWeightKg" | "parcelLengthCm" | "parcelWidthCm" | "parcelHeightCm" | "packageDescription" | "pickupScheduledAt"> {
   id: string; trackingNumber: string; status: ShipmentStatus; paymentStatus: PaymentStatus;
+  customerId: string; courierId: string | null;
   price: string; currency: string; createdAt: string; updatedAt: string;
   parcelWeightKg: string; parcelLengthCm: string | null; parcelWidthCm: string | null; parcelHeightCm: string | null;
   packageDescription: string | null; pickupScheduledAt: string | null; deliveredAt: string | null;
 }
 export interface ShipmentEvent {
   id: string; type: string; fromStatus: ShipmentStatus | null; toStatus: ShipmentStatus | null;
-  publicNote: string | null; occurredAt: string;
+  publicNote: string | null; internalNote?: string | null; actorId?: string | null; occurredAt: string;
 }
 export type ShipmentDetail = Shipment & { events: ShipmentEvent[] };
+
+export const shipmentTransitions: Record<ShipmentStatus, ShipmentStatus[]> = {
+  CREATED: ["PICKED_UP", "CANCELLED"],
+  PICKED_UP: ["IN_TRANSIT"],
+  IN_TRANSIT: ["OUT_FOR_DELIVERY"],
+  OUT_FOR_DELIVERY: ["DELIVERED", "FAILED"],
+  FAILED: ["IN_TRANSIT", "RETURNED"],
+  DELIVERED: [],
+  RETURNED: [],
+  CANCELLED: [],
+};
+
+export function getAllowedTransitions(status: ShipmentStatus, role: string): ShipmentStatus[] {
+  const allowed = shipmentTransitions[status] ?? [];
+  if (role === "CUSTOMER") {
+    return status === "CREATED" ? ["CANCELLED"] : [];
+  }
+  if (role === "COURIER") {
+    return allowed.filter(s => s !== "CANCELLED" && status !== "FAILED");
+  }
+  return allowed;
+}
+
+export function isNoteRequired(targetStatus: ShipmentStatus): boolean {
+  return ["DELIVERED", "FAILED", "RETURNED"].includes(targetStatus);
+}
+
+export function isCourierAssignable(status: ShipmentStatus): boolean {
+  return ["CREATED", "FAILED"].includes(status);
+}
+
+export function validateTransitionReadiness(
+  shipment: Pick<Shipment, "status" | "paymentStatus" | "courierId">,
+  targetStatus: ShipmentStatus,
+  role: string,
+): { eligible: boolean; reason?: string } {
+  const allowed = getAllowedTransitions(shipment.status, role);
+  if (!allowed.includes(targetStatus)) {
+    return { eligible: false, reason: `Transition to ${statusLabel(targetStatus)} is not allowed from ${statusLabel(shipment.status)}.` };
+  }
+  if (!["CANCELLED", "RETURNED"].includes(targetStatus)) {
+    if (shipment.paymentStatus !== "PAID") {
+      return { eligible: false, reason: "Confirmed payment is required before pickup or delivery." };
+    }
+    if (!shipment.courierId) {
+      return { eligible: false, reason: "An active assigned Courier is required before pickup or delivery." };
+    }
+  }
+  return { eligible: true };
+}
 export type ShipmentList = { shipments: Shipment[]; pagination: PaginationMeta };
 const pageNumber = (max: number, fallback: number) => z.string().regex(/^[1-9]\d*$/).transform(Number).pipe(z.number().int().max(max)).default(fallback);
 export const shipmentQuerySchema = z.object({

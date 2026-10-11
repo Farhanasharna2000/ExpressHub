@@ -1,12 +1,7 @@
-import { PageShell } from "@/components/layout/page-shell";
-export const metadata = { title: "Ready for the next stop" };
+import { CourierDashboard } from "@/features/courier/dashboard";
+
+export const metadata = { title: "Courier Dashboard" };
+
 export default function Page() {
-  return (
-    <PageShell
-      title={"Ready for the next stop"}
-      description={"Keep your assigned deliveries in view."}
-      kind={"overview"}
-      action={{ href: "/courier/shipments", label: "View assigned shipments" }}
-    />
-  );
+  return <CourierDashboard />;
 }

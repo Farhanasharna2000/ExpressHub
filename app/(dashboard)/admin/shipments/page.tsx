@@ -1,11 +1,7 @@
-import { PageShell } from "@/components/layout/page-shell";
-export const metadata = { title: "Shipment operations" };
+import { AdminShipmentsListView } from "@/features/admin/shipments-list";
+
+export const metadata = { title: "Shipment Operations" };
+
 export default function Page() {
-  return (
-    <PageShell
-      title={"Shipment operations"}
-      description={"Review shipments and coordinate courier assignments."}
-      kind={"list"}
-    />
-  );
+  return <AdminShipmentsListView />;
 }
