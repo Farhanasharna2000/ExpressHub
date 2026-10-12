@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import type { UserRole } from "@/types/api";
 import { Brand } from "./brand";
 import { Navigation } from "./navigation";
@@ -15,9 +15,20 @@ export function DashboardShell({
 }) {
   const { user } = useSession();
   const currentRole = user?.role ?? role;
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+    const updateHeight = () => workspaceRef.current?.style.setProperty("--sidebar-height", `${sidebar.getBoundingClientRect().height}px`);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(sidebar);
+    return () => observer.disconnect();
+  }, []);
   return (
-    <div className="workspace">
-      <aside className="sidebar">
+    <div className="workspace" ref={workspaceRef}>
+      <aside className="sidebar" ref={sidebarRef}>
         <Brand />
         <p className="eyebrow">
           {currentRole
