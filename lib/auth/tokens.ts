@@ -85,12 +85,42 @@ export const refreshTokenCookie = {
 };
 
 export function isAllowedCookieRequest(request: Request) {
-  const origin = request.headers.get("origin");
+  if (request.headers.get("sec-fetch-site") === "cross-site") return false;
 
-  if (!origin) return request.headers.get("sec-fetch-site") !== "cross-site";
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+  if (origin === "null") return false;
+
+  let requestHost: string | null = request.headers.get("host");
+  if (!requestHost && request.url) {
+    try {
+      requestHost = new URL(request.url).host;
+    } catch {
+      requestHost = null;
+    }
+  }
+
+  if (requestHost && (origin === `http://${requestHost}` || origin === `https://${requestHost}`)) {
+    return true;
+  }
 
   const allowedOrigin =
     process.env.ALLOWED_ORIGIN ??
     (process.env.NODE_ENV === "production" ? undefined : "http://localhost:3000");
-  return Boolean(allowedOrigin && origin === allowedOrigin);
+  if (allowedOrigin && origin === allowedOrigin) {
+    return true;
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      const parsed = new URL(origin);
+      if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
 }

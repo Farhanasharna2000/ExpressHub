@@ -51,8 +51,9 @@ p { color: var(--text-muted); }
 .public-header { border-bottom: 1px solid var(--line); }
 .public-main { max-width: 1240px; margin: auto; padding: 48px 32px 80px; min-height: 70vh; }
 .site-footer { border-top: 1px solid var(--line); font-size: .85rem; flex-wrap: wrap; }
-.nav-links { display: flex; gap: 8px; }
-.nav-links a { display: block; text-decoration: none; padding: 10px 16px; border-radius: 8px; color: var(--text-muted); font-weight: 600; font-size: .9rem; }
+.public-header { padding: 18px 32px; }
+.nav-links { display: flex; align-items: center; gap: 6px; }
+.nav-links a { display: inline-flex; align-items: center; text-decoration: none; padding: 8px 14px; border-radius: 8px; color: var(--text-muted); font-weight: 600; font-size: .875rem; white-space: nowrap; flex-shrink: 0; line-height: 1.25; transition: all 0.15s ease; }
 .nav-links a:hover, .nav-links a[aria-current="page"] { background: #e5ecdf; color: var(--ink); }
 .menu-toggle { display: none !important; }
 .button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; gap: 8px; padding: 11px 20px; border-radius: 8px; border: 1px solid transparent; text-decoration: none; font-weight: 600; font-size: .9rem; cursor: pointer; line-height: 1.5; }
@@ -137,6 +138,12 @@ dl { margin: 0; } dl > div { display: flex; justify-content: space-between; gap:
 dialog { color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; width: min(520px, calc(100% - 32px)); max-height: calc(100dvh - 48px); overflow-y: auto; }
 dialog::backdrop { background: #10282099; }
 .dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+@media (max-width: 960px) {
+  .public-header .menu-toggle { display: inline-flex !important; }
+  .public-header .navigation { position: relative; }
+  .public-header .nav-links { display: none; }
+  .public-header .nav-links.is-open { display: flex; flex-direction: column; position: absolute; top: 48px; right: 0; width: 220px; background: white; padding: 12px; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(23, 55, 47, 0.12); z-index: 30; }
+}
 @media (max-width: 1000px) { .hero { gap: 32px; } .grid-three { grid-template-columns: 1fr; } .workspace { grid-template-columns: 220px minmax(0, 1fr); } .workspace-body main { padding: 24px; } .auth-layout { gap: 32px; } }
 @media (max-width: 700px) {
   .public-header, .site-footer { padding: 20px; } .public-header { flex-wrap: wrap; }
