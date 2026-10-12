@@ -349,8 +349,8 @@ export function FeatureCardWithImage({
   badge: string;
   imageSrc: string;
   imageAlt: string;
-  href: string;
-  linkText: string;
+  href?: string;
+  linkText?: string;
   objectPosition?: string;
 }) {
   return (
@@ -380,9 +380,11 @@ export function FeatureCardWithImage({
       <div className="feature-card-body">
         <h3>{title}</h3>
         <p>{text}</p>
-        <Link href={href} className="feature-card-link">
-          {linkText} <ArrowRight className="inline size-4" aria-hidden="true" />
-        </Link>
+        {href && linkText ? (
+          <Link href={href} className="feature-card-link">
+            {linkText} <ArrowRight className="inline size-4" aria-hidden="true" />
+          </Link>
+        ) : null}
       </div>
     </motion.div>
   );

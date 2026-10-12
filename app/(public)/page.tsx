@@ -188,8 +188,6 @@ export default function Home() {
             badge={user?.role === "CUSTOMER" ? "Your Active Workspace" : "Customer Experience"}
             imageSrc="/courier-customer.jpg"
             imageAlt="3D illustration of customer booking parcel on mobile device"
-            href="/customer"
-            linkText={user?.role === "CUSTOMER" ? "Go to your Portal " : "Explore Customer Portal"}
           />
           <FeatureCardWithImage
             title="Courier Workspace"
@@ -197,8 +195,6 @@ export default function Home() {
             badge={user?.role === "COURIER" ? "Your Active Workspace" : "Courier Operations"}
             imageSrc="/courier-workspace.jpg"
             imageAlt="3D illustration of express courier van in transit"
-            href="/courier"
-            linkText={user?.role === "COURIER" ? "Go to your Dashboard" : "Open Courier Dashboard"}
           />
           <FeatureCardWithImage
             title="Admin Command Center"
@@ -206,8 +202,6 @@ export default function Home() {
             badge={user?.role === "ADMIN" ? "Your Active Workspace" : "Operations & Control"}
             imageSrc="/admin-center.jpg"
             imageAlt="3D illustration of logistics operations analytics command center"
-            href="/admin"
-            linkText={user?.role === "ADMIN" ? "Go to Command Center" : "Enter Admin Center"}
           />
         </MotionStaggerGroup>
       </section>

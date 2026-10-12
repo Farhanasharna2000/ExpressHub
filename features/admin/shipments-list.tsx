@@ -254,25 +254,7 @@ export function AdminShipmentsListView() {
               value={toLocalInput(params.get("to") ?? "")}
               onChange={(e) => dateFilter("to", e.target.value)}
             />
-            <Select
-              id="admin-sort-by"
-              label="Sort by"
-              value={params.get("sortBy") ?? "createdAt"}
-              onChange={(e) => update("sortBy", e.target.value)}
-            >
-              <option value="createdAt">Created Date</option>
-              <option value="updatedAt">Last Updated</option>
-              <option value="price">Price</option>
-            </Select>
-            <Select
-              id="admin-sort-order"
-              label="Order"
-              value={params.get("order") ?? "desc"}
-              onChange={(e) => update("order", e.target.value)}
-            >
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
-            </Select>
+
 
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
