@@ -5,7 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, RotateCcw, Package, ShieldCheck, ArrowRight } from "lucide-react";
+import { Plus, Search, RotateCcw, Package, ShieldCheck, ArrowRight, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Select, StatusBadge, ResponsiveTable, EmptyState, ErrorNotice, LoadingState, type Column } from "@/components/ui/primitives";
@@ -16,7 +16,7 @@ import { useResource, useRetryDelay } from "./use-resource";
 
 const columns: Column<Shipment>[] = [
   { key: "tracking", label: "Tracking number", render: shipment => <Link className="font-semibold break-all" href={`/customer/shipments/${encodeURIComponent(shipment.id)}`}>{shipment.trackingNumber}</Link> },
-  { key: "route", label: "Pickup → Delivery", render: shipment => <div className="shipment-route"><span title={shipment.pickupAddress}>{shipment.pickupAddress}</span><span aria-hidden="true">↓</span><span title={shipment.deliveryAddress}>{shipment.deliveryAddress}</span></div> },
+  { key: "route", label: "Pickup → Delivery", render: shipment => <div className="shipment-route"><span title={shipment.pickupAddress}>{shipment.pickupAddress}</span><span aria-hidden="true"><ArrowDown className="inline size-4" aria-hidden="true" /></span><span title={shipment.deliveryAddress}>{shipment.deliveryAddress}</span></div> },
   { key: "status", label: "Shipment", render: shipment => <StatusBadge status={shipment.status} /> },
   { key: "payment", label: "Payment", render: shipment => <StatusBadge status={shipment.paymentStatus} /> },
   { key: "price", label: "Price", render: shipment => <span className="whitespace-nowrap">{money(shipment.price, shipment.currency)}</span> },

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { z } from "zod";
-import { Clock3, Package, MapPin, Loader2, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Clock3, Package, MapPin, Loader2, RefreshCw, CheckCircle2, ArrowLeft } from "lucide-react";
 import { PayWithStripeButton } from "@/features/payments/initiate-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
@@ -40,7 +40,7 @@ export function ShipmentDetails({ id }: { id: string }) {
   }
 
   return <div className="page-stack">
-    <Link href="/customer/shipments" className="back-link">← My shipments</Link>
+    <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> My shipments</Link>
     <div className="page-heading"><div><p className="eyebrow">Every step of the journey</p><h1>Shipment details</h1><p className="break-all">{shipment?.trackingNumber ?? "Your shipment information and delivery history."}</p></div>{valid && <Button variant="outline" disabled={loading || busy || delay > 0} onClick={reload}><RefreshCw />Refresh</Button>}</div>
     {cancelled && <Alert role="status"><AlertTitle>Shipment cancelled</AlertTitle><AlertDescription>The cancellation was confirmed. Cancellation does not automatically refund a payment.</AlertDescription></Alert>}
     {!!mutationError && <ErrorNotice title="Cancellation could not be confirmed">{mutationError instanceof ApiError && mutationError.status === 409 ? mutationError.message : errorMessage(mutationError)} The latest shipment details are being checked. Review them before another action. Cancellation does not automatically refund payments.{delay > 0 && ` Try again in ${delay} seconds.`}</ErrorNotice>}

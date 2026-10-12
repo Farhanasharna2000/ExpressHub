@@ -1,3 +1,4 @@
+import { PackageOpen, Loader2 } from "lucide-react";
 import { Button as ShadcnButton } from "./button";
 import { Input as ShadcnInput } from "./input";
 import { Label } from "./label";
@@ -34,13 +35,13 @@ export function StatusBadge({ status }: { status: ShipmentStatus | PaymentStatus
   return <Badge variant="outline" className={`badge badge-${tone}`}>{labels[status]}</Badge>;
 }
 export function EmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
-  return <div className="empty-state"><span className="empty-symbol" aria-hidden="true">◇</span><h2>{title}</h2><p>{description}</p>{action}</div>;
+  return <div className="empty-state"><PackageOpen className="empty-symbol mx-auto size-8" aria-hidden="true" /><h2>{title}</h2><p>{description}</p>{action}</div>;
 }
 export function ErrorNotice({ title = "Something went wrong", children, action }: { title?: string; children: ReactNode; action?: ReactNode }) {
   return <Alert variant="destructive"><AlertTitle>{title}</AlertTitle><AlertDescription>{children}{action}</AlertDescription></Alert>;
 }
 export function LoadingState({ label = "Loading your workspace…" }: { label?: string }) {
-  return <div className="loading-state" role="status" aria-live="polite"><span className="spinner" aria-hidden="true" /><p>{label}</p></div>;
+  return <div className="loading-state" role="status" aria-live="polite"><Loader2 className="size-5 animate-spin" aria-hidden="true" /><p>{label}</p></div>;
 }
 export type Column<T> = { key: string; label: string; render: (row: T) => ReactNode };
 export function ResponsiveTable<T>({ caption, columns, rows, rowKey, empty }: { caption: string; columns: Column<T>[]; rows: T[]; rowKey: (row: T) => string; empty: ReactNode }) {

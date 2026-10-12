@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, RotateCcw, UserCheck, ShieldAlert, ArrowRight } from "lucide-react";
+import { Search, RotateCcw, UserCheck, ShieldAlert, ArrowRight, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -53,7 +53,7 @@ const columns: Column<Shipment>[] = [
         <span title={shipment.pickupAddress} className="truncate max-w-xs block">
           From: {shipment.pickupAddress}
         </span>
-        <span aria-hidden="true" className="text-muted-foreground">↓</span>
+        <span aria-hidden="true" className="text-muted-foreground"><ArrowDown className="inline size-4" aria-hidden="true" /></span>
         <span title={shipment.deliveryAddress} className="truncate max-w-xs block">
           To: {shipment.deliveryAddress}
         </span>

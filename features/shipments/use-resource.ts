@@ -15,7 +15,7 @@ export function useResource<T>(path: string | null) {
     const [endpoint, query] = path.split("?");
     void store.api.request<T>(endpoint, { query: Object.fromEntries(new URLSearchParams(query)), signal: controller.signal })
       .then(data => { if (!controller.signal.aborted) setResult({ key, data }); })
-      .catch(error => { if (!controller.signal.aborted) setResult({ key, error }); });
+      .catch(error => { if (!controller.signal.aborted) { setResult({ key, error }); } });
     return () => controller.abort();
   }, [path, key, store]);
   return { data: result.key === key ? result.data : undefined, error: result.key === key ? result.error : undefined, loading: Boolean(path) && (result.key !== key || (!result.data && !result.error)), reload: () => setAttempt(value => value + 1) };

@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import {
   Button,
@@ -25,7 +26,7 @@ export function PageShell({
     <div className="page-stack">
       {back && (
         <Link className="back-link" href={back.href}>
-          ← {back.label}
+          <ArrowLeft className="inline size-4" aria-hidden="true" /> {back.label}
         </Link>
       )}
       <div className="page-heading">

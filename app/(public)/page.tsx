@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowUpRight, Check } from "lucide-react";
 import Image from "next/image";
 import { ButtonLink, StatusBadge } from "@/components/ui/primitives";
 import {
@@ -42,7 +43,7 @@ export default function Home() {
               </p>
               <div className="actions">
                 <ButtonLink href={roleHome(user.role)}>
-                  Open {user.role === "ADMIN" ? "Command Center" : user.role === "COURIER" ? "Courier Portal" : "Customer Workspace"} ↗
+                  Open {user.role === "ADMIN" ? "Command Center" : user.role === "COURIER" ? "Courier Portal" : "Customer Workspace"} <ArrowUpRight className="size-4" aria-hidden="true" />
                 </ButtonLink>
                 {user.role === "CUSTOMER" && (
                   <ButtonLink href="/customer/shipments/new" secondary>
@@ -80,7 +81,7 @@ export default function Home() {
                 together in one unified platform.
               </p>
               <div className="actions">
-                <ButtonLink href="/register">Get started ↗</ButtonLink>
+                <ButtonLink href="/register">Get started <ArrowUpRight className="size-4" aria-hidden="true" /></ButtonLink>
                 <ButtonLink href="/login" secondary>
                   Sign in
                 </ButtonLink>
@@ -89,13 +90,13 @@ export default function Home() {
           )}
           <div className="flex items-center gap-6 mt-8 text-xs text-[#586b64] font-medium">
             <div className="flex items-center gap-2">
-              <span className="text-[#196547] font-bold">✓</span> Real-Time Tracking
+              <Check className="size-4 text-[#196547]" aria-hidden="true" /> Real-Time Tracking
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#196547] font-bold">✓</span> Stripe Checkout
+              <Check className="size-4 text-[#196547]" aria-hidden="true" /> Stripe Checkout
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[#196547] font-bold">✓</span> Full Audit Trails
+              <Check className="size-4 text-[#196547]" aria-hidden="true" /> Full Audit Trails
             </div>
           </div>
         </MotionContainer>
@@ -197,7 +198,7 @@ export default function Home() {
             imageSrc="/courier-workspace.jpg"
             imageAlt="3D illustration of express courier van in transit"
             href="/courier"
-            linkText={user?.role === "COURIER" ? "Go to your Dashboard ↗" : "Open Courier Dashboard"}
+            linkText={user?.role === "COURIER" ? "Go to your Dashboard" : "Open Courier Dashboard"}
           />
           <FeatureCardWithImage
             title="Admin Command Center"
@@ -206,7 +207,7 @@ export default function Home() {
             imageSrc="/admin-center.jpg"
             imageAlt="3D illustration of logistics operations analytics command center"
             href="/admin"
-            linkText={user?.role === "ADMIN" ? "Go to Command Center ↗" : "Enter Admin Center"}
+            linkText={user?.role === "ADMIN" ? "Go to Command Center" : "Enter Admin Center"}
           />
         </MotionStaggerGroup>
       </section>
@@ -234,7 +235,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col sm:flex-row gap-4 shrink-0">
               <ButtonLink href={roleHome(user.role)}>
-                Go to your workspace ↗
+                Go to your workspace <ArrowUpRight className="size-4" aria-hidden="true" />
               </ButtonLink>
             </div>
           </>
@@ -254,7 +255,7 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 shrink-0">
-              <ButtonLink href="/register">Create Free Account ↗</ButtonLink>
+              <ButtonLink href="/register">Create Free Account <ArrowUpRight className="size-4" aria-hidden="true" /></ButtonLink>
               <ButtonLink href="/login" secondary>
                 Sign In Now
               </ButtonLink>

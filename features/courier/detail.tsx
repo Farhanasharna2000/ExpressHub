@@ -4,16 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { z } from "zod";
-import {
-  MapPin,
-  Phone,
-  Package,
-  Clock3,
-  RefreshCw,
-  Navigation,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
+import { MapPin, Phone, Package, Clock3, RefreshCw, Navigation, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import {
@@ -52,7 +43,7 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
   return (
     <div className="page-stack">
       <Link href="/courier/shipments" className="back-link">
-        ← Back to assigned shipments
+        <ArrowLeft className="inline size-4" aria-hidden="true" /> Back to assigned shipments
       </Link>
 
       <div className="page-heading">

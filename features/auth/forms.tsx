@@ -81,7 +81,7 @@ function FormError({
   error: unknown;
   remaining: number;
 }) {
-  if (!error) return null;
+  if (!error || Object.keys(fieldErrors(error)).length > 0) return null;
   return (
     <Alert variant="destructive" tabIndex={-1} data-form-error>
       <AlertTitle>We couldn’t complete that request</AlertTitle>

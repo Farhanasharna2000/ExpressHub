@@ -73,7 +73,7 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
               setLoading(false);
             }
           })
-          .catch(() => setLoading(false));
+          .catch(err => { setLoading(false); setError(err); });
       } else if (authStatus === "anonymous" || authStatus === "error") {
         setLoading(false);
       }

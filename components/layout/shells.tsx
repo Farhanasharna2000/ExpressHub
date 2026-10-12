@@ -132,10 +132,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
             href={roleHome(user.role)}
             className="font-semibold text-[#196547] hover:underline"
           >
-            Go to your {user.role.toLowerCase()} dashboard ({user.name}) →
+            Go to your {user.role.toLowerCase()} dashboard ({user.name}) <ArrowRight className="inline size-4" aria-hidden="true" />
           </Link>
         ) : (
-          <Link href="/login">Your account →</Link>
+          <Link href="/login">Your account <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
         )}
       </footer>
     </>

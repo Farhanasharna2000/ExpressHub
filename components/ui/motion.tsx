@@ -1,5 +1,6 @@
 "use client";
 
+import { Pause, Play, Check, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, type ReactNode } from "react";
 import Image from "next/image";
@@ -213,7 +214,7 @@ export function InteractiveDeliveryTracker() {
               setIsPlaying(!isPlaying);
             }}
           >
-            {isPlaying ? "⏸ Pause Demo" : "▶ Simulate Journey"}
+            {isPlaying ? <Pause className="inline size-4" aria-hidden="true" /> : <Play className="inline size-4" aria-hidden="true" />} {isPlaying ? "Pause Demo" : "Simulate Journey"}
           </button>
         </div>
       </div>
@@ -250,7 +251,7 @@ export function InteractiveDeliveryTracker() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
           <span className="tracker-van-icon" aria-hidden="true">
-            🚚
+            <span className="inline-block -scale-x-100">🚚</span>
           </span>
         </motion.div>
       </div>
@@ -274,7 +275,7 @@ export function InteractiveDeliveryTracker() {
             >
               <div className="tracker-node-indicator">
                 {isDone ? (
-                  <span className="tracker-check">✓</span>
+                  <span className="tracker-check"><Check className="size-4" aria-hidden="true" /></span>
                 ) : (
                   <span>0{idx + 1}</span>
                 )}
@@ -380,7 +381,7 @@ export function FeatureCardWithImage({
         <h3>{title}</h3>
         <p>{text}</p>
         <Link href={href} className="feature-card-link">
-          {linkText} <span aria-hidden="true">→</span>
+          {linkText} <ArrowRight className="inline size-4" aria-hidden="true" />
         </Link>
       </div>
     </motion.div>

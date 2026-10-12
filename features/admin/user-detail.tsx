@@ -4,19 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 import { z } from "zod";
-import {
-  User,
-  Shield,
-  Phone,
-  Mail,
-  Calendar,
-  AlertTriangle,
-  Loader2,
-  RefreshCw,
-  CheckCircle,
-  ShieldAlert,
-  Trash2,
-} from "lucide-react";
+import { User, Shield, Phone, Mail, Calendar, AlertTriangle, Loader2, RefreshCw, CheckCircle, ShieldAlert, Trash2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -136,7 +124,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
   return (
     <div className="page-stack">
       <Link href="/admin/users" className="back-link">
-        ← Back to user directory
+        <ArrowLeft className="inline size-4" aria-hidden="true" /> Back to user directory
       </Link>
 
       <div className="page-heading">

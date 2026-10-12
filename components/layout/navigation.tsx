@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { LogOut } from "lucide-react";
+import { LogOut, X, Menu } from "lucide-react";
 import { Button } from "@/components/ui/primitives";
 import type { UserRole } from "@/types/api";
 import { useSession } from "@/features/auth/provider";
@@ -100,7 +100,7 @@ export function Navigation({ role }: { role?: UserRole }) {
         aria-controls="primary-navigation"
         onClick={() => setOpenAt(open ? null : pathname)}
       >
-        Menu {open ? "−" : "+"}
+        Menu {open ? <X className="size-4" aria-hidden="true" /> : <Menu className="size-4" aria-hidden="true" />}
       </Button>
       <nav
         id="primary-navigation"

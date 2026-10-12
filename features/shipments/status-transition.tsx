@@ -104,7 +104,9 @@ export function StatusTransitionControl({
       });
 
       setLastActionSuccess(`Shipment status successfully transitioned to ${statusLabel(target)}.`);
-      closeDialog();
+      setActiveTarget(null);
+      setNote("");
+      setNoteError("");
       onSuccess();
     } catch (err) {
       setMutationError(err);

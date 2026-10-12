@@ -71,11 +71,9 @@ export function PayWithStripeButton({
       }
 
       // If checkoutUrl is null, payment is already settled or closed
-      setError(
-        new ApiError(
+      throw new ApiError(
           409,
           "This payment has already been completed or the session has expired. Check your payment history."
-        )
       );
     } catch (err) {
       setError(err);

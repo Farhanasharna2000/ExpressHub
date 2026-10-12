@@ -3,17 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import {
-  Users,
-  Package,
-  CreditCard,
-  History,
-  TrendingUp,
-  RefreshCw,
-  Truck,
-  ShieldCheck,
-  AlertTriangle,
-} from "lucide-react";
+import { Users, Package, CreditCard, History, TrendingUp, RefreshCw, Truck, ShieldCheck, AlertTriangle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { ErrorNotice, LoadingState, StatusBadge } from "@/components/ui/primitives";
@@ -195,7 +185,7 @@ export function AdminDashboard() {
                     Shipment Operations
                   </span>
                   <Button asChild variant="ghost" size="sm">
-                    <Link href="/admin/shipments">View All →</Link>
+                    <Link href="/admin/shipments">View All <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
                   </Button>
                 </CardTitle>
               </CardHeader>
@@ -222,7 +212,7 @@ export function AdminDashboard() {
                     User Directory
                   </span>
                   <Button asChild variant="ghost" size="sm">
-                    <Link href="/admin/users">View All →</Link>
+                    <Link href="/admin/users">View All <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
                   </Button>
                 </CardTitle>
               </CardHeader>
@@ -249,7 +239,7 @@ export function AdminDashboard() {
                     Audit Log
                   </span>
                   <Button asChild variant="ghost" size="sm">
-                    <Link href="/admin/audit-logs">View Logs →</Link>
+                    <Link href="/admin/audit-logs">View Logs <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
                   </Button>
                 </CardTitle>
               </CardHeader>

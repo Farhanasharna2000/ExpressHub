@@ -3,15 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { z } from "zod";
-import {
-  MapPin,
-  Phone,
-  Package,
-  Clock3,
-  RefreshCw,
-  User,
-  ShieldAlert,
-} from "lucide-react";
+import { MapPin, Phone, Package, Clock3, RefreshCw, User, ShieldAlert, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import {
@@ -52,7 +44,7 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
   return (
     <div className="page-stack">
       <Link href="/admin/shipments" className="back-link">
-        ← Back to shipment operations
+        <ArrowLeft className="inline size-4" aria-hidden="true" /> Back to shipment operations
       </Link>
 
       <div className="page-heading">
