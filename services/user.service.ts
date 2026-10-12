@@ -71,7 +71,7 @@ export async function getUserProfile(actor: AuthenticatedUser, id: string) {
   if (actor.id !== id && actor.role !== UserRole.ADMIN) throw notFound();
   const user = await prisma.user.findFirst({
     where: { id, deletedAt: null },
-    select: profileSelect,
+    select: { ...profileSelect, avatar: true },
   });
   if (!user) throw notFound();
   return user;
@@ -86,7 +86,7 @@ export async function updateProfile(
     const user = await tx.user.update({
       where: { id: actor.id },
       data: input,
-      select: profileSelect,
+      select: { ...profileSelect, avatar: true },
     });
     await tx.auditLog.create({
       data: {

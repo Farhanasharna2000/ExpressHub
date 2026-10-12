@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Clock3, Package, MapPin, Loader2, RefreshCw, CheckCircle2, ArrowLeft } from "lucide-react";
 import { PayWithStripeButton } from "@/features/payments/initiate-button";
 import { Button } from "@/components/ui/button";
-import { NotificationToast } from "@/components/ui/notification-toast";
+import { toast } from "@/components/ui/toast";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { StatusBadge, ErrorNotice, LoadingState, EmptyState } from "@/components/ui/primitives";
@@ -24,7 +24,6 @@ export function ShipmentDetails({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
   const [mutationError, setMutationError] = useState<unknown>(null);
-  const [cancellationToastOpen, setCancellationToastOpen] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const delay = useRetryDelay(error ?? mutationError);
   const shipment = data?.shipment;
@@ -33,22 +32,21 @@ export function ShipmentDetails({ id }: { id: string }) {
   async function cancel() {
     if (!shipment || shipment.status !== "CREATED" || pending.current || delay) return;
     pending.current = true; setBusy(true); setMutationError(null); setCancelled(false);
-    setCancellationToastOpen(false);
     try {
       await store.api.request(`/shipments/${encodeURIComponent(id)}/status`, { method: "PATCH", body: { status: "CANCELLED", expectedStatus: shipment.status } });
       setCancelled(true);
-      setCancellationToastOpen(true);
-    } catch (error) { setMutationError(error); setCancellationToastOpen(true); }
+      toast.success("Shipment cancelled", "The cancellation was confirmed. Cancellation does not automatically refund a payment.");
+    } catch (error) {
+      setMutationError(error);
+      const msg = `${(error instanceof ApiError && error.status === 409 ? error.message : errorMessage(error)).replace(/[.\s]+$/, "")}. Review the latest shipment details before trying again. Cancellation does not automatically refund payments.${delay > 0 ? ` Try again in ${delay} seconds.` : ""}`;
+      toast.error("Cancellation could not be confirmed", msg);
+    }
     finally { pending.current = false; setBusy(false); setOpen(false); reload(); }
   }
 
   return <div className="page-stack">
     <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> My shipments</Link>
     <div className="page-heading"><div><p className="eyebrow">Every step of the journey</p><h1>Shipment details</h1><p>Your shipment information and delivery history.</p></div>{valid && <Button variant="outline" disabled={loading || busy || delay > 0} onClick={reload}><RefreshCw />Refresh</Button>}</div>
-    <NotificationToast open={cancellationToastOpen} onOpenChange={setCancellationToastOpen}
-      tone={cancelled ? "success" : "error"}
-      title={cancelled ? "Shipment cancelled" : "Cancellation could not be confirmed"}
-      message={cancelled ? "The cancellation was confirmed. Cancellation does not automatically refund a payment." : mutationError ? `${(mutationError instanceof ApiError && mutationError.status === 409 ? mutationError.message : errorMessage(mutationError)).replace(/[.\s]+$/, "")}. Review the latest shipment details before trying again. Cancellation does not automatically refund payments.${delay > 0 ? ` Try again in ${delay} seconds.` : ""}` : ""} />
     {!valid && <EmptyState title="Shipment unavailable" description="This shipment link is invalid. Return to your shipment list." />}
     {loading && <LoadingState label="Loading shipment details…" />}
     {!!error && <ErrorNotice title={error instanceof ApiError && error.status === 404 ? "Shipment unavailable" : "Could not load shipment"} action={<Button variant="outline" onClick={reload} disabled={delay > 0}>{delay ? `Retry in ${delay}s` : "Try again"}</Button>}>{errorMessage(error)}</ErrorNotice>}

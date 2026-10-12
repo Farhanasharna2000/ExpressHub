@@ -10,6 +10,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ErrorNotice, LoadingState, EmptyState } from "@/components/ui/primitives";
+import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage } from "@/lib/client/api";
 import type { CurrentUser, UserRole } from "@/types/api";
@@ -61,11 +62,14 @@ export function AdminUserDetailView({ id }: { id: string }) {
         method: "PATCH",
         body: { role: selectedRole },
       });
-      setFeedback(`User role successfully changed to ${selectedRole}.`);
+      const msg = `User role successfully changed to ${selectedRole}.`;
+      setFeedback(msg);
+      toast.success("Role Updated", msg);
       setRoleModalOpen(false);
       reload();
     } catch (err) {
       setRoleError(err);
+      toast.error("Role update failed", errorMessage(err));
     } finally {
       setRoleBusy(false);
     }
@@ -83,13 +87,14 @@ export function AdminUserDetailView({ id }: { id: string }) {
         method: "PATCH",
         body: { isActive: nextStatus },
       });
-      setFeedback(
-        `Account status successfully changed to ${nextStatus ? "Active" : "Inactive"}.`
-      );
+      const msg = `Account status successfully changed to ${nextStatus ? "Active" : "Inactive"}.`;
+      setFeedback(msg);
+      toast.success("Status Updated", msg);
       setStatusModalOpen(false);
       reload();
     } catch (err) {
       setStatusError(err);
+      toast.error("Status update failed", errorMessage(err));
     } finally {
       setStatusBusy(false);
     }
@@ -113,9 +118,16 @@ export function AdminUserDetailView({ id }: { id: string }) {
         body: { reason: cleanReason },
       });
       setDeletedConfirmed(true);
+      toast.success("User Account Archived", "This user has been soft-deleted and archived from active directories.");
       setDeleteModalOpen(false);
     } catch (err) {
       setDeleteError(err);
+      toast.error(
+        err instanceof ApiError && err.status === 409
+          ? "User conflict"
+          : "Archival failed",
+        errorMessage(err)
+      );
     } finally {
       setDeleteBusy(false);
     }
@@ -140,14 +152,6 @@ export function AdminUserDetailView({ id }: { id: string }) {
           </Button>
         )}
       </div>
-
-      {feedback && (
-        <Alert role="status" className="border-green-600/30 bg-green-50 text-green-950">
-          <CheckCircle className="size-4 text-green-700" />
-          <AlertTitle>Action Completed</AlertTitle>
-          <AlertDescription>{feedback}</AlertDescription>
-        </Alert>
-      )}
 
       {deletedConfirmed && (
         <Alert role="status" className="border-amber-600/30 bg-amber-50 text-amber-950">
@@ -336,10 +340,6 @@ export function AdminUserDetailView({ id }: { id: string }) {
                 </DialogDescription>
               </DialogHeader>
 
-              {!!roleError && (
-                <ErrorNotice title="Role update failed">{errorMessage(roleError)}</ErrorNotice>
-              )}
-
               <div className="space-y-4 py-2">
                 <div className="field">
                   <label htmlFor="select-user-role" className="text-sm font-medium">
@@ -389,10 +389,6 @@ export function AdminUserDetailView({ id }: { id: string }) {
                 </DialogDescription>
               </DialogHeader>
 
-              {!!statusError && (
-                <ErrorNotice title="Status update failed">{errorMessage(statusError)}</ErrorNotice>
-              )}
-
               <div className="flex justify-end gap-3 pt-4">
                 <Button variant="outline" disabled={statusBusy} onClick={() => setStatusModalOpen(false)}>
                   Cancel
@@ -419,18 +415,6 @@ export function AdminUserDetailView({ id }: { id: string }) {
                   Active shipments or unresolved payments must be settled before deletion.
                 </DialogDescription>
               </DialogHeader>
-
-              {!!deleteError && (
-                <ErrorNotice
-                  title={
-                    deleteError instanceof ApiError && deleteError.status === 409
-                      ? "User conflict"
-                      : "Archival failed"
-                  }
-                >
-                  {errorMessage(deleteError)}
-                </ErrorNotice>
-              )}
 
               <div className="space-y-4 py-2">
                 <div className="field">

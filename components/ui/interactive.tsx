@@ -7,12 +7,19 @@ import { Dialog as DialogRoot, DialogContent, DialogHeader, DialogTitle, DialogD
 import type { PaginationMeta } from "@/types/api";
 import { Button } from "./button";
 
-export function Pagination({ meta, onPageChange, onPageSizeChange, busy = false }: {
+export interface PaginationProps {
   meta: PaginationMeta;
   onPageChange: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
   busy?: boolean;
-}) {
+}
+
+export function Pagination({
+  meta,
+  onPageChange,
+  onPageSizeChange,
+  busy = false,
+}: PaginationProps) {
   const selectId = useId();
   const totalPages = Math.max(1, meta.totalPages);
   const currentPage = Math.min(Math.max(1, meta.page), totalPages);

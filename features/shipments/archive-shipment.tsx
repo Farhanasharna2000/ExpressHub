@@ -6,7 +6,7 @@ import { Archive, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ErrorNotice } from "@/components/ui/primitives";
+import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage } from "@/lib/client/api";
 import { isShipmentArchivable } from "@/features/admin/contracts";
@@ -49,6 +49,7 @@ export function ArchiveShipmentControl({
       });
 
       setModalOpen(false);
+      toast.success("Shipment Archived", "The shipment has been successfully archived.");
       if (onSuccess) {
         onSuccess();
       } else {
@@ -56,6 +57,12 @@ export function ArchiveShipmentControl({
       }
     } catch (err) {
       setMutationError(err);
+      toast.error(
+        err instanceof ApiError && err.status === 409
+          ? "Archival conflict"
+          : "Failed to archive shipment",
+        errorMessage(err)
+      );
     } finally {
       setBusy(false);
     }
@@ -110,18 +117,6 @@ export function ArchiveShipmentControl({
                 All audit event records will be permanently retained.
               </DialogDescription>
             </DialogHeader>
-
-            {!!mutationError && (
-              <ErrorNotice
-                title={
-                  mutationError instanceof ApiError && mutationError.status === 409
-                    ? "Archival conflict"
-                    : "Failed to archive shipment"
-                }
-              >
-                {errorMessage(mutationError)}
-              </ErrorNotice>
-            )}
 
             <div className="space-y-4 py-2">
               <div className="field">

@@ -9,13 +9,12 @@ import { errorResponse, tooManyRequestsResponse } from "@/lib/http/responses";
 import { getRateLimitIdentifier, limitApiRequests } from "@/lib/rate-limit";
 import { rateLimitDiagnostics } from "@/lib/rate-limit-diagnostics";
 
-export async function parseRequestBody<T>(request: Request, schema: ZodType<T>): Promise<T> {
+export async function parseRequestBody<T>(request: Request, schema: ZodType<T>, maxBodyBytes = 16 * 1024): Promise<T> {
   const contentType = request.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
   if (contentType !== "application/json") {
     throw new AppError(415, "Content-Type must be application/json", "UNSUPPORTED_MEDIA_TYPE");
   }
 
-  const maxBodyBytes = 16 * 1024;
   const declaredLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > maxBodyBytes) {
     throw new AppError(413, "Request body is too large", "REQUEST_TOO_LARGE");

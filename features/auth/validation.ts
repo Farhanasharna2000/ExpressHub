@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { profilePhotoSchema } from "@/lib/profile-photo";
 // Browser-safe equivalent of the auth/profile validators. No Buffer or Prisma.
 const email = z.string().trim().toLowerCase().pipe(z.email().max(254));
 const phone = z.string().trim().min(5).max(30);
@@ -27,5 +28,6 @@ export const profileFields = z
     name: z.string().trim().min(2).max(100),
     email,
     phone: phone.nullable(),
+    avatar: profilePhotoSchema,
   })
   .strict();

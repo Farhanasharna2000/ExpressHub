@@ -5,8 +5,7 @@ import { Loader2, ArrowRight, CheckCircle, AlertTriangle, XCircle, RotateCcw } f
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ErrorNotice } from "@/components/ui/primitives";
+import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage } from "@/lib/client/api";
 import type { ShipmentStatus, UserRole } from "@/types/api";
@@ -103,14 +102,23 @@ export function StatusTransitionControl({
         body: payload,
       });
 
-      setLastActionSuccess(`Shipment status successfully transitioned to ${statusLabel(target)}.`);
+      const msg = `Shipment status successfully transitioned to ${statusLabel(target)}.`;
+      setLastActionSuccess(msg);
+      toast.success("Update Confirmed", msg);
       setActiveTarget(null);
       setNote("");
       setNoteError("");
       onSuccess();
     } catch (err) {
       setMutationError(err);
-      if (err instanceof ApiError && err.status === 409) {
+      const isConflict = err instanceof ApiError && err.status === 409;
+      toast.error(
+        isConflict ? "Concurrent update detected" : "Status update failed",
+        isConflict
+          ? `${err.message}. The shipment has been reloaded with its latest state.`
+          : errorMessage(err)
+      );
+      if (isConflict) {
         // Concurrency conflict: reload latest status
         onSuccess();
       }
@@ -149,26 +157,6 @@ export function StatusTransitionControl({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {lastActionSuccess && (
-          <Alert role="status" className="border-green-600/30 bg-green-50 text-green-950">
-            <AlertTitle>Update Confirmed</AlertTitle>
-            <AlertDescription>{lastActionSuccess}</AlertDescription>
-          </Alert>
-        )}
-
-        {!!mutationError && (
-          <ErrorNotice
-            title={
-              mutationError instanceof ApiError && mutationError.status === 409
-                ? "Concurrent update detected"
-                : "Status update failed"
-            }
-          >
-            {mutationError instanceof ApiError && mutationError.status === 409
-              ? `${mutationError.message}. The shipment has been reloaded with its latest state.`
-              : errorMessage(mutationError)}
-          </ErrorNotice>
-        )}
 
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">

@@ -48,3 +48,4 @@ export function ResponsiveTable<T>({ caption, columns, rows, rowKey, empty }: { 
   if (!rows.length) return <>{empty}</>;
   return <><div className="table-desktop"><table><caption>{caption}</caption><thead><tr>{columns.map(c => <th scope="col" key={c.key}>{c.label}</th>)}</tr></thead><tbody>{rows.map(row => <tr key={rowKey(row)}>{columns.map(c => <td key={c.key}>{c.render(row)}</td>)}</tr>)}</tbody></table></div><div className="table-mobile" aria-label={caption}>{rows.map(row => <Card key={rowKey(row)}><dl>{columns.map(c => <div key={c.key}><dt>{c.label}</dt><dd>{c.render(row)}</dd></div>)}</dl></Card>)}</div></>;
 }
+export { Pagination, type PaginationProps } from "./interactive";

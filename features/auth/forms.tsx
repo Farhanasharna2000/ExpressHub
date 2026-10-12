@@ -1,5 +1,8 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
+import { Camera, Upload, UserRound, Save, Trash2 } from "lucide-react";
+import { prepareProfilePhoto } from "./profile-photo";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
@@ -25,6 +28,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input, LoadingState } from "@/components/ui/primitives";
+import { toast } from "@/components/ui/toast";
 import { ApiError, errorMessage, fieldErrors } from "@/lib/client/api";
 import { useSession } from "./provider";
 import { safeReturnUrl } from "./session";
@@ -48,6 +52,11 @@ function useFeedback() {
     setError(error);
     const fields = fieldErrors(error);
     setErrors(fields);
+    if (!fields || Object.keys(fields).length === 0) {
+      toast.error("We couldn’t complete that request", errorMessage(error), {
+        dataAttribute: { "data-form-error": "true" },
+      });
+    }
     requestAnimationFrame(() => {
       const target = form.elements.namedItem(Object.keys(fields)[0]);
       if (target instanceof HTMLElement) target.focus();
@@ -75,24 +84,13 @@ function useFeedback() {
   };
 }
 function FormError({
-  error,
-  remaining,
+  error: _error,
+  remaining: _remaining,
 }: {
   error: unknown;
   remaining: number;
 }) {
-  if (!error || Object.keys(fieldErrors(error)).length > 0) return null;
-  return (
-    <Alert variant="destructive" tabIndex={-1} data-form-error>
-      <AlertTitle>We couldn’t complete that request</AlertTitle>
-      <AlertDescription>
-        {errorMessage(error)}
-        {remaining > 0 && (
-          <span aria-live="polite">Try again in {remaining} seconds.</span>
-        )}
-      </AlertDescription>
-    </Alert>
-  );
+  return null;
 }
 function validationError(issues: { path: PropertyKey[]; message: string }[]) {
   return new ApiError(
@@ -153,6 +151,10 @@ export function AuthForm({ register = false }: { register?: boolean }) {
       const current = await store.authenticate(
         register ? "register" : "login",
         parsed.data,
+      );
+      toast.success(
+        register ? "Account created" : "Welcome back",
+        register ? "Welcome to ExpressHub!" : `Signed in as ${current.name || current.email}.`
       );
       form.reset();
       router.replace(
@@ -360,14 +362,33 @@ export function ProfileForm() {
   const { user, store } = useSession();
   const feedback = useFeedback();
   const [saved, setSaved] = useState(false);
+  const [photoDraft, setPhotoDraft] = useState<string | null | undefined>(undefined);
+  const [photoError, setPhotoError] = useState("");
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const photoPending = useRef(false);
+  const photo = photoDraft === undefined ? user?.avatar : photoDraft;
+  async function choosePhoto(file?: File) {
+    if (!file || photoPending.current) return;
+    photoPending.current = true;
+    setPhotoBusy(true); setPhotoError(""); setSaved(false);
+    try { setPhotoDraft(await prepareProfilePhoto(file)); }
+    catch (error) {
+      const msg = error instanceof Error ? error.message : "Could not load this photo.";
+      setPhotoError(msg);
+      toast.error("Profile photo error", msg);
+    }
+    finally { photoPending.current = false; setPhotoBusy(false); if (photoInput.current) photoInput.current.value = ""; }
+  }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!feedback.start()) return;
+    if (photoPending.current || !feedback.start()) return;
     setSaved(false);
     const form = event.currentTarget;
     const data = new FormData(form);
     try {
       const parsed = profileFields.safeParse({
+        ...(photoDraft !== undefined ? { avatar: photoDraft } : {}),
         name: data.get("name"),
         email: data.get("email"),
         phone: String(data.get("phone") ?? "").trim() || null,
@@ -379,7 +400,10 @@ export function ProfileForm() {
         if (input instanceof HTMLInputElement)
           input.value = updated[field] ?? "";
       }
+      setPhotoDraft(undefined);
+      setPhotoError("");
       setSaved(true);
+      toast.success("Profile updated", "Your changes have been saved.");
     } catch (error) {
       feedback.fail(error, form);
     } finally {
@@ -390,84 +414,51 @@ export function ProfileForm() {
   return (
     <div className="page-stack">
       <div className="page-heading">
-        <div>
-          <p className="eyebrow">Account settings</p>
-          <h1>Your profile</h1>
-          <p>Keep your contact details up to date.</p>
-        </div>
+        <div><p className="eyebrow">Account settings</p><h1>Your profile</h1><p>Manage your photo and personal details.</p></div>
       </div>
-      <Card className="profile-card">
-        <CardHeader>
-          <CardTitle>
-            <h2>Personal information</h2>
-          </CardTitle>
-          <CardDescription>
-            Your account role is {user.role.toLowerCase()}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="form-grid"
-            onSubmit={submit}
-            onChange={() => setSaved(false)}
-            noValidate
-            aria-busy={feedback.busy}
-          >
+      <form onSubmit={submit} onChange={() => setSaved(false)} noValidate aria-busy={feedback.busy || photoBusy} className="grid items-start gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
+        <Card className="gap-0 overflow-hidden pt-0">
+          <div className="h-24 bg-linear-to-br from-[#196547] via-[#287b59] to-[#b2cc98]" />
+          <CardContent className="relative -mt-12 space-y-5 text-center">
+            <div className="relative mx-auto w-fit">
+              <div className="flex size-28 items-center justify-center overflow-hidden rounded-full border-4 border-background bg-muted shadow-sm">
+                {photo ? <Image src={photo} alt="Your profile photo" width={112} height={112} unoptimized className="size-full object-cover" /> : <UserRound className="size-12 text-primary/60" aria-hidden="true" />}
+              </div>
+              <span className="absolute bottom-1 right-0 flex size-8 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground"><Camera className="size-4" aria-hidden="true" /></span>
+            </div>
+            <div className="min-w-0"><h2 className="break-words text-xl font-semibold">{user.name}</h2><p className="mt-1 break-all text-sm text-muted-foreground">{user.email}</p><span className="mt-3 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold capitalize text-primary">{user.role.toLowerCase()}</span></div>
+            <div className="space-y-3 border-t pt-5">
+              <input ref={photoInput} id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" tabIndex={-1} aria-label="Profile photo" disabled={feedback.busy || photoBusy} aria-invalid={Boolean(photoError || feedback.errors.avatar)} aria-describedby="profile-photo-help profile-photo-error" onChange={event => void choosePhoto(event.target.files?.[0])} />
+              <Button type="button" variant="outline" className="w-full" disabled={feedback.busy || photoBusy} onClick={() => photoInput.current?.click()}>
+                {photoBusy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" aria-hidden="true" />}{photoBusy ? "Preparing photo…" : photo ? "Change photo" : "Upload photo"}
+              </Button>
+              {photo && <Button type="button" variant="ghost" size="sm" disabled={feedback.busy || photoBusy} onClick={() => { setPhotoDraft(null); setPhotoError(""); setSaved(false); }}><Trash2 className="size-3.5" aria-hidden="true" />Remove photo</Button>}
+              <p id="profile-photo-help" className="text-xs leading-relaxed text-muted-foreground">JPG, PNG or WebP. Up to 5 MB.<br />Save changes to update your photo.</p>
+              <p id="profile-photo-error" role={photoError || feedback.errors.avatar ? "alert" : undefined} className="text-sm text-destructive">{photoError || feedback.errors.avatar}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="gap-0 overflow-hidden">
+          <CardHeader className="border-b pb-5">
+            <CardTitle className="flex items-center gap-2"><UserRound className="size-5 text-primary" aria-hidden="true" /><h2 className="text-lg">Personal information</h2></CardTitle>
+            <CardDescription>Keep your contact details up to date for your deliveries.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 py-6">
             <FormError error={feedback.error} remaining={feedback.remaining} />
-            {saved && (
-              <Alert role="status">
-                <CheckCircle2 />
-                <AlertTitle>Profile updated</AlertTitle>
-                <AlertDescription>
-                  Your changes have been saved.
-                </AlertDescription>
-              </Alert>
-            )}
-            <Input
-              id="profile-name"
-              name="name"
-              label="Full name"
-              defaultValue={user.name}
-              autoComplete="name"
-              maxLength={100}
-              required
-              disabled={feedback.busy}
-              error={feedback.errors.name}
-            />
-            <Input
-              id="profile-email"
-              name="email"
-              label="Email address"
-              type="email"
-              defaultValue={user.email}
-              autoComplete="email"
-              maxLength={254}
-              required
-              disabled={feedback.busy}
-              error={feedback.errors.email}
-            />
-            <Input
-              id="profile-phone"
-              name="phone"
-              label="Phone number (optional)"
-              type="tel"
-              defaultValue={user.phone ?? ""}
-              autoComplete="tel"
-              maxLength={30}
-              disabled={feedback.busy}
-              error={feedback.errors.phone}
-            />
-            <Button
-              type="submit"
-              className="h-11"
-              disabled={feedback.busy || feedback.remaining > 0}
-            >
-              {feedback.busy && <Loader2 className="animate-spin" />}{" "}
-              {feedback.busy ? "Saving…" : "Save changes"}
+            <Input id="profile-name" name="name" label="Full name" defaultValue={user.name} autoComplete="name" maxLength={100} required disabled={feedback.busy} error={feedback.errors.name} />
+            <div className="grid gap-6 md:grid-cols-2">
+              <Input id="profile-email" name="email" label="Email address" type="email" defaultValue={user.email} autoComplete="email" maxLength={254} required disabled={feedback.busy} error={feedback.errors.email} />
+              <Input id="profile-phone" name="phone" label="Phone number (optional)" type="tel" defaultValue={user.phone ?? ""} autoComplete="tel" maxLength={30} disabled={feedback.busy} error={feedback.errors.phone} />
+            </div>
+            <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-4"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" /><div><p className="text-sm font-medium">Account access</p><p className="mt-1 text-xs text-muted-foreground">Your {user.role.toLowerCase()} role is managed by your administrator.</p></div></div>
+          </CardContent>
+          <CardFooter className="justify-end gap-3 border-t pt-5">
+            <Button type="submit" className="h-11 w-full sm:w-auto" disabled={feedback.busy || photoBusy || feedback.remaining > 0}>
+              {feedback.busy ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" aria-hidden="true" />}{feedback.busy ? "Saving…" : "Save changes"}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </CardFooter>
+        </Card>
+      </form>
     </div>
   );
 }

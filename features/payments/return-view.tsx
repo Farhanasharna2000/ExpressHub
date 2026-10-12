@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { StatusBadge, LoadingState, ErrorNotice } from "@/components/ui/primitives";
+import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { errorMessage } from "@/lib/client/api";
 import {
@@ -91,11 +92,13 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
 
       if (res.payment.status === "PAID") {
         clearPendingPayment();
+        toast.success("Payment complete", "Your payment has been successfully confirmed.");
       }
 
       return res.payment;
     } catch (err) {
       setError(err);
+      toast.error("Could not verify status", errorMessage(err));
       return null;
     } finally {
       setLoading(false);

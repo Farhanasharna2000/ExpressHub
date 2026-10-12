@@ -6,5 +6,6 @@ export interface PaginationMeta { page: number; limit: number; total: number; to
 export type ApiResponse<T> = { success: true; message: string; data: T } | { success: false; message: string; errors: unknown[] };
 export interface CurrentUser {
   id: string; name: string; email: string; phone: string | null;
+  avatar?: string | null;
   role: UserRole; isActive: boolean; createdAt: string; updatedAt: string;
 }

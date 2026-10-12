@@ -4,8 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { UserCheck, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ErrorNotice } from "@/components/ui/primitives";
+import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage } from "@/lib/client/api";
 import type { CurrentUser } from "@/types/api";
@@ -78,13 +77,20 @@ export function AssignCourierControl({
       });
 
       const assignedCourier = couriers.find((c) => c.id === selectedCourierId);
-      setSuccessNotice(
-        `Courier ${assignedCourier ? `${assignedCourier.name} (${assignedCourier.email})` : selectedCourierId} assigned successfully.`
-      );
+      const msg = `Courier ${assignedCourier ? `${assignedCourier.name} (${assignedCourier.email})` : selectedCourierId} assigned successfully.`;
+      setSuccessNotice(msg);
+      toast.success("Assignment Confirmed", msg);
       onSuccess();
     } catch (err) {
       setMutationError(err);
-      if (err instanceof ApiError && err.status === 409) {
+      const isConflict = err instanceof ApiError && err.status === 409;
+      toast.error(
+        isConflict ? "Assignment conflict detected" : "Failed to assign courier",
+        isConflict
+          ? `${err.message}. The shipment has been refreshed with the latest data.`
+          : errorMessage(err)
+      );
+      if (isConflict) {
         // Concurrent conflict: reload latest shipment data
         onSuccess();
       }
@@ -112,26 +118,6 @@ export function AssignCourierControl({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {successNotice && (
-          <Alert role="status" className="border-green-600/30 bg-green-50 text-green-950">
-            <AlertTitle>Assignment Confirmed</AlertTitle>
-            <AlertDescription>{successNotice}</AlertDescription>
-          </Alert>
-        )}
-
-        {!!mutationError && (
-          <ErrorNotice
-            title={
-              mutationError instanceof ApiError && mutationError.status === 409
-                ? "Assignment conflict detected"
-                : "Failed to assign courier"
-            }
-          >
-            {mutationError instanceof ApiError && mutationError.status === 409
-              ? `${mutationError.message}. The shipment has been refreshed with the latest data.`
-              : errorMessage(mutationError)}
-          </ErrorNotice>
-        )}
 
         {/* Current status display */}
         <div className="p-3 rounded-lg border bg-muted/30">

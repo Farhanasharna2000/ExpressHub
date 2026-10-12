@@ -70,6 +70,7 @@ model User {
   passwordHash String
   role         UserRole  @default(CUSTOMER)
   phone        String?
+  avatar       String?   @db.Text
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt

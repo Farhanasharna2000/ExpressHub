@@ -209,6 +209,7 @@ export class SessionStore {
     }
   }
   async updateProfile(body: {
+    avatar?: string | null;
     name: string;
     email: string;
     phone: string | null;

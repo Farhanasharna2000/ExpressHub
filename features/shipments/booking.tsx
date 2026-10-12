@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Loader2, Package, MapPin, Phone, Pencil, CalendarClock, Scale, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/primitives";
+import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage, fieldErrors } from "@/lib/client/api";
 import { bookingPayload, bookingSchema, pickupFields, deliveryFields, parcelFields, emptyDraft, dateTime, type BookingDraft, type Shipment } from "./contracts";
@@ -69,11 +69,35 @@ export function ShipmentBooking() {
       const payload = bookingSchema.parse(bookingPayload(draft));
       submitting.current = true; setBusy(true);
       const { shipment } = await store.api.request<{ shipment: Shipment }>("/shipments", { method: "POST", body: payload });
+      toast.success("Shipment booked", "Your shipment has been created successfully.");
       // Keep submission locked through navigation; the server is the source of price and currency.
       router.replace(`/customer/shipments/${encodeURIComponent(shipment.id)}`);
     } catch (failure) {
-      if (submitting.current && (!(failure instanceof ApiError) || failure.status === 0 || failure.status >= 500)) setUncertain(true);
+      const isUncertain = submitting.current && (!(failure instanceof ApiError) || failure.status === 0 || failure.status >= 500);
+      if (isUncertain) setUncertain(true);
       submitting.current = false; setBusy(false); report(failure);
+
+      const fieldErrMap = fieldErrors(failure);
+      const hasFieldErrors = Object.keys(fieldErrMap).length > 0;
+
+      // When field validation errors exist, the error (e.g. "Pickup must be scheduled in the future")
+      // is already displayed directly under the input field. Do not display a redundant generic toast.
+      if (!hasFieldErrors || isUncertain) {
+        toast.error(
+          isUncertain ? "Check your shipments before booking again" : errorMessage(failure),
+          isUncertain
+            ? "We couldn’t confirm whether this shipment was created. Check your shipment list first to avoid a duplicate booking."
+            : undefined,
+          {
+            dataAttribute: { "data-booking-error": "true" },
+            action: isUncertain ? (
+              <Button asChild variant="outline" size="sm">
+                <Link href="/customer/shipments">Check my shipments</Link>
+              </Button>
+            ) : undefined,
+          }
+        );
+      }
     }
   }
 
@@ -84,7 +108,6 @@ export function ShipmentBooking() {
     <form ref={formRef} onSubmit={submit} noValidate aria-busy={busy} className="booking-layout">
       <Card><CardHeader><CardTitle><h2 ref={heading} tabIndex={-1}>{["Where should we pick up?", "Where is it going?", "Tell us about your parcel", "Review your shipment"][step]}</h2></CardTitle><CardDescription>{["Add the sender’s contact details and pickup address.", "Add the recipient’s contact details and full delivery address.", "Enter the parcel weight and an optional description.", "Check the details below before creating your shipment."][step]}</CardDescription></CardHeader>
         <CardContent className="space-y-6">
-          {!!error && (uncertain || Object.keys(errors).length === 0) && <Alert variant="destructive" tabIndex={-1} data-booking-error><AlertTitle>{uncertain ? "Check your shipments before booking again" : "We couldn’t complete that request"}</AlertTitle><AlertDescription>{uncertain ? "We couldn’t confirm whether this shipment was created. Check your shipment list first to avoid a duplicate booking." : errorMessage(error)}{delay > 0 && <span role="status">Try again in {delay} seconds.</span>}{uncertain && <Button asChild variant="outline"><Link href="/customer/shipments">Check my shipments</Link></Button>}</AlertDescription></Alert>}
           {step === 0 && <div className="form-grid">{input("pickupContactName", "Pickup contact name", { required: true, maxLength: 100 })}{input("pickupContactPhone", "Pickup phone", { type: "tel", required: true, maxLength: 30 })}{input("pickupAddress", "Pickup address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
           {step === 1 && <div className="form-grid">{input("deliveryContactName", "Recipient name", { required: true, maxLength: 100 })}{input("deliveryContactPhone", "Recipient phone", { type: "tel", required: true, maxLength: 30 })}{input("deliveryAddress", "Delivery address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
           {step === 2 && <div className="form-grid"><WeightInput value={draft.parcelWeightKg} disabled={busy || uncertain} error={errors.parcelWeightKg} onChange={value => {

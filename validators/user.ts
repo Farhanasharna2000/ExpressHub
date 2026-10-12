@@ -1,5 +1,6 @@
 import { UserRole } from "@prisma/client";
 import { z } from "zod";
+import { profilePhotoSchema } from "@/lib/profile-photo";
 import { paginationFields, searchQuery, sortOrder } from "@/validators/list-query";
 
 export const userIdSchema = z.cuid();
@@ -8,6 +9,7 @@ export const updateProfileSchema = z.object({
   name: z.string().trim().min(2).max(100).optional(),
   email: z.string().trim().toLowerCase().pipe(z.email().max(254)).optional(),
   phone: z.string().trim().min(5).max(30).nullable().optional(),
+  avatar: profilePhotoSchema,
 }).strict().refine((input) => Object.keys(input).length > 0, {
   message: "Provide at least one profile field",
 });

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const actor = await requireUser(request);
-    const input = await parseRequestBody(request, updateProfileSchema);
+    const input = await parseRequestBody(request, updateProfileSchema, 300 * 1024);
     const user = await updateProfile(actor, input);
     return successResponse("Profile updated successfully", { user });
   } catch (error) {
