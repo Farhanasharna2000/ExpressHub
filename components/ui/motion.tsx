@@ -334,7 +334,6 @@ export function AnimatedMetricCard({
 }
 
 export function FeatureCardWithImage({
-  index,
   title,
   text,
   badge,
@@ -342,8 +341,8 @@ export function FeatureCardWithImage({
   imageAlt,
   href,
   linkText,
+  objectPosition = "center top",
 }: {
-  index: number;
   title: string;
   text: string;
   badge: string;
@@ -351,6 +350,7 @@ export function FeatureCardWithImage({
   imageAlt: string;
   href: string;
   linkText: string;
+  objectPosition?: string;
 }) {
   return (
     <motion.div
@@ -372,11 +372,11 @@ export function FeatureCardWithImage({
           width={480}
           height={320}
           className="feature-card-img"
+          style={{ objectPosition: objectPosition ?? "center top" }}
         />
         <div className="feature-card-badge">{badge}</div>
       </div>
       <div className="feature-card-body">
-        <span className="step-number">0{index}</span>
         <h3>{title}</h3>
         <p>{text}</p>
         <Link href={href} className="feature-card-link">

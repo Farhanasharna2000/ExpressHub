@@ -61,7 +61,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="rounded-2xl border border-line bg-gradient-to-r from-white via-[#f7f9f4] to-[#edf3e8] p-6 shadow-sm overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6"
+        className="rounded-2xl border border-line bg-linear-to-r from-white via-[#f7f9f4] to-[#edf3e8] p-6 shadow-sm overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6"
       >
         <div className="space-y-3 max-w-xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#196547]/10 text-[#196547] text-xs font-bold uppercase tracking-wider">
@@ -85,11 +85,11 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
         </div>
         <div className="relative shrink-0 w-full md:w-72 h-44 rounded-xl overflow-hidden border border-line/80 shadow-md bg-white">
           <Image
-            src="/customer-feature.jpg"
+            src="/courier-customer.jpg"
             alt="3D customer parcel booking illustration"
             fill
             sizes="(max-width: 768px) 100vw, 288px"
-            className="object-cover transition-transform duration-500 hover:scale-105"
+            className="object-cover object-top transition-transform duration-500 hover:scale-105"
           />
         </div>
       </motion.div>

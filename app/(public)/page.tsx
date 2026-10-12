@@ -59,9 +59,6 @@ export default function Home() {
                     Fleet shipments
                   </ButtonLink>
                 )}
-                <ButtonLink href="/profile" secondary>
-                  Account settings
-                </ButtonLink>
               </div>
             </>
           ) : (
@@ -182,34 +179,31 @@ export default function Home() {
       {/* 3 Workspaces with 3D Generated Visuals */}
       <section>
         <p className="eyebrow">One platform. Three perspectives.</p>
-        <h2>A purpose-built workspace for every role.</h2>
+        <h2>A purpose built workspace for every role.</h2>
         <MotionStaggerGroup className="grid-three">
           <FeatureCardWithImage
-            index={1}
             title="Customer Workspace"
             text="Calculate dimensional shipping quotes, book doorstep pickups, complete instant Stripe checkout, and follow chronological event timelines."
             badge={user?.role === "CUSTOMER" ? "Your Active Workspace" : "Customer Experience"}
-            imageSrc="/customer-feature.jpg"
+            imageSrc="/courier-customer.jpg"
             imageAlt="3D illustration of customer booking parcel on mobile device"
             href="/customer"
-            linkText={user?.role === "CUSTOMER" ? "Go to your Portal ↗" : "Explore Customer Portal"}
+            linkText={user?.role === "CUSTOMER" ? "Go to your Portal " : "Explore Customer Portal"}
           />
           <FeatureCardWithImage
-            index={2}
             title="Courier Workspace"
             text="Access assigned delivery batches, execute status progressions from pickup to proof of delivery, and submit mandatory transit notes."
             badge={user?.role === "COURIER" ? "Your Active Workspace" : "Courier Operations"}
-            imageSrc="/courier-feature.jpg"
+            imageSrc="/courier-workspace.jpg"
             imageAlt="3D illustration of express courier van in transit"
             href="/courier"
             linkText={user?.role === "COURIER" ? "Go to your Dashboard ↗" : "Open Courier Dashboard"}
           />
           <FeatureCardWithImage
-            index={3}
             title="Admin Command Center"
             text="Assign couriers with optimistic concurrency protection, monitor fleet telemetry, manage user access, and inspect immutable audit logs."
             badge={user?.role === "ADMIN" ? "Your Active Workspace" : "Operations & Control"}
-            imageSrc="/admin-feature.jpg"
+            imageSrc="/admin-center.jpg"
             imageAlt="3D illustration of logistics operations analytics command center"
             href="/admin"
             linkText={user?.role === "ADMIN" ? "Go to Command Center ↗" : "Enter Admin Center"}
@@ -223,7 +217,7 @@ export default function Home() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="p-8 md:p-12 rounded-3xl bg-gradient-to-r from-[#196547] to-[#104d35] text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl"
+        className="p-8 md:p-12 rounded-3xl bg-linear-to-r from-[#196547] to-[#104d35] text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl"
       >
         {isAuthenticated && user ? (
           <>
@@ -241,9 +235,6 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 shrink-0">
               <ButtonLink href={roleHome(user.role)}>
                 Go to your workspace ↗
-              </ButtonLink>
-              <ButtonLink href="/profile" secondary>
-                Account settings
               </ButtonLink>
             </div>
           </>

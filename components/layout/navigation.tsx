@@ -9,7 +9,7 @@ import type { UserRole } from "@/types/api";
 import { useSession } from "@/features/auth/provider";
 import { roleHome } from "@/features/auth/session";
 
-type Item = { href: string; label: string };
+type Item = { href: string; label: string; mobileOnly?: boolean };
 const navigation: Record<UserRole, Item[]> = {
   CUSTOMER: [
     { href: "/customer", label: "Overview" },
@@ -60,7 +60,6 @@ export function Navigation({ role }: { role?: UserRole }) {
     items = [...navigation[role], { href: "/profile", label: "Profile" }];
   } else if (status === "authenticated" && user) {
     items = [
-      { href: "/", label: "Home" },
       ...(user.role === "CUSTOMER"
         ? [
             { href: "/customer/shipments", label: "My shipments" },
@@ -75,13 +74,10 @@ export function Navigation({ role }: { role?: UserRole }) {
             { href: "/admin/audit-logs", label: "Audit logs" },
           ]),
     ];
-  } else if (status === "loading") {
-    items = [{ href: "/", label: "Home" }];
-  } else {
+  } else if (status !== "loading") {
     items = [
-      { href: "/", label: "Home" },
-      { href: "/login", label: "Sign in" },
-      { href: "/register", label: "Create account" },
+      { href: "/login", label: "Sign in", mobileOnly: true },
+      { href: "/register", label: "Create account", mobileOnly: true },
     ];
   }
 
@@ -93,8 +89,10 @@ export function Navigation({ role }: { role?: UserRole }) {
     )
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
+  if (items.length === 0) return null;
+
   return (
-    <div className="navigation">
+    <div className={items.every((item) => item.mobileOnly) ? "navigation sm:hidden" : "navigation"}>
       <Button
         variant="secondary"
         className="menu-toggle"
@@ -123,6 +121,7 @@ export function Navigation({ role }: { role?: UserRole }) {
           <Link
             key={item.href}
             href={item.href}
+            className={item.mobileOnly ? "sm:!hidden" : undefined}
             aria-current={active === item.href ? "page" : undefined}
             onClick={() => setOpenAt(null)}
           >

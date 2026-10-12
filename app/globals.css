@@ -240,8 +240,8 @@ dialog::backdrop { background: #10282099; }
   /* 3D Perspective Feature Cards */
   .feature-perspective-card { background: white; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease; box-shadow: 0 4px 16px rgba(23, 55, 47, 0.03); }
   .feature-perspective-card:hover { box-shadow: 0 20px 40px rgba(23, 55, 47, 0.09); border-color: rgba(25, 101, 71, 0.35); }
-  .feature-card-image-wrap { position: relative; width: 100%; height: 210px; background: #f0f3eb; overflow: hidden; }
-  .feature-card-img { width: 100%; height: 100%; object-fit: cover; object-position: center; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+  .feature-card-image-wrap { position: relative; width: 100%; height: 224px; background: #f0f3eb; overflow: hidden; }
+  .feature-card-img { width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
   .feature-perspective-card:hover .feature-card-img { transform: scale(1.05); }
   .feature-card-badge { position: absolute; top: 14px; left: 14px; z-index: 2; padding: 4px 10px; border-radius: 9999px; background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(25, 101, 71, 0.15); color: var(--brand); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; }
   .feature-card-body { padding: 24px; display: flex; flex-direction: column; flex-grow: 1; }
