@@ -44,7 +44,7 @@ export function ShipmentDetails({ id }: { id: string }) {
 
   return <div className="page-stack">
     <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> My shipments</Link>
-    <div className="page-heading"><div><p className="eyebrow">Every step of the journey</p><h1>Shipment details</h1><p className="break-all">{shipment?.trackingNumber ?? "Your shipment information and delivery history."}</p></div>{valid && <Button variant="outline" disabled={loading || busy || delay > 0} onClick={reload}><RefreshCw />Refresh</Button>}</div>
+    <div className="page-heading"><div><p className="eyebrow">Every step of the journey</p><h1>Shipment details</h1><p>Your shipment information and delivery history.</p></div>{valid && <Button variant="outline" disabled={loading || busy || delay > 0} onClick={reload}><RefreshCw />Refresh</Button>}</div>
     <NotificationToast open={cancellationToastOpen} onOpenChange={setCancellationToastOpen}
       tone={cancelled ? "success" : "error"}
       title={cancelled ? "Shipment cancelled" : "Cancellation could not be confirmed"}
@@ -53,7 +53,17 @@ export function ShipmentDetails({ id }: { id: string }) {
     {loading && <LoadingState label="Loading shipment details…" />}
     {!!error && <ErrorNotice title={error instanceof ApiError && error.status === 404 ? "Shipment unavailable" : "Could not load shipment"} action={<Button variant="outline" onClick={reload} disabled={delay > 0}>{delay ? `Retry in ${delay}s` : "Try again"}</Button>}>{errorMessage(error)}</ErrorNotice>}
     {shipment && <>
-      <Card><CardContent className="shipment-summary"><div><span className="text-xs text-muted-foreground">Shipment status</span><div className="mt-2"><StatusBadge status={shipment.status} /></div></div><div><span className="text-xs text-muted-foreground">Payment status</span><div className="mt-2"><StatusBadge status={shipment.paymentStatus} /></div></div><div><span className="text-xs text-muted-foreground">Shipment price</span><p className="font-semibold text-xl">{money(shipment.price, shipment.currency)}</p></div><div><span className="text-xs text-muted-foreground">Created</span><p><time dateTime={shipment.createdAt}>{dateTime(shipment.createdAt)}</time></p></div></CardContent></Card>
+      <Card>
+        <CardHeader className="border-b pb-5">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Package className="size-5" aria-hidden="true" /></span>
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-muted-foreground">Tracking number</p>
+              <p className="mt-1 break-all font-mono text-sm font-semibold tracking-wide text-foreground select-all">{shipment.trackingNumber}</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="shipment-summary"><div><span className="text-xs text-muted-foreground">Shipment status</span><div className="mt-2"><StatusBadge status={shipment.status} /></div></div><div><span className="text-xs text-muted-foreground">Payment status</span><div className="mt-2"><StatusBadge status={shipment.paymentStatus} /></div></div><div><span className="text-xs text-muted-foreground">Shipment price</span><p className="font-semibold text-xl">{money(shipment.price, shipment.currency)}</p></div><div><span className="text-xs text-muted-foreground">Created</span><p><time dateTime={shipment.createdAt}>{dateTime(shipment.createdAt)}</time></p></div></CardContent></Card>
       <div className="shipment-detail-grid">
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="size-5" />Delivery route</CardTitle></CardHeader><CardContent className="space-y-6 break-words"><Address title="Pickup" name={shipment.pickupContactName} phone={shipment.pickupContactPhone} address={shipment.pickupAddress} /><Address title="Delivery" name={shipment.deliveryContactName} phone={shipment.deliveryContactPhone} address={shipment.deliveryAddress} /></CardContent></Card>
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><Package className="size-5" />Parcel details</CardTitle></CardHeader><CardContent className="space-y-3 break-words"><p><strong>Weight:</strong> {shipment.parcelWeightKg} kg</p><p>{shipment.packageDescription || "No parcel description provided."}</p><p><strong>Preferred pickup:</strong> {shipment.pickupScheduledAt ? dateTime(shipment.pickupScheduledAt) : "Not specified"}</p>{shipment.deliveredAt && <p><strong>Delivered:</strong> {dateTime(shipment.deliveredAt)}</p>}<p className="text-xs">Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p></CardContent></Card>
