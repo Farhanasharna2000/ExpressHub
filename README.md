@@ -1,90 +1,112 @@
 
-# ExpressHub Backend API
+# ExpressHub - Full-Stack Courier & Logistics Platform
 
-ExpressHub is a courier and logistics management REST API built with Next.js App Router, TypeScript, Prisma ORM, and PostgreSQL.
+ExpressHub is a full-stack courier and logistics management platform built with Next.js 16 (App Router), TypeScript, Prisma ORM, PostgreSQL, and Stripe Checkout.
 
-The backend provides secure authentication, role-based authorization, shipment management, courier assignment, order tracking, administrative operations, and Stripe Checkout payment integration.
+The application provides a responsive web interface alongside a secure REST API.
+It includes role-based workspaces for Customers, Couriers, and Administrators, real-time telemetry, live courier assignment, parcel tracking, audit logging, and verified Stripe Checkout integration.
 
 ## Tech Stack
 
-- **Framework:** Next.js 16 (App Router)
+- **Framework:** Next.js 16 (App Router with Turbopack)
 - **Language:** TypeScript
 - **Database:** PostgreSQL
 - **ORM:** Prisma
-- **Authentication:** JWT & bcryptjs
+- **Authentication:** JWT, HttpOnly cookies, and bcryptjs
 - **Validation:** Zod
-- **Payment Gateway:** Stripe Checkout
-- **Rate Limiting:** Upstash Redis
-- **API Testing:** Postman
-- **Styling:** shadcn/ui, Tailwind CSS v4, and ExpressHub layout styles
+- **Payment Gateway:** Stripe Checkout & signed webhooks
+- **Rate Limiting:** Upstash Redis with local fallback
+- **Styling:** shadcn/ui, Tailwind CSS v4, and ExpressHub CSS primitives
+- **Testing:** Node.js native test runner & Playwright
 
-## Key Features
+## Frontend Workspaces & Routes
 
-### Authentication & Authorization
-- User registration and login
-- JWT-based authentication
-- Access and refresh token support
-- Password hashing
-- Role-based access control
-- Secure logout
+| Workspace | Route | Purpose & Key Features |
+|---|---|---|
+| Public | `/` | Responsive landing hero with brand logo, live courier delivery showcase, and feature highlights |
+| Public | `/login`, `/register` | Authentication with in-memory tokens, HttpOnly cookie rotation, and UTF-8 password validation |
+| Customer | `/customer` | Customer dashboard overview and recent bookings |
+| Customer | `/customer/shipments` | Searchable shipment list with status filters, date range bounds, and pagination |
+| Customer | `/customer/shipments/new` | Multi-step shipment booking wizard with dimensional validation and server pricing calculation |
+| Customer | `/customer/shipments/[id]` | Shipment tracking timeline, recipient details, live Stripe payment button, and cancellation |
+| Customer | `/customer/payments` | Caller-scoped payment transaction ledger with status filters and receipt details |
+| Checkout | `/checkout/success`, `/checkout/cancel` | Verified Stripe return handler with session polling and recovery |
+| Courier | `/courier` | Courier operations dashboard with active delivery KPIs and quick routes |
+| Courier | `/courier/shipments` | Assigned shipment list with mobile-ready route cards and phone call links |
+| Courier | `/courier/shipments/[id]` | Delivery operations screen with milestone status stepper and proof of delivery notes |
+| Admin | `/admin` | Enterprise operations overview with real-time statistics and telemetry |
+| Admin | `/admin/shipments` | System-wide shipment operations with courier assignment badges and filters |
+| Admin | `/admin/shipments/[id]` | Full shipment inspection, active courier assignment control, and soft-delete archival |
+| Admin | `/admin/users` | User directory with search, role filters, and active/inactive toggles |
+| Admin | `/admin/users/[id]` | User profile inspection, role assignment, status toggling, and soft-delete archival |
+| Admin | `/admin/audit-logs` | Immutable audit trail ledger with entity filters and state mutation JSON inspector |
+| Shared | `/profile` | Authenticated profile viewer and name/phone editor |
 
-### User Roles
+## Demonstration Workflows
 
-The system supports three user roles:
+### 1. Customer Booking to Verified Payment
+1. Register a new account at `/register` or sign in at `/login`.
+2. Navigate to `/customer/shipments/new` and complete pickup, delivery, and parcel specifications.
+3. Review estimated price and submit booking.
+4. On the shipment detail page, click **Pay with Stripe Checkout**.
+5. Complete payment in Stripe test mode.
+6. The browser returns to `/checkout/success` where payment settlement is polled and verified.
+7. Return to `/customer/shipments/[id]` to observe the confirmed **Payment Verified** badge.
 
-| Role | Permissions |
-|------|-------------|
-| CUSTOMER | Create shipments, track orders, make payments |
-| COURIER | View assigned shipments, update delivery status |
-| ADMIN | Manage users, shipments, couriers, and system operations |
+### 2. Admin Assignment & Operational Dispatch
+1. Sign in as an administrator at `/login` and navigate to `/admin`.
+2. Inspect operational telemetry and shipment counts.
+3. Open `/admin/shipments` and select an unassigned shipment.
+4. In the **Courier Assignment** panel, select an active courier from the dropdown and click **Assign Courier**.
+5. When delivery milestones require operational intervention, use the status control to update transit states.
+6. Once terminal (`DELIVERED`, `RETURNED`, or `CANCELLED`), an eligible shipment can be archived with an audit reason.
 
-### Shipment Management
-- Create shipment requests
-- Retrieve shipment details
-- Track shipment progress
-- Manage shipment statuses
-- Assign couriers
-- Shipment history and tracking
-
-### Payment Management
-- Stripe Checkout integration
-- Secure payment session creation
-- Payment status tracking
-- Payment verification through Stripe webhooks
-- Idempotency protection
-
-### Admin Management
-- User management
-- Shipment management
-- Courier assignment
-- Dashboard statistics
-- Audit logs
+### 3. Courier Delivery Execution
+1. Sign in as a courier at `/login` and navigate to `/courier`.
+2. Review assigned delivery stops and click **View & Update**.
+3. Contact sender or recipient via one-click phone links.
+4. When parcel is collected from sender, click **Mark as Picked up**.
+5. Advance parcel to **Mark as In transit** and **Mark as Out for delivery**.
+6. At delivery destination, click **Mark as Delivered**, enter delivery confirmation notes (e.g., handed to recipient at front door), and confirm.
 
 ## Project Structure
 
 ```text
 ExpressHub/
 ├── app/
-│   ├── api/
-│   │   └── v1/
-│   │       ├── auth/
-│   │       ├── users/
-│   │       ├── shipments/
-│   │       ├── payments/
-│   │       ├── admin/
-│   │       └── health/
-│   ├── layout.tsx
-│   └── page.tsx
+│   ├── (public)/              # Marketing landing, login, register
+│   ├── (dashboard)/           # Authenticated role-based workspaces
+│   │   ├── customer/          # Customer shipments and payment history
+│   │   ├── courier/           # Courier assignments and delivery execution
+│   │   ├── admin/             # Admin telemetry, users, shipments, and audit logs
+│   │   └── profile/           # User profile management
+│   ├── checkout/              # Stripe checkout success and cancel return views
+│   ├── api/v1/                # REST API route handlers
+│   │   ├── auth/              # Registration, login, token refresh, logout
+│   │   ├── users/             # User directory and profile endpoints
+│   │   ├── shipments/         # Booking, assignment, and status endpoints
+│   │   ├── payments/          # Stripe checkout, webhook, and payment endpoints
+│   │   └── admin/             # Dashboard telemetry and audit log endpoints
+│   ├── layout.tsx             # Root layout and theme provider
+│   └── globals.css            # Responsive styling, status badges, and layout tokens
+├── components/
+│   ├── layout/                # Page shells, headers, brand navigation
+│   └── ui/                    # Reusable shadcn/ui and custom primitives
+├── features/
+│   ├── auth/                  # Authentication forms, session provider, token store
+│   ├── shipments/             # Booking wizards, tables, assignment, transition controls
+│   ├── payments/              # Stripe buttons, return views, payment contracts
+│   ├── courier/               # Courier dashboard, assignment lists, delivery details
+│   └── admin/                 # Admin telemetry, user directory, audit trail views
 ├── lib/
-├── services/
-├── validators/
-├── prisma/
-├── tests/
-├── public/
-├── .env.example
-├── package.json
-├── tsconfig.json
-└── README.md
+│   ├── auth/                  # JWT token helpers, password hashing, route guards
+│   ├── client/                # Browser API client and error formatting helpers
+│   ├── http/                  # HTTP response wrappers and CORS helpers
+│   └── prisma.ts              # Database client singleton
+├── services/                  # Business logic and database transaction services
+├── validators/                # Zod schemas for request validation
+├── prisma/                    # Database schema and seed scripts
+└── tests/                     # Unit, workflow, and browser test suites
 ```
 
 ## Getting Started

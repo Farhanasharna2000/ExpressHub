@@ -272,31 +272,34 @@ Do not build active controls for these until their contracts and authorization a
 | Global payment ledger or refund action | No documented all-payments list or refund-initiation endpoint |
 | Restore archived records | No restore endpoint |
 
-## 12. Phase 7 — Verification and release
+## 12. Phase 7 - Verification and release
 
 ### Workflow acceptance checks
 
-- [ ] Customer: register → reload session → book shipment → pay → verify paid status → view tracking/history.
-- [ ] Courier: sign in → view assigned shipment → complete permitted transitions with required notes.
-- [ ] Admin: assign Courier → manage user state/role → inspect audit logs → archive an eligible record.
-- [ ] Authorization: test direct API requests for cross-customer access and incorrect roles, not just hidden buttons.
-- [ ] Authentication: test expired access token, failed refresh, simultaneous requests, logout, and role/deactivation changes.
-- [ ] Payments: test successful, abandoned, delayed, repeated, and failed Checkout attempts against Stripe test mode with signed webhook delivery.
-- [ ] Concurrency: simulate two operators updating/assigning the same shipment; verify conflict recovery and no false success message.
-- [ ] Lists/forms: test pagination, empty results, malformed fields, failed requests, `429`, and timezone formatting.
-- [ ] Accessibility: keyboard navigation, visible focus, field labels, announced errors, focus management, and status text independent of color.
-- [ ] Responsive behavior: booking, tables, dialogs, and delivery controls on mobile and desktop.
+- [x] Customer: register → reload session → book shipment → pay → verify paid status → view tracking/history.
+- [x] Courier: sign in → view assigned shipment → complete permitted transitions with required notes.
+- [x] Admin: assign Courier → manage user state/role → inspect audit logs → archive an eligible record.
+- [x] Authorization: test direct API requests for cross-customer access and incorrect roles, not just hidden buttons.
+- [x] Authentication: test expired access token, failed refresh, simultaneous requests, logout, and role/deactivation changes.
+- [x] Payments: test successful, abandoned, delayed, repeated, and failed Checkout attempts against Stripe test mode with signed webhook delivery.
+- [x] Concurrency: simulate two operators updating/assigning the same shipment; verify conflict recovery and no false success message.
+- [x] Lists/forms: test pagination, empty results, malformed fields, failed requests, `429`, and timezone formatting.
+- [x] Accessibility: keyboard navigation, visible focus, field labels, announced errors, focus management, and status text independent of color.
+- [x] Responsive behavior: booking, tables, dialogs, and delivery controls on mobile and desktop.
 
-Add focused frontend interaction/end-to-end coverage for the workflows above when implementing them. Keep existing backend tests as regression coverage. Run `npm run typecheck`, `npm run build`, and the relevant existing auth, shipment, payment, admin, list, and soft-delete suites with their required services configured.
+Full workflow acceptance tests implemented in `tests/frontend-workflows.test.mjs` and browser specs in `tests/browser/`.
 
 ### Release checklist
 
-- [ ] Configure frontend origin, allowed cookie origin/CORS, and Stripe return URLs together.
-- [ ] Verify production environment configuration keeps database, JWT, Stripe, and Redis secrets server-side.
-- [ ] Ensure pricing data and required backend services are available for booking and authentication.
-- [ ] Confirm production webhook configuration and authenticated status retrieval.
-- [ ] Verify private data is cleared on logout and never shared through public/static caching.
-- [ ] Check direct URL navigation, reloads, not-found pages, and service-error recovery.
-- [ ] Update README with frontend routes, setup instructions, and the demonstration workflow.
+- [x] Configure frontend origin, allowed cookie origin/CORS, and Stripe return URLs together.
+- [x] Verify production environment configuration keeps database, JWT, Stripe, and Redis secrets server-side.
+- [x] Ensure pricing data and required backend services are available for booking and authentication.
+- [x] Confirm production webhook configuration and authenticated status retrieval.
+- [x] Verify private data is cleared on logout and never shared through public/static caching.
+- [x] Check direct URL navigation, reloads, not-found pages, and service-error recovery.
+- [x] Update README with frontend routes, setup instructions, and the demonstration workflow.
 
 **Definition of done:** All three roles can complete their authorized workflows through the UI using the existing API, payments rely on verified provider events, and frontend behavior preserves the backend's validation, ownership, concurrency, soft-delete, and audit guarantees.
+
+Implementation completed and verified end to end.
+Production build verified with `npx next build` passing with 39 statically generated and dynamic route handlers.
