@@ -226,18 +226,7 @@ export function AdminUsersListView() {
               <option value="desc">Descending</option>
               <option value="asc">Ascending</option>
             </Select>
-            <Select
-              id="user-page-size"
-              label="Per page"
-              value={params.get("limit") ?? "20"}
-              onChange={(e) => update("limit", e.target.value)}
-            >
-              {[10, 20, 50, 100].map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </Select>
+
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3">
             <Button variant="ghost" onClick={clear}>
@@ -314,7 +303,7 @@ export function AdminUsersListView() {
               }
             />
             <Pagination
-              meta={data.pagination}
+              meta={data.pagination} onPageSizeChange={size => update("limit", String(size))} busy={loading}
               onPageChange={(page) => update("page", String(page))}
             />
           </CardContent>

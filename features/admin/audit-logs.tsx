@@ -255,18 +255,7 @@ export function AdminAuditLogsView() {
               value={toLocalInput(params.get("to") ?? "")}
               onChange={(e) => dateFilter("to", e.target.value)}
             />
-            <Select
-              id="audit-page-size"
-              label="Per page"
-              value={params.get("limit") ?? "20"}
-              onChange={(e) => update("limit", e.target.value)}
-            >
-              {[10, 20, 50, 100].map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </Select>
+
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
@@ -347,7 +336,7 @@ export function AdminAuditLogsView() {
               }
             />
             <Pagination
-              meta={data.pagination}
+              meta={data.pagination} onPageSizeChange={size => update("limit", String(size))} busy={loading}
               onPageChange={(page) => update("page", String(page))}
             />
           </CardContent>

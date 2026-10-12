@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RefreshCw, ArrowRight } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -83,17 +83,7 @@ const columns: Column<Payment>[] = [
       </span>
     ),
   },
-  {
-    key: "action",
-    label: "Details",
-    render: (payment) => (
-      <Button variant="ghost" size="sm" asChild>
-        <Link href={`/customer/payments/${encodeURIComponent(payment.id)}`}>
-          View <ArrowRight className="size-3.5 ml-1" />
-        </Link>
-      </Button>
-    ),
-  },
+
 ];
 
 export function PaymentsListView() {
@@ -140,9 +130,7 @@ export function PaymentsListView() {
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Financial activity</p>
           <h1>My payments</h1>
-          <p>Verified payment history and Stripe transaction statuses.</p>
         </div>
         <Button
           variant="outline"
@@ -151,7 +139,7 @@ export function PaymentsListView() {
           className="gap-2"
         >
           <RefreshCw className={loading ? "animate-spin size-4" : "size-4"} />
-          Refresh
+          {loading ? "Updating payments…" : "Refresh"}
         </Button>
       </div>
 
@@ -175,25 +163,11 @@ export function PaymentsListView() {
               ))}
             </Select>
 
-            <Select
-              id="payment-limit"
-              label="Per page"
-              value={String(filters.limit)}
-              onChange={(e) => update("limit", e.target.value)}
-            >
-              {[10, 20, 50].map((size) => (
-                <option key={size} value={size}>
-                  {size} records
-                </option>
-              ))}
-            </Select>
+
           </div>
 
           {isFiltered && (
             <div className="flex items-center justify-between gap-3 pt-2">
-              <span className="text-xs text-muted-foreground">
-                Showing filtered payment transactions.
-              </span>
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 Clear filters
               </Button>
@@ -202,7 +176,7 @@ export function PaymentsListView() {
         </CardContent>
       </Card>
 
-      {loading && <LoadingState label="Loading payment records…" />}
+      {loading && <LoadingState label="Loading your payment history…" />}
 
       {!!error && (
         <ErrorNotice
@@ -244,7 +218,7 @@ export function PaymentsListView() {
                       ? "Return to the first page to view your payments."
                       : isFiltered
                       ? "Try selecting another status or clear the filter."
-                      : "When you book shipments and complete Stripe Checkout, transactions appear here."
+                      : "Payments for your shipments will appear here."
                   }
                   action={
                     pagination.total > 0 ? (
@@ -265,15 +239,13 @@ export function PaymentsListView() {
               }
             />
 
-            {pagination.totalPages > 1 && (
-              <div className="mt-6">
+            <div>
                 <Pagination
-                  meta={pagination}
+                  meta={pagination} onPageSizeChange={size => update("limit", String(size))}
                   onPageChange={(p) => update("page", String(p))}
                   busy={loading}
                 />
               </div>
-            )}
           </CardContent>
         </Card>
       )}

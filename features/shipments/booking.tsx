@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Loader2, Package, MapPin } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Package, MapPin, Phone, Pencil, CalendarClock, Scale, Ruler, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -86,15 +86,79 @@ export function ShipmentBooking() {
           {!!error && (uncertain || Object.keys(errors).length === 0) && <Alert variant="destructive" tabIndex={-1} data-booking-error><AlertTitle>{uncertain ? "Check your shipments before booking again" : "We couldn’t complete that request"}</AlertTitle><AlertDescription>{uncertain ? "We couldn’t confirm whether this shipment was created. Check your shipment list first to avoid a duplicate booking." : errorMessage(error)}{delay > 0 && <span role="status">Try again in {delay} seconds.</span>}{uncertain && <Button asChild variant="outline"><Link href="/customer/shipments">Check my shipments</Link></Button>}</AlertDescription></Alert>}
           {step === 0 && <div className="form-grid">{input("pickupContactName", "Pickup contact name", { required: true, maxLength: 100 })}{input("pickupContactPhone", "Pickup phone", { type: "tel", required: true, maxLength: 30 })}{input("pickupAddress", "Pickup address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
           {step === 1 && <div className="form-grid">{input("deliveryContactName", "Recipient name", { required: true, maxLength: 100 })}{input("deliveryContactPhone", "Recipient phone", { type: "tel", required: true, maxLength: 30 })}{input("deliveryAddress", "Delivery address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
-          {step === 2 && <div className="form-grid">{input("parcelWeightKg", "Weight (kg)", { type: "number", required: true, min: "0.001", max: "9999999.999", step: "0.001" })}{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}<fieldset><legend className="text-sm font-medium mb-3">Dimensions (optional — provide all three)</legend><div className="shipment-dimensions">{input("parcelLengthCm", "Length (cm)", { type: "number", min: "0.01", max: "99999999.99", step: "0.01" })}{input("parcelWidthCm", "Width (cm)", { type: "number", min: "0.01", max: "99999999.99", step: "0.01" })}{input("parcelHeightCm", "Height (cm)", { type: "number", min: "0.01", max: "99999999.99", step: "0.01" })}</div></fieldset>{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: `Choose a future time in your device timezone: ${timezone}.` })}</div>}
-          {step === 3 && <div className="space-y-6"><ReviewAddress title="Pickup" name={draft.pickupContactName} phone={draft.pickupContactPhone} address={draft.pickupAddress} /><ReviewAddress title="Delivery" name={draft.deliveryContactName} phone={draft.deliveryContactPhone} address={draft.deliveryAddress} /><div><h3>Parcel</h3><p>{draft.parcelWeightKg} kg{draft.parcelLengthCm && ` · ${draft.parcelLengthCm} × ${draft.parcelWidthCm} × ${draft.parcelHeightCm} cm`}</p>{draft.packageDescription && <p className="break-words">{draft.packageDescription}</p>}<p>{draft.pickupScheduledAt ? `${dateTime(new Date(draft.pickupScheduledAt).toISOString())} (${timezone})` : "No preferred pickup time"}</p></div></div>}
+          {step === 2 && <div className="form-grid">{input("parcelWeightKg", "Weight (kg)", { type: "number", required: true, min: "0.001", max: "9999999.999", step: "0.001" })}{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}<fieldset><legend className="text-sm font-medium mb-3">Dimensions (optional — provide all three)</legend><div className="shipment-dimensions">{input("parcelLengthCm", "Length (cm)", { type: "number", min: "0.01", max: "99999999.99", step: "0.01" })}{input("parcelWidthCm", "Width (cm)", { type: "number", min: "0.01", max: "99999999.99", step: "0.01" })}{input("parcelHeightCm", "Height (cm)", { type: "number", min: "0.01", max: "99999999.99", step: "0.01" })}</div></fieldset>{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : `Choose a future time in your device timezone: ${timezone}.` })}</div>}
+          {step === 3 && (
+            <div className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <ReviewAddress title="Pickup" name={draft.pickupContactName} phone={draft.pickupContactPhone} address={draft.pickupAddress} disabled={busy || uncertain} onEdit={() => setStep(0)} />
+                <ReviewAddress title="Delivery" name={draft.deliveryContactName} phone={draft.deliveryContactPhone} address={draft.deliveryAddress} disabled={busy || uncertain} onEdit={() => setStep(1)} />
+              </div>
+
+              <section className="overflow-hidden rounded-xl border bg-background" aria-labelledby="review-parcel-title">
+                <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-5 py-3">
+                  <h3 id="review-parcel-title" className="flex items-center gap-2 text-base font-semibold"><Package className="size-4 text-primary" aria-hidden="true" />Parcel details</h3>
+                  <Button type="button" variant="ghost" size="sm" disabled={busy || uncertain} onClick={() => setStep(2)} aria-label="Edit parcel details"><Pencil className="size-3.5" aria-hidden="true" />Edit</Button>
+                </div>
+                <div className="space-y-5 p-5">
+                  <dl className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Scale className="size-4" aria-hidden="true" />Weight</dt>
+                      <dd className="mt-2 text-lg font-semibold">{draft.parcelWeightKg} <span className="text-sm font-normal text-muted-foreground">kg</span></dd>
+                    </div>
+                    <div>
+                      <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Ruler className="size-4" aria-hidden="true" />Dimensions (L × W × H)</dt>
+                      <dd className="mt-2 break-words text-sm font-medium">{draft.parcelLengthCm ? `${draft.parcelLengthCm} × ${draft.parcelWidthCm} × ${draft.parcelHeightCm} cm` : "Not provided"}</dd>
+                    </div>
+                  </dl>
+                  {draft.packageDescription && <div className="border-t pt-4"><p className="text-xs font-medium text-muted-foreground">Description</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed">{draft.packageDescription}</p></div>}
+                  <div className="flex items-start gap-3 rounded-lg bg-muted/40 p-4">
+                    <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-muted-foreground">Preferred pickup</p>
+                      <p className="mt-1 text-sm font-semibold">{draft.pickupScheduledAt ? dateTime(new Date(draft.pickupScheduledAt).toISOString()) : "No preferred time"}</p>
+                      {draft.pickupScheduledAt && <p className="mt-1 text-xs text-muted-foreground">{timezone}</p>}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
           <div className="flex flex-wrap justify-between gap-3 border-t pt-6"><Button type="button" variant="outline" disabled={step === 0 || busy || uncertain} onClick={() => { setStep(step - 1); setErrors({}); setError(null); }}><ArrowLeft />Back</Button><Button type="submit" className="min-h-11" disabled={busy || uncertain || delay > 0}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{busy ? "Creating shipment…" : step === 3 ? "Create shipment" : "Continue"}</Button></div>
         </CardContent>
       </Card>
-      <Card className="self-start"><CardHeader><MapPin className="size-6 text-primary" aria-hidden="true" /><CardTitle>Before you book</CardTitle></CardHeader><CardContent className="space-y-4 text-sm"><p>Your final price and currency will appear after the shipment is created.</p><p>Review contact details carefully. Booked addresses and parcel details cannot be edited.</p><p>Secure online payment will be available in the next release.</p></CardContent></Card>
+      <Card className="self-start border-primary/15 bg-primary/5 shadow-none">
+        <CardHeader>
+          <span className="flex size-10 items-center justify-center rounded-xl bg-background text-primary"><CreditCard className="size-5" aria-hidden="true" /></span>
+          <CardTitle>{step === 3 ? "Booking & payment" : "Before you book"}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5 text-sm">
+          <div>
+            <p className="font-semibold">Price shown after booking</p>
+            <p className="mt-1 leading-relaxed text-muted-foreground">Create your shipment to see the final price and pay securely with Stripe.</p>
+          </div>
+          <div className="border-t border-primary/15 pt-4">
+            <p className="font-semibold">Check your details</p>
+            <p className="mt-1 leading-relaxed text-muted-foreground">Addresses and parcel details cannot be changed after booking.</p>
+          </div>
+        </CardContent>
+      </Card>
     </form>
   </div>;
 }
-function ReviewAddress({ title, name, phone, address }: { title: string; name: string; phone: string; address: string }) {
-  return <section className="space-y-1 break-words"><h3>{title}</h3><p>{name} · {phone}</p><p>{address}</p></section>;
+function ReviewAddress({ title, name, phone, address, disabled, onEdit }: {
+  title: string; name: string; phone: string; address: string; disabled: boolean; onEdit: () => void;
+}) {
+  return (
+    <section className="min-w-0 overflow-hidden rounded-xl border bg-background" aria-label={`${title} details`}>
+      <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-5 py-3">
+        <h3 className="flex items-center gap-2 text-base font-semibold"><MapPin className="size-4 text-primary" aria-hidden="true" />{title}</h3>
+        <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={onEdit} aria-label={`Edit ${title.toLowerCase()} details`}><Pencil className="size-3.5" aria-hidden="true" />Edit</Button>
+      </div>
+      <div className="space-y-3 break-words p-5">
+        <p className="font-semibold">{name}</p>
+        <p className="flex items-start gap-2 text-sm text-muted-foreground"><Phone className="mt-0.5 size-4 shrink-0" aria-hidden="true" /><span className="min-w-0 break-all">{phone}</span></p>
+        <p className="whitespace-pre-wrap border-t pt-3 text-sm leading-relaxed">{address}</p>
+      </div>
+    </section>
+  );
 }

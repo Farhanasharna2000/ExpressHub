@@ -7,7 +7,6 @@ import {
   CreditCard,
   RefreshCw,
   Clock,
-  CheckCircle2,
   AlertTriangle,
   ArrowLeft,
   Package,
@@ -26,7 +25,6 @@ import { errorMessage } from "@/lib/client/api";
 import {
   dateTime,
   money,
-  statusLabel,
   type PaymentDetailResponse,
 } from "./contracts";
 
@@ -64,13 +62,12 @@ export function PaymentDetailsView({ id }: { id: string }) {
 
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Transaction verification</p>
           <h1>Payment details</h1>
           <p className="break-all font-mono text-xs sm:text-sm text-muted-foreground">
-            {payment?.id ?? "Retrieving payment information…"}
+            {payment?.id ?? "Loading your payment details…"}
           </p>
         </div>
-        {isValidId && (
+        {isValidId && !error && payment?.status === "PENDING" && (
           <Button
             variant="outline"
             disabled={loading || delay > 0}
@@ -81,7 +78,7 @@ export function PaymentDetailsView({ id }: { id: string }) {
             className="gap-2"
           >
             <RefreshCw className={loading ? "animate-spin size-4" : "size-4"} />
-            Refresh
+            {loading ? "Checking payment…" : "Refresh"}
           </Button>
         )}
       </div>
@@ -89,16 +86,12 @@ export function PaymentDetailsView({ id }: { id: string }) {
       {!isValidId && (
         <EmptyState
           title="Invalid payment link"
-          description="The payment identifier format is invalid. Please return to your payments history."
-          action={
-            <Button asChild>
-              <Link href="/customer/payments">Go to payments</Link>
-            </Button>
-          }
+          description="Return to your payment history to find this payment."
+
         />
       )}
 
-      {loading && !payment && <LoadingState label="Loading payment status…" />}
+      {loading && !payment && <LoadingState label="Checking your payment status. Please wait…" />}
 
       {!!error && (
         <ErrorNotice
@@ -125,25 +118,13 @@ export function PaymentDetailsView({ id }: { id: string }) {
             <Alert className="border-amber-500/30 bg-amber-500/10">
               <Clock className="size-5 text-amber-600" />
               <AlertTitle className="text-amber-800">
-                Payment Verification Pending
+                Payment pending
               </AlertTitle>
               <AlertDescription className="text-amber-700">
-                Your checkout session was created. ExpressHub confirms settlement automatically through verified Stripe webhooks.
+                Waiting for payment confirmation.
                 {pollingCount < maxPolls
-                  ? " Checking for updates in the background…"
-                  : " Verification is taking longer than expected. Use the Refresh button when your payment finishes."}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {payment.status === "PAID" && (
-            <Alert className="border-green-600/30 bg-green-600/10">
-              <CheckCircle2 className="size-5 text-green-700" />
-              <AlertTitle className="text-green-800">
-                Payment Verified & Confirmed
-              </AlertTitle>
-              <AlertDescription className="text-green-700">
-                This transaction has been successfully settled via Stripe. Your shipment is confirmed and eligible for courier assignment.
+                  ? " This page will update automatically when payment is confirmed."
+                  : " Confirmation is taking longer than expected. Refresh to check again."}
               </AlertDescription>
             </Alert>
           )}
@@ -153,7 +134,7 @@ export function PaymentDetailsView({ id }: { id: string }) {
               <AlertTriangle className="size-5" />
               <AlertTitle>Payment Failed</AlertTitle>
               <AlertDescription>
-                This checkout attempt was not completed. You can start a fresh checkout attempt from your shipment details screen.
+                Open your shipment to try payment again.
               </AlertDescription>
             </Alert>
           )}
@@ -173,38 +154,26 @@ export function PaymentDetailsView({ id }: { id: string }) {
                   {money(payment.amount, payment.currency)}
                 </p>
               </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Provider</span>
-                <p className="font-medium text-base mt-1">Stripe Checkout</p>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Created</span>
-                <p className="text-sm mt-1">
-                  <time dateTime={payment.createdAt}>
-                    {dateTime(payment.createdAt)}
-                  </time>
-                </p>
-              </div>
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Associated Shipment */}
+            {/* Shipment */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Package className="size-4" /> Associated Shipment
+                  <Package className="size-4" /> Shipment
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <span className="text-xs text-muted-foreground">Shipment Reference</span>
+                  <span className="text-xs text-muted-foreground">Shipment ID</span>
                   <p className="font-mono text-sm break-all mt-1">{payment.shipmentId}</p>
                 </div>
                 <div>
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/customer/shipments/${payment.shipmentId}`}>
-                      View Shipment Details
+                      View shipment
                     </Link>
                   </Button>
                 </div>
@@ -215,17 +184,17 @@ export function PaymentDetailsView({ id }: { id: string }) {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <CreditCard className="size-4" /> Settlement Timeline
+                  <CreditCard className="size-4" /> Payment dates
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div>
-                  <span className="text-xs text-muted-foreground">Initiated Date</span>
+                  <span className="text-xs text-muted-foreground">Created</span>
                   <p className="mt-0.5">{dateTime(payment.createdAt)}</p>
                 </div>
                 {payment.paidAt && (
                   <div>
-                    <span className="text-xs text-muted-foreground">Verified Settlement Date</span>
+                    <span className="text-xs text-muted-foreground">Paid</span>
                     <p className="mt-0.5 text-green-700 font-medium">
                       {dateTime(payment.paidAt)}
                     </p>
@@ -233,14 +202,14 @@ export function PaymentDetailsView({ id }: { id: string }) {
                 )}
                 {payment.refundedAt && (
                   <div>
-                    <span className="text-xs text-muted-foreground">Refund Date</span>
+                    <span className="text-xs text-muted-foreground">Refunded</span>
                     <p className="mt-0.5 text-amber-700 font-medium">
                       {dateTime(payment.refundedAt)}
                     </p>
                   </div>
                 )}
                 <div>
-                  <span className="text-xs text-muted-foreground">Last Updated</span>
+                  <span className="text-xs text-muted-foreground">Updated</span>
                   <p className="mt-0.5">{dateTime(payment.updatedAt)}</p>
                 </div>
               </CardContent>

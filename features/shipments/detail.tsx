@@ -60,7 +60,7 @@ export function ShipmentDetails({ id }: { id: string }) {
             <div>
               <h4 className="font-semibold text-base">Payment Required</h4>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Complete online payment with Stripe Checkout to confirm your booking and enable courier dispatch.
+                Pay to confirm your booking.
               </p>
             </div>
             <PayWithStripeButton
@@ -75,15 +75,15 @@ export function ShipmentDetails({ id }: { id: string }) {
           <div className="p-4 rounded-xl border border-green-600/30 bg-green-600/10 text-green-950 space-y-2">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="size-5 text-green-700" />
-              <h4 className="font-semibold text-base">Payment Verified</h4>
+              <h4 className="font-semibold text-base">Payment received</h4>
             </div>
             <p className="text-sm text-green-800">
-              Payment of {money(shipment.price, shipment.currency)} has been verified and confirmed via Stripe.
+              {money(shipment.price, shipment.currency)} paid.
             </p>
             <div className="pt-1">
               <Button variant="outline" size="sm" asChild className="bg-white hover:bg-white/90">
                 <Link href={`/customer/payments?shipmentId=${shipment.id}`}>
-                  View Payment Record
+                  View payment
                 </Link>
               </Button>
             </div>

@@ -95,12 +95,12 @@ export function PayWithStripeButton({
         {busy ? (
           <>
             <Loader2 className="size-4 animate-spin" />
-            Connecting to Stripe…
+            Opening secure payment page…
           </>
         ) : (
           <>
             <CreditCard className="size-4" />
-            Pay with Stripe Checkout
+            Pay with Stripe
             {price ? ` (${currency.toUpperCase()} ${price})` : ""}
           </>
         )}
@@ -108,7 +108,7 @@ export function PayWithStripeButton({
 
       {!!error && (
         <Alert variant="destructive" className="text-sm">
-          <AlertTitle>Payment checkout could not start</AlertTitle>
+          <AlertTitle>Could not start payment</AlertTitle>
           <AlertDescription>
             {errorMessage(error)}
             {delay > 0 && ` You can try again in ${delay} seconds.`}

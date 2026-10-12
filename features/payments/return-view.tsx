@@ -8,10 +8,7 @@ import {
   Clock,
   AlertTriangle,
   RefreshCw,
-  ArrowRight,
   Package,
-  CreditCard,
-  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
@@ -24,6 +21,7 @@ import {
   clearPendingPayment,
   money,
   dateTime,
+  statusLabel,
   type Payment,
   type PaymentDetailResponse,
 } from "./contracts";
@@ -33,7 +31,7 @@ interface CheckoutReturnViewProps {
 }
 
 export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
-  const { user, status: authStatus, store } = useSession();
+  const { status: authStatus, store } = useSession();
   const searchParams = useSearchParams();
 
   // Identify payment ID from query params or session recovery storage
@@ -145,35 +143,39 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
       <Card className="shadow-md border-border/80">
         <CardHeader className="text-center pb-4">
           <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-muted">
-            {type === "success" ? (
-              payment?.status === "PAID" ? (
-                <CheckCircle2 className="size-8 text-green-600" />
-              ) : (
-                <Clock className="size-8 text-amber-600 animate-pulse" />
-              )
+            {payment?.status === "PAID" ? (
+              <CheckCircle2 className="size-8 text-green-600" />
+            ) : payment?.status === "PENDING" && type === "success" ? (
+              <Clock className="size-8 text-amber-600" />
             ) : (
               <AlertTriangle className="size-8 text-amber-600" />
             )}
           </div>
           <CardTitle className="text-2xl">
-            {type === "success"
-              ? payment?.status === "PAID"
-                ? "Payment Verified & Complete"
-                : "Checking Payment Verification…"
-              : "You Left Stripe Checkout"}
+            {payment?.status === "PAID"
+              ? "Payment complete"
+              : payment && payment.status !== "PENDING"
+                ? `Payment ${statusLabel(payment.status).toLowerCase()}`
+                : type === "cancel"
+                  ? "Checkout closed"
+                  : loading || paymentId ? "Checking your payment" : "Payment status unavailable"}
           </CardTitle>
-          <CardDescription className="text-sm mt-1">
-            {type === "success"
-              ? payment?.status === "PAID"
-                ? "Your payment was confirmed by Stripe webhooks and recorded on your shipment."
-                : "Returning from Checkout does not immediately confirm payment. Verification is processing."
-              : "Checkout was cancelled in the browser. A cancelled return does not automatically alter settled payments."}
-          </CardDescription>
+          {payment?.status !== "PAID" && <CardDescription className="text-sm mt-1">
+            {payment?.status === "FAILED"
+                ? "Payment failed. Open your shipment to try again."
+                : payment && payment.status !== "PENDING"
+                  ? "Your latest payment status is shown below."
+                  : type === "cancel"
+                    ? "Check the status below before trying again."
+                    : pollAttempt < maxPolls
+                      ? "We’re waiting for payment confirmation. This page will update automatically."
+                      : "Confirmation is taking longer than expected. Refresh to check again."}
+          </CardDescription>}
         </CardHeader>
 
         <CardContent className="space-y-4">
           {loading && !payment && (
-            <LoadingState label="Verifying payment status with the service…" />
+            <LoadingState label="Checking whether your payment was completed. Please wait…" />
           )}
 
           {!!error && (
@@ -195,14 +197,14 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground font-medium">Transaction ID:</span>
-                <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+                <span className="text-muted-foreground font-medium">Payment ID:</span>
+                <code className="min-w-0 break-all text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
                   {payment.id}
                 </code>
               </div>
               {payment.paidAt && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground font-medium">Settled at:</span>
+                  <span className="text-muted-foreground font-medium">Paid at:</span>
                   <span className="text-xs text-muted-foreground">
                     {dateTime(payment.paidAt)}
                   </span>
@@ -211,40 +213,18 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
             </div>
           )}
 
-          {/* Contextual guidance */}
-          {type === "success" && payment?.status === "PENDING" && (
-            <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-900 text-xs sm:text-sm">
-              <Clock className="size-4 text-amber-600" />
-              <AlertTitle className="font-semibold">Verification in Progress</AlertTitle>
-              <AlertDescription>
-                {pollAttempt < maxPolls
-                  ? `Checking for webhook confirmation (attempt ${pollAttempt + 1} of ${maxPolls})…`
-                  : "Stripe webhook confirmation is taking longer than expected. You can check back shortly or refresh."}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {type === "cancel" && payment?.status === "PENDING" && (
-            <Alert className="border-muted bg-muted/60 text-xs sm:text-sm">
-              <AlertTitle className="font-semibold">Checkout Session Incomplete</AlertTitle>
-              <AlertDescription>
-                Your shipment remains in Created status and will not be dispatched until payment is verified. You can restart Checkout whenever you are ready.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {!paymentId && (
+          {!loading && !paymentId && (
             <Alert className="text-xs sm:text-sm">
-              <AlertTitle>No Recent Checkout Reference Found</AlertTitle>
+              <AlertTitle>Payment not found</AlertTitle>
               <AlertDescription>
-                Your session has ended. To inspect your payment records, open your payments history.
+                Open your payment history to find this payment.
               </AlertDescription>
             </Alert>
           )}
         </CardContent>
 
         <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-          {payment?.status === "PENDING" && (
+          {paymentId && (payment?.status === "PENDING" || !!error) && (
             <Button
               variant="outline"
               size="sm"
@@ -253,7 +233,7 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
               className="w-full sm:w-auto gap-2"
             >
               <RefreshCw className={loading ? "animate-spin size-3.5" : "size-3.5"} />
-              Refresh status
+              {loading ? "Checking payment…" : "Refresh status"}
             </Button>
           )}
 
@@ -267,12 +247,9 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
               </Button>
             )}
 
-            <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-              <Link href="/customer/payments">
-                <CreditCard className="size-4 mr-1.5" />
-                All Payments
-              </Link>
-            </Button>
+            <Link href="/customer/payments" className="text-sm font-medium text-primary hover:underline">
+              Payment history
+            </Link>
           </div>
         </CardFooter>
       </Card>
