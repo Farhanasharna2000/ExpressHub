@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, RotateCcw } from "lucide-react";
+import { Plus, Search, RotateCcw, Package, ShieldCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Select, StatusBadge, ResponsiveTable, EmptyState, ErrorNotice, LoadingState, type Column } from "@/components/ui/primitives";
@@ -54,6 +56,44 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
   const filtered = Boolean(query.value && [query.value.q, query.value.status, query.value.paymentStatus, query.value.from, query.value.to].some(Boolean));
 
   return <div className="page-stack">
+    {recent && (
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="rounded-2xl border border-line bg-gradient-to-r from-white via-[#f7f9f4] to-[#edf3e8] p-6 shadow-sm overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6"
+      >
+        <div className="space-y-3 max-w-xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#196547]/10 text-[#196547] text-xs font-bold uppercase tracking-wider">
+            <span className="size-2 rounded-full bg-[#196547] animate-pulse" />
+            Customer Delivery Portal
+          </div>
+          <h2 className="text-xl md:text-2xl font-bold text-ink">
+            Smart Parcel Booking & Live Milestone Tracking
+          </h2>
+          <p className="text-sm text-text-muted leading-relaxed">
+            Create doorstep pickup requests, settle payments with Stripe Checkout, and follow real-time courier milestone updates.
+          </p>
+          <div className="flex flex-wrap gap-3 pt-1 text-xs">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-line font-semibold text-ink">
+              <Package className="size-3.5 text-primary" /> Volumetric Pricing Engine
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-line font-semibold text-ink">
+              <ShieldCheck className="size-3.5 text-emerald-600" /> Stripe Verified Payments
+            </span>
+          </div>
+        </div>
+        <div className="relative shrink-0 w-full md:w-72 h-44 rounded-xl overflow-hidden border border-line/80 shadow-md bg-white">
+          <Image
+            src="/customer-feature.jpg"
+            alt="3D customer parcel booking illustration"
+            fill
+            sizes="(max-width: 768px) 100vw, 288px"
+            className="object-cover transition-transform duration-500 hover:scale-105"
+          />
+        </div>
+      </motion.div>
+    )}
     <div className="page-heading"><div><p className="eyebrow">Your parcels, in one place</p><h1>{recent ? "Your deliveries, together" : "My shipments"}</h1><p>{recent ? "Your five most recent shipments. Ready for the next delivery?" : "Search, track, and manage your deliveries."}</p></div><Button asChild className="min-h-11"><Link href="/customer/shipments/new"><Plus />Book a shipment</Link></Button></div>
     {!recent && <Card><CardHeader><CardTitle className="flex items-center gap-2"><Search className="size-4" />Find a shipment</CardTitle></CardHeader><CardContent className="space-y-4"><div className="shipment-filters">
       <Input id="shipment-search" label="Search shipments" placeholder="Tracking number, name, or address" maxLength={100} value={search} onChange={event => setSearch(event.target.value)} />

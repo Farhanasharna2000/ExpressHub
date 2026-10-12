@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { motion } from "framer-motion";
 import {
   Users,
   Package,
@@ -71,70 +73,116 @@ export function AdminDashboard() {
 
       {stats && (
         <>
-          {/* Top Headline Metric Strip */}
+          {/* Operations Command Center Visual Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="rounded-2xl border border-line bg-gradient-to-r from-white via-[#f7f9f4] to-[#edf3e8] p-6 shadow-sm overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6"
+          >
+            <div className="space-y-3 max-w-xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#196547]/10 text-[#196547] text-xs font-bold uppercase tracking-wider">
+                <span className="size-2 rounded-full bg-[#196547] animate-pulse" />
+                Live Logistics Command Telemetry
+              </div>
+              <h2 className="text-xl md:text-2xl font-bold text-ink">
+                Real-Time Operations & Courier Fleet Control
+              </h2>
+              <p className="text-sm text-text-muted leading-relaxed">
+                Supervise end-to-end parcel dispatches, track active transit volumes, audit status overrides, and enforce strict optimistic concurrency across your logistics hubs.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-1 text-xs">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-line font-semibold text-ink">
+                  <ShieldCheck className="size-3.5 text-primary" /> Immutable Audit Ledger
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-line font-semibold text-ink">
+                  <Truck className="size-3.5 text-emerald-600" /> Active Couriers: {stats.users.byRole.COURIER ?? 0}
+                </span>
+              </div>
+            </div>
+            <div className="relative shrink-0 w-full md:w-72 h-44 rounded-xl overflow-hidden border border-line/80 shadow-md bg-white">
+              <Image
+                src="/admin-feature.jpg"
+                alt="3D logistics command center illustration"
+                fill
+                sizes="(max-width: 768px) 100vw, 288px"
+                className="object-cover transition-transform duration-500 hover:scale-105"
+              />
+            </div>
+          </motion.div>
+
+          {/* Top Headline Metric Strip with Motion Hover */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                  <span>Total Shipments</span>
-                  <Package className="size-4 text-primary" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{stats.shipments.total}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  <span className="font-semibold text-primary">{stats.shipments.active}</span> active in transit
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+              <Card className="h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                    <span>Total Shipments</span>
+                    <Package className="size-4 text-primary" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{stats.shipments.total}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <span className="font-semibold text-primary">{stats.shipments.active}</span> active in transit
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                  <span>Registered Users</span>
-                  <Users className="size-4 text-emerald-600" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{stats.users.total}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  <span className="font-semibold text-emerald-600">{stats.users.active}</span> active accounts
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+              <Card className="h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                    <span>Registered Users</span>
+                    <Users className="size-4 text-emerald-600" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{stats.users.total}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <span className="font-semibold text-emerald-600">{stats.users.active}</span> active accounts
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                  <span>Payment Transactions</span>
-                  <CreditCard className="size-4 text-blue-600" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{stats.payments.total}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  <span className="font-semibold text-blue-600">
-                    {stats.payments.byStatus.PAID ?? 0}
-                  </span>{" "}
-                  settled with Stripe
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+              <Card className="h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                    <span>Payment Transactions</span>
+                    <CreditCard className="size-4 text-blue-600" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{stats.payments.total}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <span className="font-semibold text-blue-600">
+                      {stats.payments.byStatus.PAID ?? 0}
+                    </span>{" "}
+                    settled with Stripe
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                  <span>Delivery Success Rate</span>
-                  <TrendingUp className="size-4 text-violet-600" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{deliveryRate}%</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {totalDelivered} of {stats.shipments.total} completed
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+              <Card className="h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+                    <span>Delivery Success Rate</span>
+                    <TrendingUp className="size-4 text-violet-600" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{deliveryRate}%</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {totalDelivered} of {stats.shipments.total} completed
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
 
           {/* Quick Hub Navigation Cards */}

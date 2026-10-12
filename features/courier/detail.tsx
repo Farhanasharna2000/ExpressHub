@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { motion } from "framer-motion";
 import { z } from "zod";
 import {
   MapPin,
@@ -277,8 +278,13 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
             <CardContent>
               {events.length ? (
                 <ol className="shipment-timeline">
-                  {events.map((event) => (
-                    <li key={event.id}>
+                  {events.map((event, idx) => (
+                    <motion.li
+                      key={event.id}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.07, duration: 0.3 }}
+                    >
                       <div className="flex flex-wrap items-center gap-3">
                         <h3 className="text-base">{statusLabel(event.type)}</h3>
                         {event.toStatus && <StatusBadge status={event.toStatus} />}
@@ -287,7 +293,7 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
                         {dateTime(event.occurredAt)}
                       </time>
                       {event.publicNote && <p className="break-words mt-1">{event.publicNote}</p>}
-                    </li>
+                    </motion.li>
                   ))}
                 </ol>
               ) : (

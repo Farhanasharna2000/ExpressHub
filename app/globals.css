@@ -190,4 +190,78 @@ dialog::backdrop { background: #10282099; }
   .shipment-timeline li::before { content: ""; position: absolute; left: -26px; top: 4px; width: 10px; height: 10px; background: var(--brand); border-radius: 50%; }
   @media (max-width: 1000px) { .booking-layout { grid-template-columns: 1fr; } .shipment-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 700px) { .shipment-filters, .shipment-detail-grid, .shipment-dimensions { grid-template-columns: 1fr; } .shipment-results { padding: 0 16px; } .shipment-results dl > div { display: block; } .shipment-results dd { margin-top: 4px; } .shipment-route { max-width: 100%; } .shipment-steps { gap: 12px; } .shipment-steps li { font-size: .75rem; gap: 6px; } }
+
+  /* Motion & Interactive Components */
+  .motion-card { transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease; }
+  .motion-card:hover { box-shadow: 0 16px 36px rgba(23, 55, 47, 0.08); border-color: rgba(25, 101, 71, 0.3); }
+
+  /* Tracker Simulation */
+  .tracker-stage-wrapper { background: linear-gradient(180deg, #ffffff 0%, #f4f7ef 100%); border: 1px solid var(--line); border-radius: 24px; padding: 32px; box-shadow: 0 12px 32px rgba(23, 55, 47, 0.04); margin-top: 24px; }
+  .tracker-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+  .tracker-title { font-size: 1.5rem; color: var(--ink); margin-top: 4px; }
+  .tracker-play-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 9999px; background: #e5ecdf; color: var(--brand); border: 1px solid rgba(25, 101, 71, 0.2); font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; }
+  .tracker-play-btn:hover { background: var(--brand); color: white; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(25, 101, 71, 0.15); }
+  
+  .tracker-meta-banner { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 16px 20px; background: white; border: 1px solid var(--line); border-radius: 16px; margin-bottom: 28px; }
+  .tracker-meta-col { display: flex; flex-direction: column; gap: 4px; }
+  .tracker-meta-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 700; }
+  .tracker-meta-val { font-size: 0.95rem; font-weight: 700; color: var(--ink); }
+  .tracker-badge-wrap { display: flex; align-items: center; }
+
+  .tracker-progress-track { position: relative; height: 8px; background: #dfe7d9; border-radius: 9999px; margin: 32px 16px 24px; }
+  .tracker-progress-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 9999px; background: linear-gradient(90deg, #196547, #3d8f63); box-shadow: 0 0 10px rgba(25, 101, 71, 0.3); }
+  .tracker-van-marker { position: absolute; top: -16px; margin-left: -18px; z-index: 3; }
+  .tracker-van-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: white; border: 2px solid var(--brand); box-shadow: 0 4px 12px rgba(23, 55, 47, 0.15); font-size: 1.1rem; }
+
+  .tracker-steps-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 24px; }
+  .tracker-step-node { display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; padding: 8px 4px; text-align: center; border-radius: 12px; transition: background-color 0.2s ease; }
+  .tracker-step-node:hover { background: rgba(25, 101, 71, 0.04); }
+  .tracker-node-indicator { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; border: 2px solid #cbd6bf; background: white; color: var(--text-muted); transition: all 0.25s ease; }
+  .tracker-step-node.is-done .tracker-node-indicator { background: #e5ecdf; border-color: var(--brand); color: var(--brand); }
+  .tracker-step-node.is-current .tracker-node-indicator { background: var(--brand); border-color: var(--brand); color: white; box-shadow: 0 0 0 4px rgba(25, 101, 71, 0.15); transform: scale(1.08); }
+  .tracker-node-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); line-height: 1.25; }
+  .tracker-step-node.is-current .tracker-node-label { color: var(--ink); font-weight: 700; }
+  .tracker-check { font-size: 0.85rem; font-weight: 800; }
+
+  .tracker-detail-card { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 24px; background: white; border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 14px; box-shadow: 0 4px 16px rgba(23, 55, 47, 0.03); }
+  .tracker-detail-status { font-size: 1.15rem; font-weight: 800; color: var(--ink); }
+  .tracker-detail-sub { font-size: 0.9rem; font-weight: 600; color: var(--brand); margin: 2px 0 6px; }
+  .tracker-detail-note { font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.45; }
+  .tracker-hub-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 9999px; background: #eaf1e3; color: var(--brand); font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+  .tracker-pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 3px rgba(25, 101, 71, 0.25); }
+
+  /* 3D Perspective Feature Cards */
+  .feature-perspective-card { background: white; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease; box-shadow: 0 4px 16px rgba(23, 55, 47, 0.03); }
+  .feature-perspective-card:hover { box-shadow: 0 20px 40px rgba(23, 55, 47, 0.09); border-color: rgba(25, 101, 71, 0.35); }
+  .feature-card-image-wrap { position: relative; width: 100%; height: 210px; background: #f0f3eb; overflow: hidden; }
+  .feature-card-img { width: 100%; height: 100%; object-fit: cover; object-position: center; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+  .feature-perspective-card:hover .feature-card-img { transform: scale(1.05); }
+  .feature-card-badge { position: absolute; top: 14px; left: 14px; z-index: 2; padding: 4px 10px; border-radius: 9999px; background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(25, 101, 71, 0.15); color: var(--brand); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; }
+  .feature-card-body { padding: 24px; display: flex; flex-direction: column; flex-grow: 1; }
+  .feature-card-body h3 { font-size: 1.3rem; margin-bottom: 8px; }
+  .feature-card-body p { font-size: 0.92rem; color: var(--text-muted); margin-bottom: 20px; flex-grow: 1; line-height: 1.5; }
+  .feature-card-link { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.9rem; color: var(--brand); text-decoration: none; transition: gap 0.2s ease; }
+  .feature-card-link:hover { gap: 10px; color: var(--brand-hover); }
+
+  /* Animated Metrics */
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin-top: 24px; }
+  .metric-card { background: white; border: 1px solid var(--line); border-radius: 18px; padding: 24px 20px; text-align: center; box-shadow: 0 4px 16px rgba(23, 55, 47, 0.02); }
+  .metric-val { font-size: clamp(2rem, 3.5vw, 2.75rem); font-weight: 900; letter-spacing: -0.04em; color: var(--brand); line-height: 1; margin-bottom: 8px; }
+  .metric-label { font-size: 0.95rem; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+  .metric-sub { font-size: 0.78rem; color: var(--text-muted); }
+
+  @media (max-width: 1000px) {
+    .tracker-meta-banner { grid-template-columns: 1fr; gap: 12px; }
+    .tracker-steps-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 700px) {
+    .tracker-stage-wrapper { padding: 20px 16px; }
+    .tracker-header { flex-direction: column; align-items: flex-start; }
+    .tracker-steps-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tracker-detail-card { flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px; }
+    .metrics-grid { grid-template-columns: 1fr; }
+  }
 }
+

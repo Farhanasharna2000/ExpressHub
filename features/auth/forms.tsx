@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   CheckCircle2,
@@ -177,7 +178,12 @@ export function AuthForm({ register = false }: { register?: boolean }) {
       />
     );
   return (
-    <div className="auth-layout">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className="auth-layout"
+    >
       <section className="auth-story">
         <span className="auth-icon">
           <PackageCheck size={30} aria-hidden="true" />
@@ -347,7 +353,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
           </span>
         </CardFooter>
       </Card>
-    </div>
+    </motion.div>
   );
 }
 export function ProfileForm() {
