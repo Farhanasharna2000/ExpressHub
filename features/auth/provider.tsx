@@ -80,12 +80,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
     );
   if (status !== "authenticated" || !user)
     return (
-      <main id="main-content">
+      <main id="main-content" className="flex min-h-dvh items-center justify-center px-4 text-center">
         <LoadingState
           label={
             status === "anonymous"
               ? "Taking you to sign in…"
-              : "Restoring your session…"
+              : "Loading…"
           }
         />
       </main>

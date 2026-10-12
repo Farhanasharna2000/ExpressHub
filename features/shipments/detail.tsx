@@ -7,8 +7,8 @@ import { z } from "zod";
 import { Clock3, Package, MapPin, Loader2, RefreshCw, CheckCircle2, ArrowLeft } from "lucide-react";
 import { PayWithStripeButton } from "@/features/payments/initiate-button";
 import { Button } from "@/components/ui/button";
+import { NotificationToast } from "@/components/ui/notification-toast";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { StatusBadge, ErrorNotice, LoadingState, EmptyState } from "@/components/ui/primitives";
 import { useSession } from "@/features/auth/provider";
@@ -24,6 +24,7 @@ export function ShipmentDetails({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
   const [mutationError, setMutationError] = useState<unknown>(null);
+  const [cancellationToastOpen, setCancellationToastOpen] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const delay = useRetryDelay(error ?? mutationError);
   const shipment = data?.shipment;
@@ -32,18 +33,22 @@ export function ShipmentDetails({ id }: { id: string }) {
   async function cancel() {
     if (!shipment || shipment.status !== "CREATED" || pending.current || delay) return;
     pending.current = true; setBusy(true); setMutationError(null); setCancelled(false);
+    setCancellationToastOpen(false);
     try {
       await store.api.request(`/shipments/${encodeURIComponent(id)}/status`, { method: "PATCH", body: { status: "CANCELLED", expectedStatus: shipment.status } });
       setCancelled(true);
-    } catch (error) { setMutationError(error); }
+      setCancellationToastOpen(true);
+    } catch (error) { setMutationError(error); setCancellationToastOpen(true); }
     finally { pending.current = false; setBusy(false); setOpen(false); reload(); }
   }
 
   return <div className="page-stack">
     <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> My shipments</Link>
     <div className="page-heading"><div><p className="eyebrow">Every step of the journey</p><h1>Shipment details</h1><p className="break-all">{shipment?.trackingNumber ?? "Your shipment information and delivery history."}</p></div>{valid && <Button variant="outline" disabled={loading || busy || delay > 0} onClick={reload}><RefreshCw />Refresh</Button>}</div>
-    {cancelled && <Alert role="status"><AlertTitle>Shipment cancelled</AlertTitle><AlertDescription>The cancellation was confirmed. Cancellation does not automatically refund a payment.</AlertDescription></Alert>}
-    {!!mutationError && <ErrorNotice title="Cancellation could not be confirmed">{mutationError instanceof ApiError && mutationError.status === 409 ? mutationError.message : errorMessage(mutationError)} The latest shipment details are being checked. Review them before another action. Cancellation does not automatically refund payments.{delay > 0 && ` Try again in ${delay} seconds.`}</ErrorNotice>}
+    <NotificationToast open={cancellationToastOpen} onOpenChange={setCancellationToastOpen}
+      tone={cancelled ? "success" : "error"}
+      title={cancelled ? "Shipment cancelled" : "Cancellation could not be confirmed"}
+      message={cancelled ? "The cancellation was confirmed. Cancellation does not automatically refund a payment." : mutationError ? `${(mutationError instanceof ApiError && mutationError.status === 409 ? mutationError.message : errorMessage(mutationError)).replace(/[.\s]+$/, "")}. Review the latest shipment details before trying again. Cancellation does not automatically refund payments.${delay > 0 ? ` Try again in ${delay} seconds.` : ""}` : ""} />
     {!valid && <EmptyState title="Shipment unavailable" description="This shipment link is invalid. Return to your shipment list." />}
     {loading && <LoadingState label="Loading shipment details…" />}
     {!!error && <ErrorNotice title={error instanceof ApiError && error.status === 404 ? "Shipment unavailable" : "Could not load shipment"} action={<Button variant="outline" onClick={reload} disabled={delay > 0}>{delay ? `Retry in ${delay}s` : "Try again"}</Button>}>{errorMessage(error)}</ErrorNotice>}
@@ -91,7 +96,7 @@ export function ShipmentDetails({ id }: { id: string }) {
         )}
         {shipment.status === "CREATED" ? <><p className="text-sm text-muted-foreground">You can request cancellation before pickup. An open Checkout session may prevent cancellation. Cancelling does not automatically refund a payment.</p><Button variant="destructive" disabled={busy || delay > 0} onClick={() => setOpen(true)}>Cancel shipment</Button></> : <p className="text-sm text-muted-foreground">This shipment can no longer be cancelled by a customer.</p>}
       </CardContent></Card>
-      <Dialog open={open} onOpenChange={value => { if (!pending.current) setOpen(value); }}><DialogContent onEscapeKeyDown={event => { if (pending.current) event.preventDefault(); }} onPointerDownOutside={event => { if (pending.current) event.preventDefault(); }} showCloseButton={!busy}><DialogHeader><DialogTitle>Cancel this shipment?</DialogTitle><DialogDescription>This action cannot be undone. An open Checkout session may block cancellation. Cancelling a shipment does not automatically refund any payment.</DialogDescription></DialogHeader><p className="break-all text-sm">{shipment.trackingNumber}</p><div className="flex flex-wrap justify-end gap-3"><Button variant="outline" disabled={busy} autoFocus onClick={() => setOpen(false)}>Keep shipment</Button><Button variant="destructive" disabled={busy || delay > 0} onClick={cancel}>{busy && <Loader2 className="animate-spin" />}{busy ? "Cancelling…" : "Confirm cancellation"}</Button></div></DialogContent></Dialog>
+      <Dialog open={open} onOpenChange={value => { if (!pending.current) setOpen(value); }}><DialogContent onEscapeKeyDown={event => { if (pending.current) event.preventDefault(); }} onPointerDownOutside={event => { if (pending.current) event.preventDefault(); }} showCloseButton={!busy}><DialogHeader><DialogTitle>Cancel this shipment?</DialogTitle><DialogDescription>This action cannot be undone. An open Checkout session may block cancellation. Cancelling a shipment does not automatically refund any payment.</DialogDescription></DialogHeader><div className="flex flex-wrap justify-end gap-3"><Button variant="outline" disabled={busy} autoFocus onClick={() => setOpen(false)}>Keep shipment</Button><Button variant="destructive" disabled={busy || delay > 0} onClick={cancel}>{busy && <Loader2 className="animate-spin" />}{busy ? "Cancelling…" : "Confirm cancellation"}</Button></div></DialogContent></Dialog>
     </>}
   </div>;
 }
