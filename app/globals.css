@@ -33,6 +33,10 @@ body { margin: 0; }
 a { color: var(--brand); text-underline-offset: 4px; }
 button, input, select { font: inherit; }
 button, a, input, select { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled):not([aria-disabled="true"]),
+[role="button"]:not([aria-disabled="true"]):not(:disabled),
+input:is([type="button"], [type="submit"], [type="reset"]):not(:disabled) { cursor: pointer; }
+button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
 h1, h2, h3, p { margin: 0; }
 h1, h2, h3 { line-height: 1.15; letter-spacing: -.035em; }

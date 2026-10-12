@@ -12,6 +12,7 @@ import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage, fieldErrors } from "@/lib/client/api";
 import { bookingPayload, bookingSchema, pickupFields, deliveryFields, parcelFields, emptyDraft, dateTime, type BookingDraft, type Shipment } from "./contracts";
 import { useRetryDelay } from "./use-resource";
+import { WeightInput } from "./weight-input";
 
 const steps = ["Pickup", "Delivery", "Parcel", "Review"];
 const fieldStep = (key: string) => key.startsWith("pickup") && key !== "pickupScheduledAt" ? 0 : key.startsWith("delivery") ? 1 : 2;
@@ -86,7 +87,10 @@ export function ShipmentBooking() {
           {!!error && (uncertain || Object.keys(errors).length === 0) && <Alert variant="destructive" tabIndex={-1} data-booking-error><AlertTitle>{uncertain ? "Check your shipments before booking again" : "We couldn’t complete that request"}</AlertTitle><AlertDescription>{uncertain ? "We couldn’t confirm whether this shipment was created. Check your shipment list first to avoid a duplicate booking." : errorMessage(error)}{delay > 0 && <span role="status">Try again in {delay} seconds.</span>}{uncertain && <Button asChild variant="outline"><Link href="/customer/shipments">Check my shipments</Link></Button>}</AlertDescription></Alert>}
           {step === 0 && <div className="form-grid">{input("pickupContactName", "Pickup contact name", { required: true, maxLength: 100 })}{input("pickupContactPhone", "Pickup phone", { type: "tel", required: true, maxLength: 30 })}{input("pickupAddress", "Pickup address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
           {step === 1 && <div className="form-grid">{input("deliveryContactName", "Recipient name", { required: true, maxLength: 100 })}{input("deliveryContactPhone", "Recipient phone", { type: "tel", required: true, maxLength: 30 })}{input("deliveryAddress", "Delivery address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
-          {step === 2 && <div className="form-grid">{input("parcelWeightKg", "Weight (kg)", { type: "number", required: true, min: "0.001", max: "9999999.999", step: "0.001" })}{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : `Choose a future time in your device timezone: ${timezone}.` })}</div>}
+          {step === 2 && <div className="form-grid"><WeightInput value={draft.parcelWeightKg} disabled={busy || uncertain} error={errors.parcelWeightKg} onChange={value => {
+            setDraft(current => ({ ...current, parcelWeightKg: value }));
+            setErrors(current => { const next = { ...current }; delete next.parcelWeightKg; return next; });
+          }} />{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : `Choose a future time in your device timezone: ${timezone}.` })}</div>}
           {step === 3 && (
             <div className="space-y-5">
               <div className="grid gap-4 md:grid-cols-2">
