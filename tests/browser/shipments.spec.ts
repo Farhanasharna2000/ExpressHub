@@ -65,15 +65,15 @@ test("books through review, sends allowed fields once, and shows the server pric
   await page.screenshot({ path: `test-results/shipment-detail-${test.info().project.name}.png`, fullPage: true });
 });
 
-test("partial dimensions, precision, and past pickup times prevent submission", async ({ page }) => {
+test("weight precision and past pickup times prevent submission", async ({ page }) => {
   const calls = await setup(page); await fillBooking(page);
   await page.getByLabel("Weight (kg)").fill("1.0001");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByLabel("Weight (kg)")).toHaveAttribute("aria-invalid", "true");
-  await page.getByLabel("Weight (kg)").fill("1.125"); await page.getByLabel("Length (cm)").fill("12");
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await expect(page.getByText("Provide all three dimensions or leave them all blank")).toBeVisible();
-  await page.getByLabel("Width (cm)").fill("10"); await page.getByLabel("Height (cm)").fill("5");
+  await page.getByLabel("Weight (kg)").fill("1.125");
+  await expect(page.getByLabel("Length (cm)")).toHaveCount(0);
+  await expect(page.getByLabel("Width (cm)")).toHaveCount(0);
+  await expect(page.getByLabel("Height (cm)")).toHaveCount(0);
   await page.getByLabel("Preferred pickup time (optional)").fill("2000-01-01T10:00");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByText("Pickup must be scheduled in the future")).toBeVisible();

@@ -128,7 +128,7 @@ export default function Home() {
           </h2>
           <ol className="journey">
             <li>
-              <span>01</span> Book with volumetric parcel dimensions
+              <span>01</span> Book with your parcel weight
             </li>
             <li>
               <span>02</span> Pay securely with Stripe Checkout
@@ -184,7 +184,7 @@ export default function Home() {
         <MotionStaggerGroup className="grid-three">
           <FeatureCardWithImage
             title="Customer Workspace"
-            text="Calculate dimensional shipping quotes, book doorstep pickups, complete instant Stripe checkout, and follow chronological event timelines."
+            text="Get weight-based shipping quotes, book doorstep pickups, complete instant Stripe checkout, and follow chronological event timelines."
             badge={user?.role === "CUSTOMER" ? "Your Active Workspace" : "Customer Experience"}
             imageSrc="/courier-customer.jpg"
             imageAlt="3D illustration of customer booking parcel on mobile device"

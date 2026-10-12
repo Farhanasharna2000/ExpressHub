@@ -13,20 +13,18 @@ export const deliveryFields = z.object({
   deliveryContactPhone: z.string().trim().min(5).max(30),
   deliveryAddress: z.string().trim().min(5).max(500),
 });
-const dimension = z.number().positive().max(99999999.99).multipleOf(0.01);
 export const parcelFields = z.object({
   parcelWeightKg: z.number().positive().max(9999999.999).multipleOf(0.001),
   packageDescription: z.string().trim().min(1).max(1000).optional(),
-  parcelLengthCm: dimension.optional(), parcelWidthCm: dimension.optional(), parcelHeightCm: dimension.optional(),
   pickupScheduledAt: z.iso.datetime({ offset: true }).refine(value => Date.parse(value) > Date.now(), "Pickup must be scheduled in the future").optional(),
-}).refine(value => [value.parcelLengthCm, value.parcelWidthCm, value.parcelHeightCm].filter(v => v !== undefined).length % 3 === 0, { message: "Provide all three dimensions or leave them all blank", path: ["parcelLengthCm"] });
+});
 export const bookingSchema = z.object({ ...pickupFields.shape, ...deliveryFields.shape, ...parcelFields.shape }).strict().superRefine((value, context) => {
   const result = parcelFields.safeParse(value);
   if (!result.success) for (const issue of result.error.issues) context.addIssue({ code: "custom", path: issue.path, message: issue.message });
 });
 export type BookingInput = z.infer<typeof bookingSchema>;
 export type BookingDraft = Record<keyof BookingInput, string>;
-export const emptyDraft: BookingDraft = { pickupContactName: "", pickupContactPhone: "", pickupAddress: "", deliveryContactName: "", deliveryContactPhone: "", deliveryAddress: "", parcelWeightKg: "", packageDescription: "", parcelLengthCm: "", parcelWidthCm: "", parcelHeightCm: "", pickupScheduledAt: "" };
+export const emptyDraft: BookingDraft = { pickupContactName: "", pickupContactPhone: "", pickupAddress: "", deliveryContactName: "", deliveryContactPhone: "", deliveryAddress: "", parcelWeightKg: "", packageDescription: "", pickupScheduledAt: "" };
 
 /** Convert a browser-local datetime to an explicit UTC ISO timestamp. Reject normalized invalid dates. */
 export function localToISO(value: string) {
@@ -47,7 +45,6 @@ export function bookingPayload(draft: BookingDraft) {
     deliveryContactName: draft.deliveryContactName, deliveryContactPhone: draft.deliveryContactPhone, deliveryAddress: draft.deliveryAddress,
     parcelWeightKg: draft.parcelWeightKg.trim() ? Number(draft.parcelWeightKg) : NaN,
     ...(draft.packageDescription.trim() ? { packageDescription: draft.packageDescription } : {}),
-    ...Object.fromEntries((["parcelLengthCm", "parcelWidthCm", "parcelHeightCm"] as const).filter(key => draft[key].trim()).map(key => [key, Number(draft[key])])),
     ...(draft.pickupScheduledAt ? { pickupScheduledAt: localToISO(draft.pickupScheduledAt) } : {}),
   };
 }

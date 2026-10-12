@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Loader2, Package, MapPin, Phone, Pencil, CalendarClock, Scale, Ruler, CreditCard } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Package, MapPin, Phone, Pencil, CalendarClock, Scale, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -81,12 +81,12 @@ export function ShipmentBooking() {
     <div className="page-heading"><div><p className="eyebrow">Make your next move</p><h1>Book a shipment</h1><p>A few details to get your parcel on its way.</p></div><Package aria-hidden="true" className="size-9 text-primary" /></div>
     <ol className="shipment-steps" aria-label="Booking progress">{steps.map((name, index) => <li key={name} aria-current={step === index ? "step" : undefined}><span>{index < step ? <Check className="size-4" aria-hidden="true" /> : index + 1}</span>{name}</li>)}</ol>
     <form ref={formRef} onSubmit={submit} noValidate aria-busy={busy} className="booking-layout">
-      <Card><CardHeader><CardTitle><h2 ref={heading} tabIndex={-1}>{["Where should we pick up?", "Where is it going?", "Tell us about your parcel", "Review your shipment"][step]}</h2></CardTitle><CardDescription>{["Add the sender’s contact details and pickup address.", "Add the recipient’s contact details and full delivery address.", "Use kilograms for weight and centimeters for dimensions.", "Check the details below before creating your shipment."][step]}</CardDescription></CardHeader>
+      <Card><CardHeader><CardTitle><h2 ref={heading} tabIndex={-1}>{["Where should we pick up?", "Where is it going?", "Tell us about your parcel", "Review your shipment"][step]}</h2></CardTitle><CardDescription>{["Add the sender’s contact details and pickup address.", "Add the recipient’s contact details and full delivery address.", "Enter the parcel weight and an optional description.", "Check the details below before creating your shipment."][step]}</CardDescription></CardHeader>
         <CardContent className="space-y-6">
           {!!error && (uncertain || Object.keys(errors).length === 0) && <Alert variant="destructive" tabIndex={-1} data-booking-error><AlertTitle>{uncertain ? "Check your shipments before booking again" : "We couldn’t complete that request"}</AlertTitle><AlertDescription>{uncertain ? "We couldn’t confirm whether this shipment was created. Check your shipment list first to avoid a duplicate booking." : errorMessage(error)}{delay > 0 && <span role="status">Try again in {delay} seconds.</span>}{uncertain && <Button asChild variant="outline"><Link href="/customer/shipments">Check my shipments</Link></Button>}</AlertDescription></Alert>}
           {step === 0 && <div className="form-grid">{input("pickupContactName", "Pickup contact name", { required: true, maxLength: 100 })}{input("pickupContactPhone", "Pickup phone", { type: "tel", required: true, maxLength: 30 })}{input("pickupAddress", "Pickup address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
           {step === 1 && <div className="form-grid">{input("deliveryContactName", "Recipient name", { required: true, maxLength: 100 })}{input("deliveryContactPhone", "Recipient phone", { type: "tel", required: true, maxLength: 30 })}{input("deliveryAddress", "Delivery address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
-          {step === 2 && <div className="form-grid">{input("parcelWeightKg", "Weight (kg)", { type: "number", required: true, min: "0.001", max: "9999999.999", step: "0.001" })}{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}<fieldset><legend className="text-sm font-medium mb-3">Dimensions (optional — provide all three)</legend><div className="shipment-dimensions">{input("parcelLengthCm", "Length (cm)", { type: "number", min: "0.01", max: "99999999.99", step: "0.01" })}{input("parcelWidthCm", "Width (cm)", { type: "number", min: "0.01", max: "99999999.99", step: "0.01" })}{input("parcelHeightCm", "Height (cm)", { type: "number", min: "0.01", max: "99999999.99", step: "0.01" })}</div></fieldset>{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : `Choose a future time in your device timezone: ${timezone}.` })}</div>}
+          {step === 2 && <div className="form-grid">{input("parcelWeightKg", "Weight (kg)", { type: "number", required: true, min: "0.001", max: "9999999.999", step: "0.001" })}{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : `Choose a future time in your device timezone: ${timezone}.` })}</div>}
           {step === 3 && (
             <div className="space-y-5">
               <div className="grid gap-4 md:grid-cols-2">
@@ -104,10 +104,6 @@ export function ShipmentBooking() {
                     <div>
                       <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Scale className="size-4" aria-hidden="true" />Weight</dt>
                       <dd className="mt-2 text-lg font-semibold">{draft.parcelWeightKg} <span className="text-sm font-normal text-muted-foreground">kg</span></dd>
-                    </div>
-                    <div>
-                      <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Ruler className="size-4" aria-hidden="true" />Dimensions (L × W × H)</dt>
-                      <dd className="mt-2 break-words text-sm font-medium">{draft.parcelLengthCm ? `${draft.parcelLengthCm} × ${draft.parcelWidthCm} × ${draft.parcelHeightCm} cm` : "Not provided"}</dd>
                     </div>
                   </dl>
                   {draft.packageDescription && <div className="border-t pt-4"><p className="text-xs font-medium text-muted-foreground">Description</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed">{draft.packageDescription}</p></div>}

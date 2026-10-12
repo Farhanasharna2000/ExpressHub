@@ -218,18 +218,10 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <span className="text-xs text-muted-foreground">Weight:</span>
                   <p className="font-semibold">{shipment.parcelWeightKg} kg</p>
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground">Dimensions (L × W × H):</span>
-                  <p className="font-semibold">
-                    {shipment.parcelLengthCm
-                      ? `${shipment.parcelLengthCm} × ${shipment.parcelWidthCm} × ${shipment.parcelHeightCm} cm`
-                      : "Standard"}
-                  </p>
                 </div>
                 <div>
                   <span className="text-xs text-muted-foreground">Payment Status:</span>

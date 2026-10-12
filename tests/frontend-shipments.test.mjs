@@ -15,8 +15,8 @@ const { bookingSchema, bookingPayload, emptyDraft, readShipmentQuery, localToISO
 const { createShipmentSchema } = await import('../validators/shipment.ts');
 const valid = { pickupContactName: 'Sender Name', pickupContactPhone: '0123456789', pickupAddress: '12 Pickup Street', deliveryContactName: 'Recipient Name', deliveryContactPhone: '0987654321', deliveryAddress: '34 Delivery Street', parcelWeightKg: 1.125 };
 
-test('booking validation agrees with server field limits, precision and complete dimensions', () => {
-  for (const change of [{}, { parcelWeightKg: 0 }, { parcelWeightKg: -1 }, { parcelWeightKg: 1.0001 }, { parcelWeightKg: 10000000 }, { pickupContactName: 'A' }, { deliveryContactPhone: '1234' }, { pickupAddress: 'x'.repeat(501) }, { packageDescription: 'x'.repeat(1001) }, { parcelLengthCm: 5 }, { parcelLengthCm: 5, parcelWidthCm: 3, parcelHeightCm: 2 }, { parcelLengthCm: 5.001, parcelWidthCm: 3, parcelHeightCm: 2 }, { pickupScheduledAt: '2000-01-01T00:00:00Z' }, { pickupScheduledAt: '2099-01-01T00:00:00+06:00' }, { price: 1 }]) {
+test('booking validation agrees with server field limits and precision', () => {
+  for (const change of [{}, { parcelWeightKg: 0 }, { parcelWeightKg: -1 }, { parcelWeightKg: 1.0001 }, { parcelWeightKg: 10000000 }, { pickupContactName: 'A' }, { deliveryContactPhone: '1234' }, { pickupAddress: 'x'.repeat(501) }, { packageDescription: 'x'.repeat(1001) }, { pickupScheduledAt: '2000-01-01T00:00:00Z' }, { pickupScheduledAt: '2099-01-01T00:00:00+06:00' }, { price: 1 }]) {
     const input = { ...valid, ...change }; assert.equal(bookingSchema.safeParse(input).success, createShipmentSchema.safeParse(input).success, JSON.stringify(change));
   }
 });
@@ -24,7 +24,8 @@ test('blank optional fields are omitted and booking submits accepted fields only
   const draft = { ...emptyDraft, ...Object.fromEntries(Object.entries(valid).map(([key, value]) => [key, String(value)])) };
   assert.deepEqual(bookingSchema.parse(bookingPayload(draft)), valid);
   assert.equal(bookingSchema.safeParse(bookingPayload({ ...draft, parcelWeightKg: '' })).success, false);
-  assert.equal(bookingSchema.safeParse(bookingPayload({ ...draft, parcelWidthCm: '3' })).success, false);
+  assert.deepEqual(bookingPayload({ ...draft, parcelLengthCm: '12', parcelWidthCm: '10', parcelHeightCm: '5' }), valid);
+  assert.equal(createShipmentSchema.safeParse(bookingPayload(draft)).success, true);
 });
 test('local time conversion preserves timezone and rejects invalid normalized dates', () => {
   const before = process.env.TZ; process.env.TZ = 'Asia/Dhaka';
