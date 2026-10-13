@@ -12,7 +12,6 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  LockKeyhole,
   LogOut,
   Save,
   ShieldAlert,
@@ -25,6 +24,7 @@ import {
 } from "lucide-react";
 import { prepareProfilePhoto } from "./profile-photo";
 import { Button } from "@/components/ui/button";
+import { Brand } from "@/components/layout/brand";
 import {
   Card,
   CardContent,
@@ -286,12 +286,17 @@ export function AuthForm({ register = false }: { register?: boolean }) {
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-4xl"
       >
+        <div className="mb-4 flex justify-start w-full max-w-[440px] mx-auto lg:hidden">
+          <Brand />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* ================= STORYSET ANIMATED ILLUSTRATION PANEL (Desktop) ================= */}
           <div className="hidden lg:flex lg:col-span-5 flex-col items-center justify-center p-8 rounded-3xl bg-gradient-to-br from-[#f2f7f0] via-[#e5ecdf]/80 to-[#dce7d9]/60 border border-[var(--line)] shadow-sm relative overflow-hidden text-center">
             {/* Ambient background glows */}
             <div className="pointer-events-none absolute -top-16 -left-16 size-48 rounded-full bg-emerald-400/15 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-16 -right-16 size-48 rounded-full bg-[#196547]/10 blur-3xl" />
+
+            <Brand className="relative z-10 mb-4" />
 
             <motion.div
               animate={{ y: [-6, 6, -6] }}
@@ -345,15 +350,9 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                   </motion.div>
                 </div>
 
-                <div className="hidden lg:flex justify-center">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
-                    <LockKeyhole className="size-5" aria-hidden="true" />
-                  </div>
-                </div>
-
                 <div>
                   <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
-                    {register ? "Create your account" : "Sign in to ExpressHub"}
+                    {register ? "Create your account" : "Sign in "}
                   </CardTitle>
                   <CardDescription className="text-xs text-muted-foreground mt-1">
                     {register

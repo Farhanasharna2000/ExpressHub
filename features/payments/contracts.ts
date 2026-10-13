@@ -31,7 +31,7 @@ export interface PaymentDetailResponse {
 
 export const paymentFilterSchema = z.object({
   page: z.coerce.number().int().min(1).max(1000000).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
   status: z.enum(["PENDING", "PAID", "FAILED", "REFUND_PENDING", "REFUNDED"] as const).optional(),
   shipmentId: z.string().cuid().optional(),
 });
@@ -44,7 +44,7 @@ export function parsePaymentFilters(params: URLSearchParams): PaymentFilters {
     if (value !== "") raw[key] = value;
   }
   const result = paymentFilterSchema.safeParse(raw);
-  return result.success ? result.data : { page: 1, limit: 20 };
+  return result.success ? result.data : { page: 1, limit: 10 };
 }
 
 export function money(amount: string | number, currency = "BDT"): string {

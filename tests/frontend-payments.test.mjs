@@ -62,7 +62,7 @@ test("parsePaymentFilters accepts supported query parameters and resets invalid 
 
   const invalid = parsePaymentFilters(new URLSearchParams("page=-5&limit=500&status=UNKNOWN"));
   assert.equal(invalid.page, 1);
-  assert.equal(invalid.limit, 20);
+  assert.equal(invalid.limit, 10);
   assert.equal(invalid.status, undefined);
 });
 

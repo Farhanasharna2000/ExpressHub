@@ -81,9 +81,9 @@ export default function Home() {
                 together in one unified platform.
               </p>
               <div className="actions">
-                <ButtonLink href="/register">Get started <ArrowUpRight className="size-4" aria-hidden="true" /></ButtonLink>
-                <ButtonLink href="/login" secondary>
-                  Sign in
+                <ButtonLink href="/register">Book your first parcel <ArrowUpRight className="size-4" aria-hidden="true" /></ButtonLink>
+                <ButtonLink href="#how-it-works" secondary>
+                  How it works
                 </ButtonLink>
               </div>
             </>
@@ -145,7 +145,7 @@ export default function Home() {
       </section>
 
       {/* Interactive Live Journey Tracker Simulation */}
-      <section>
+      <section id="how-it-works" className="scroll-mt-28" aria-label="How delivery works">
         <InteractiveDeliveryTracker />
       </section>
 
@@ -249,10 +249,7 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 shrink-0">
-              <ButtonLink href="/register">Create Free Account <ArrowUpRight className="size-4" aria-hidden="true" /></ButtonLink>
-              <ButtonLink href="/login" secondary>
-                Sign In Now
-              </ButtonLink>
+              <ButtonLink href="/register">Create an account <ArrowUpRight className="size-4" aria-hidden="true" /></ButtonLink>
             </div>
           </>
         )}

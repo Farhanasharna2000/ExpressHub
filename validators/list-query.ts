@@ -5,7 +5,7 @@ const positiveInteger = (maximum: number) => z.string().regex(/^[1-9]\d*$/)
 
 export const paginationFields = {
   page: positiveInteger(1_000_000).default(1),
-  limit: positiveInteger(100).default(20),
+  limit: positiveInteger(100).default(10),
 };
 export const searchQuery = z.string().trim().min(1).max(100).optional();
 export const sortOrder = z.enum(["asc", "desc"]).default("desc");

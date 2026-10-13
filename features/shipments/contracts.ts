@@ -134,7 +134,7 @@ export function validateTransitionReadiness(
 export type ShipmentList = { shipments: Shipment[]; pagination: PaginationMeta };
 const pageNumber = (max: number, fallback: number) => z.string().regex(/^[1-9]\d*$/).transform(Number).pipe(z.number().int().max(max)).default(fallback);
 export const shipmentQuerySchema = z.object({
-  page: pageNumber(1000000, 1), limit: pageNumber(100, 20),
+  page: pageNumber(1000000, 1), limit: pageNumber(100, 10),
   q: z.string().trim().min(1).max(100).optional(),
   status: z.enum(shipmentStatuses).optional(), paymentStatus: z.enum(paymentStatuses).optional(),
   from: z.iso.datetime({ offset: true }).optional(), to: z.iso.datetime({ offset: true }).optional(),

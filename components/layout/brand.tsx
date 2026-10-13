@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "@/components/ui/logo";
+import Image from "next/image";
 
 export function Brand({ className }: { className?: string }) {
   return (
@@ -8,8 +8,13 @@ export function Brand({ className }: { className?: string }) {
       className={`brand ${className ?? ""}`.trim()}
       aria-label="ExpressHub home"
     >
-      <Logo size={28} variant="icon" className="mr-1" />
-      Express<span>Hub</span>
+      <Image
+        src="/ex-logo.png"
+        alt="ExpressHub"
+        width={180}
+        height={60}
+        className="h-auto w-[180px]"
+      />
     </Link>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ArrowRight, LayoutDashboard, LogOut } from "lucide-react";
 import { Navigation } from "./navigation";
@@ -91,7 +91,7 @@ export function PublicHeaderAuth() {
         href="/register"
         className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-[#196547] hover:bg-[#135038] text-white text-xs font-semibold shadow-xs transition-colors no-underline shrink-0 whitespace-nowrap"
       >
-        <span>Get Started</span>
+        <span>Get started</span>
         <ArrowRight className="size-3 shrink-0" />
       </Link>
     </div>
@@ -100,6 +100,15 @@ export function PublicHeaderAuth() {
 
 export function PublicShell({ children }: { children: ReactNode }) {
   const { user, status } = useSession();
+  const pathname = usePathname();
+
+  if (pathname === "/login" || pathname === "/register") {
+    return (
+      <main id="main-content" className="public-main auth-main" tabIndex={-1}>
+        {children}
+      </main>
+    );
+  }
 
   return (
     <>
@@ -122,7 +131,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             Go to your dashboard ({user.name}) <ArrowRight className="inline size-4" aria-hidden="true" />
           </Link>
         ) : (
-          <Link href="/login">Your account <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
+          <Link href="/#how-it-works">How it works <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
         )}
       </footer>
     </>
