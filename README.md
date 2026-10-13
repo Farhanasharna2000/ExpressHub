@@ -230,6 +230,30 @@ npm run typecheck
 
 ---
 
+## Page route protection
+
+Next.js 16 uses `proxy.ts` for middleware. The proxy protects `/admin`, `/customer`,
+`/courier`, `/profile`, and `/checkout` (including nested routes), while preserving
+API CORS handling. Missing, expired, or invalid page cookies redirect to
+`/login?next=...`; a different role redirects to its own workspace. Login and
+registration remain accessible so expired or revoked sessions can recover without
+redirect loops.
+
+`expresshub_page_session` is a signed, HTTP-only, SameSite=Lax cookie scoped to `/`
+(Secure in production). It uses `JWT_ACCESS_SECRET` with a separate audience and
+purpose from API access tokens. Login, registration, refresh, and current-user
+responses issue it; logout and rejected refresh sessions clear it. Existing sessions
+without this cookie recover through the login page's normal refresh flow.
+
+This cookie provides optimistic navigation checks only. It cannot refresh a session
+or authenticate an API request. The client session guard and database-backed API
+checks remain authoritative for revocation, disabled accounts, and current roles.
+The refresh cookie remains scoped to `/api/v1/auth`.
+
+Run `npm run test:security` for route and cookie checks. The request-level Playwright
+checks in `tests/browser/route-protection.spec.ts` exercise the production proxy
+without launching a browser.
+
 ## 👤 Author
 
 **Farhana Sharna**  

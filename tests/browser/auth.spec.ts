@@ -1,7 +1,9 @@
+import { setMockPageSession } from "./session";
 import { expect, test, type Page } from "@playwright/test";
 
 async function mockAuth(page: Page, role = "CUSTOMER", restored = false) {
   let signedIn = restored;
+  if (restored) await setMockPageSession(page, role);
   let current = { id: "user-1", name: "Alex Sender", email: "alex@example.com", phone: null as string | null, role, isActive: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" };
   const calls: { path: string; body: unknown }[] = [];
   await page.route("**/api/v1/**", async route => {
@@ -9,8 +11,8 @@ async function mockAuth(page: Page, role = "CUSTOMER", restored = false) {
     const body = route.request().postDataJSON(); calls.push({ path, body });
     const response = (data: unknown, status = 200) => route.fulfill({ status, json: status === 200 ? { success: true, message: "OK", data } : { success: false, message: "Invalid email or password", errors: [] } });
     if (path.endsWith("/auth/refresh-token")) return signedIn ? response({ accessToken: "test-access-token" }) : response(null, 401);
-    if (path.endsWith("/auth/login") || path.endsWith("/auth/register")) { signedIn = true; return response({ accessToken: "test-access-token", user: current }); }
-    if (path.endsWith("/auth/logout")) { signedIn = false; return response(null); }
+    if (path.endsWith("/auth/login") || path.endsWith("/auth/register")) { signedIn = true; await setMockPageSession(page, role); return response({ accessToken: "test-access-token", user: current }); }
+    if (path.endsWith("/auth/logout")) { signedIn = false; await page.context().clearCookies({ name: "expresshub_page_session" }); return response(null); }
     if (path.endsWith("/users/me")) {
       if (!signedIn) return response(null, 401);
       expect(route.request().headers().authorization).toBe("Bearer test-access-token");
@@ -60,7 +62,7 @@ for (const role of ["CUSTOMER", "COURIER", "ADMIN"]) {
     await mockAuth(page, role, true); await page.goto("/login?next=https://evil.example");
     await expect(page).toHaveURL(new RegExp(`/${role.toLowerCase()}$`));
     await page.goto(role === "ADMIN" ? "/customer" : "/admin");
-    await expect(page.getByText("Access denied", { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/${role.toLowerCase()}$`));
     await expect(page.getByRole("heading", { name: role === "ADMIN" ? "Your deliveries, together" : "Operations overview" })).toHaveCount(0);
   });
 }

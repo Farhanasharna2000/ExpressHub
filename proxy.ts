@@ -2,10 +2,41 @@ import { NextRequest, NextResponse } from "next/server";
 import { AppError } from "@/lib/http/errors";
 import { errorResponse } from "@/lib/http/responses";
 
+import { isProtectedPage, permittedPath, roleHome } from "@/lib/auth/route-access";
+import { pageSessionCookie, verifyPageSession } from "@/lib/auth/tokens";
+
+function protectPage(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  if (!isProtectedPage(path)) return NextResponse.next();
+
+  const token = request.cookies.get(pageSessionCookie.name)?.value;
+  let session;
+  try { session = token ? verifyPageSession(token) : null; }
+  catch { session = null; }
+
+  let response: NextResponse;
+  if (!session) {
+    const login = new URL("/login", request.url);
+    login.searchParams.set("next", `${path}${request.nextUrl.search}`);
+    response = NextResponse.redirect(login);
+    if (token) response.cookies.set({ ...pageSessionCookie, value: "", maxAge: 0 });
+  } else if (!permittedPath(path, session.role)) {
+    response = NextResponse.redirect(new URL(roleHome(session.role), request.url));
+  } else {
+    response = NextResponse.next();
+  }
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
+
 const allowedMethods = "GET, HEAD, POST, PATCH, DELETE, OPTIONS";
 const allowedHeaders = "Authorization, Content-Type, X-CSRF-Token, Idempotency-Key";
 
 export function proxy(request: NextRequest) {
+  // Keep API CORS and bearer authorization independent of page redirects.
+  if (request.nextUrl.pathname !== "/api" && !request.nextUrl.pathname.startsWith("/api/")) {
+    return protectPage(request);
+  }
   const origin = request.headers.get("origin");
   const allowedOrigin = process.env.ALLOWED_ORIGIN ??
     (process.env.NODE_ENV !== "production" ? "http://localhost:3000" : undefined);
@@ -54,5 +85,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: ["/api/:path*", "/admin/:path*", "/customer/:path*", "/courier/:path*", "/profile/:path*", "/checkout/:path*"],
 };

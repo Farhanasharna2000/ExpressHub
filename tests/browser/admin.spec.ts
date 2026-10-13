@@ -1,9 +1,11 @@
+import { setMockPageSession } from "./session";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 const ok = (route: Route, data: unknown) =>
   route.fulfill({ json: { success: true, message: "OK", data } });
 
 async function setupAdmin(page: Page) {
+  await setMockPageSession(page, "ADMIN");
   await page.route("**/api/v1/**", async (route) => {
     const req = route.request();
     const url = new URL(req.url());

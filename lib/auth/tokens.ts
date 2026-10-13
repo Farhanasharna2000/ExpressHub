@@ -124,3 +124,31 @@ export function isAllowedCookieRequest(request: Request) {
 
   return false;
 }
+
+// An optimistic page-access hint, never an API credential or a refresh token.
+export const pageSessionCookie = {
+  name: "expresshub_page_session",
+  maxAge: Math.floor(REFRESH_TOKEN_TTL_MS / 1000),
+  path: "/",
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+};
+
+export function signPageSession(claims: AccessTokenClaims) {
+  return jwt.sign({ role: claims.role, tokenType: "page" }, getAccessTokenSecret(), {
+    algorithm: "HS256", subject: claims.userId, issuer: TOKEN_ISSUER,
+    audience: "expresshub-pages", expiresIn: pageSessionCookie.maxAge,
+  });
+}
+
+export function verifyPageSession(token: string): AccessTokenClaims {
+  const payload = jwt.verify(token, getAccessTokenSecret(), {
+    algorithms: ["HS256"], issuer: TOKEN_ISSUER, audience: "expresshub-pages",
+  }) as JwtPayload;
+  if (!payload.sub || typeof payload.sub !== "string" || payload.tokenType !== "page" ||
+      !Object.values(UserRole).includes(payload.role) || typeof payload.exp !== "number") {
+    throw new Error("Invalid page session");
+  }
+  return { userId: payload.sub, role: payload.role };
+}

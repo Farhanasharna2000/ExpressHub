@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       accessToken: result.accessToken,
     });
 
-    setRefreshCookie(response, result.refreshToken);
+    setRefreshCookie(response, result.refreshToken, result.accessToken);
     return response;
   } catch (error) {
     const response = handleRouteError(error);

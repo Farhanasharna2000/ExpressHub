@@ -1,3 +1,4 @@
+import { setMockPageSession } from "./session";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 const shipmentId = "cm111222333444555666777888";
@@ -41,6 +42,7 @@ const ok = (route: Route, data: unknown) =>
   route.fulfill({ json: { success: true, message: "OK", data } });
 
 async function setupCourier(page: Page) {
+  await setMockPageSession(page, "COURIER");
   let shipment = { ...fixture };
   const calls: { url: URL; method: string; body: unknown }[] = [];
 

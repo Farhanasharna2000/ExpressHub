@@ -3,7 +3,7 @@ import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { type ZodType } from "zod";
 
-import { isAllowedCookieRequest, refreshTokenCookie } from "@/lib/auth/tokens";
+import { isAllowedCookieRequest, refreshTokenCookie, pageSessionCookie, signPageSession, verifyAccessToken, type AccessTokenClaims } from "@/lib/auth/tokens";
 import { AppError } from "@/lib/http/errors";
 import { errorResponse, tooManyRequestsResponse } from "@/lib/http/responses";
 import { getRateLimitIdentifier, limitApiRequests } from "@/lib/rate-limit";
@@ -85,7 +85,9 @@ export function handleRouteError(error: unknown) {
 export function setRefreshCookie(
   response: NextResponse,
   token: string,
+  accessToken: string,
 ) {
+  setPageSessionCookie(response, verifyAccessToken(accessToken));
   response.cookies.set({
     ...refreshTokenCookie,
     value: token,
@@ -93,9 +95,14 @@ export function setRefreshCookie(
 }
 
 export function clearRefreshCookie(response: NextResponse) {
+  response.cookies.set({ ...pageSessionCookie, value: "", maxAge: 0 });
   response.cookies.set({
     ...refreshTokenCookie,
     value: "",
     maxAge: 0,
   });
+}
+
+export function setPageSessionCookie(response: NextResponse, claims: AccessTokenClaims) {
+  response.cookies.set({ ...pageSessionCookie, value: signPageSession(claims) });
 }

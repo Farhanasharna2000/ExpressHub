@@ -1,6 +1,8 @@
+import { setMockPageSession } from "./session";
 import { test, expect } from "@playwright/test";
 
 test("profile photo upload, persistence, removal, and mobile layout", async ({ page }) => {
+  await setMockPageSession(page, "CUSTOMER");
   let current = { id: "user-1", name: "Alex Sender", email: "alex@example.com", phone: null, avatar: null as string | null, role: "CUSTOMER", isActive: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" };
   await page.route("**/api/v1/**", async route => {
     const path = new URL(route.request().url()).pathname;
