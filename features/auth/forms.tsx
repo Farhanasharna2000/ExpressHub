@@ -268,13 +268,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
 
   if (status === "loading" || status === "authenticated") {
     return (
-      <LoadingState
-        label={
-          status === "loading"
-            ? "Checking your session"
-            : "Opening your workspace"
-        }
-      />
+      <LoadingState label="Loading" />
     );
   }
 
