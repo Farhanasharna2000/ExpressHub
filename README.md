@@ -19,6 +19,19 @@ It includes role-based workspaces for Customers, Couriers, and Administrators, r
 - **Styling:** shadcn/ui, Tailwind CSS v4, and ExpressHub CSS primitives
 - **Testing:** Node.js native test runner & Playwright
 
+
+## ?? Demo Evaluation Credentials & One-Click Role Login
+
+The application implements a dedicated **One-Click Role Login** layout on [`/login`](http://localhost:3000/login) allowing evaluators to sign in instantly with a single click.
+
+| Role | Demo Email | Demo Password | Workspace & Capabilities | One-Click Login |
+|---|---|---|---|---|
+| **Admin** | `admin@gmail.com` | `ExpressHub123!` | Operations telemetry, courier assignment, user directory & audit trail | ? Enabled on `/login` |
+| **User (Customer)** | `customer@gmail.com` | `ExpressHub123!` | Parcel booking wizard, tracking timeline, real Stripe Checkout integration | ? Enabled on `/login` |
+| **Provider (Courier)** | `courier@gmail.com` | `ExpressHub123!` | Assigned route view, transit status stepper & proof of delivery notes | ? Enabled on `/login` |
+
+> **Evaluator Tip:** On the login page (`/login`), click any of the 3 role buttons (**"Demo Login: Admin"**, **"Demo Login: User"**, or **"Demo Login: Provider"**) to populate credentials and log directly into that workspace.
+
 ## Frontend Workspaces & Routes
 
 | Workspace | Route | Purpose & Key Features |

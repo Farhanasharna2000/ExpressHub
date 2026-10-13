@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { Camera, Upload, UserRound, Save, Trash2 } from "lucide-react";
+import { Camera, Upload, UserRound, Save, Trash2, Sparkles, Truck, ShieldAlert } from "lucide-react";
 import { prepareProfilePhoto } from "./profile-photo";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -34,6 +34,48 @@ import { useSession } from "./provider";
 import { safeReturnUrl } from "./session";
 import { loginFields, registrationFields, profileFields } from "./validation";
 
+export const DEMO_ROLES = [
+  {
+    role: "ADMIN" as const,
+    label: "Admin",
+    roleName: "Admin",
+    badgeLabel: "Admin",
+    email: "admin@gmail.com",
+    password: "ExpressHub123!",
+    icon: ShieldAlert,
+    description: "System stats, courier dispatch, user management & audit trail",
+    color: "from-purple-500/10 via-purple-500/5 to-transparent border-purple-200 hover:border-purple-400 dark:border-purple-800/40",
+    badgeBg: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700",
+    iconBg: "bg-purple-600 text-white",
+  },
+  {
+    role: "CUSTOMER" as const,
+    label: "User (Customer)",
+    roleName: "User",
+    badgeLabel: "User",
+    email: "customer@gmail.com",
+    password: "ExpressHub123!",
+    icon: UserRound,
+    description: "Book parcels, follow tracking & test Stripe checkout",
+    color: "from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-200 hover:border-emerald-400 dark:border-emerald-800/40",
+    badgeBg: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700",
+    iconBg: "bg-emerald-600 text-white",
+  },
+  {
+    role: "COURIER" as const,
+    label: "Provider (Courier)",
+    roleName: "Provider",
+    badgeLabel: "Provider",
+    email: "courier@gmail.com",
+    password: "ExpressHub123!",
+    icon: Truck,
+    description: "Assigned routes, delivery status transitions & proof notes",
+    color: "from-sky-500/10 via-sky-500/5 to-transparent border-sky-200 hover:border-sky-400 dark:border-sky-800/40",
+    badgeBg: "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/40 dark:text-sky-300 dark:border-sky-700",
+    iconBg: "bg-sky-600 text-white",
+  },
+];
+
 function useFeedback() {
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
@@ -53,7 +95,7 @@ function useFeedback() {
     const fields = fieldErrors(error);
     setErrors(fields);
     if (!fields || Object.keys(fields).length === 0) {
-      toast.error("We couldn’t complete that request", errorMessage(error), {
+      toast.error("We couldn�t complete that request", errorMessage(error), {
         dataAttribute: { "data-form-error": "true" },
       });
     }
@@ -108,6 +150,8 @@ export function AuthForm({ register = false }: { register?: boolean }) {
   const router = useRouter();
   const feedback = useFeedback();
   const [visible, setVisible] = useState(false);
+  const [demoRoleBusy, setDemoRoleBusy] = useState<string | null>(null);
+
   const logoutFailed =
     sessionError instanceof ApiError &&
     sessionError.errors.some(
@@ -126,6 +170,43 @@ export function AuthForm({ register = false }: { register?: boolean }) {
         ),
       );
   }, [status, user, router]);
+
+  async function handleDemoLogin(demo: (typeof DEMO_ROLES)[number]) {
+    if (demoRoleBusy || feedback.busy || feedback.remaining > 0) return;
+    if (!feedback.start()) return;
+    setDemoRoleBusy(demo.role);
+
+    const form = document.querySelector<HTMLFormElement>("form.form-grid");
+    if (form) {
+      const emailInput = form.elements.namedItem("email");
+      const passwordInput = form.elements.namedItem("password");
+      if (emailInput instanceof HTMLInputElement) emailInput.value = demo.email;
+      if (passwordInput instanceof HTMLInputElement) passwordInput.value = demo.password;
+    }
+
+    try {
+      const current = await store.authenticate("login", {
+        email: demo.email,
+        password: demo.password,
+      });
+      toast.success(
+        `Welcome, ${demo.label}`,
+        `Signed in as ${current.name || current.email}. Opening ${demo.roleName} workspace�`
+      );
+      router.replace(
+        safeReturnUrl(
+          new URLSearchParams(window.location.search).get("next"),
+          current.role,
+        ),
+      );
+    } catch (error) {
+      if (form) feedback.fail(error, form);
+    } finally {
+      setDemoRoleBusy(null);
+      feedback.finish();
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!feedback.start()) return;
@@ -174,8 +255,8 @@ export function AuthForm({ register = false }: { register?: boolean }) {
       <LoadingState
         label={
           status === "loading"
-            ? "Checking your session…"
-            : "Opening your workspace…"
+            ? "Checking your session�"
+            : "Opening your workspace�"
         }
       />
     );
@@ -204,6 +285,39 @@ export function AuthForm({ register = false }: { register?: boolean }) {
           <ShieldCheck size={20} aria-hidden="true" />
           <span>Secure payments. Clear delivery updates.</span>
         </div>
+        {!register && (
+          <div className="mt-6 rounded-2xl border border-[#d9e1d9] bg-white/70 p-4 shadow-xs backdrop-blur-xs">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#196547] mb-2 flex items-center gap-1.5">
+              <Sparkles className="size-3.5" /> Demo Evaluation Roles
+            </p>
+            <ul className="space-y-1.5 text-xs text-muted-foreground">
+              <li className="flex items-center justify-between gap-2 border-b border-[#d9e1d9]/40 pb-1">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-purple-600" />
+                  <strong className="text-foreground">Admin:</strong> admin@gmail.com
+                </span>
+                <span className="text-[10px] rounded bg-purple-100 text-purple-800 px-1.5 py-0.2 font-semibold">ADMIN</span>
+              </li>
+              <li className="flex items-center justify-between gap-2 border-b border-[#d9e1d9]/40 pb-1">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-emerald-600" />
+                  <strong className="text-foreground">User:</strong> customer@gmail.com
+                </span>
+                <span className="text-[10px] rounded bg-emerald-100 text-emerald-800 px-1.5 py-0.2 font-semibold">CUSTOMER</span>
+              </li>
+              <li className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-sky-600" />
+                  <strong className="text-foreground">Provider:</strong> courier@gmail.com
+                </span>
+                <span className="text-[10px] rounded bg-sky-100 text-sky-800 px-1.5 py-0.2 font-semibold">COURIER</span>
+              </li>
+            </ul>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Password for all: <code className="font-mono font-semibold text-foreground bg-muted px-1 rounded">ExpressHub123!</code>
+            </p>
+          </div>
+        )}
       </section>
       <Card className="auth-card">
         <CardHeader>
@@ -218,7 +332,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
           <CardDescription>
             {register
               ? "Start sending as an ExpressHub customer."
-              : "Enter your account details to continue."}
+              : "Enter your account details or choose a demo role below."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -250,6 +364,69 @@ export function AuthForm({ register = false }: { register?: boolean }) {
               </AlertDescription>
             </Alert>
           )}
+
+          {!register && (
+            <div className="mb-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="size-4 text-[#196547]" aria-hidden="true" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#196547]">
+                    One-Click Role Login
+                  </span>
+                </div>
+                <span className="text-[11px] text-muted-foreground font-medium">
+                  Instant demo evaluation
+                </span>
+              </div>
+
+              <div className="grid gap-2.5 sm:grid-cols-3">
+                {DEMO_ROLES.map((demo) => {
+                  const Icon = demo.icon;
+                  const isCurrentBusy = demoRoleBusy === demo.role;
+                  return (
+                    <button
+                      key={demo.role}
+                      type="button"
+                      disabled={feedback.busy || Boolean(demoRoleBusy)}
+                      onClick={() => void handleDemoLogin(demo)}
+                      className={`group relative flex flex-col items-start justify-between rounded-xl border p-3 text-left transition-all bg-gradient-to-br ${demo.color} shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed`}
+                    >
+                      <div className="flex w-full items-center justify-between gap-1 mb-2">
+                        <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${demo.iconBg} shadow-xs`}>
+                          {isCurrentBusy ? (
+                            <Loader2 className="size-4 animate-spin text-white" aria-hidden="true" />
+                          ) : (
+                            <Icon className="size-4 text-white" aria-hidden="true" />
+                          )}
+                        </span>
+                        <span className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${demo.badgeBg}`}>
+                          {demo.badgeLabel}
+                        </span>
+                      </div>
+
+                      <div className="min-w-0 w-full">
+                        <span className="block text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                          {isCurrentBusy ? "Signing in�" : `Demo Login: ${demo.roleName}`}
+                        </span>
+                        <span className="block truncate text-[11px] text-muted-foreground mt-0.5" title={demo.email}>
+                          {demo.email}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="relative my-4 flex items-center">
+                <div className="grow border-t border-border" />
+                <span className="mx-2 shrink text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Or sign in with email
+                </span>
+                <div className="grow border-t border-border" />
+              </div>
+            </div>
+          )}
+
           <form
             onSubmit={submit}
             noValidate
@@ -339,7 +516,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                 <ArrowRight aria-hidden="true" />
               )}
               {feedback.busy
-                ? "Please wait…"
+                ? "Please wait�"
                 : register
                   ? "Create account"
                   : "Sign in"}
@@ -430,7 +607,7 @@ export function ProfileForm() {
             <div className="space-y-3 border-t pt-5">
               <input ref={photoInput} id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" tabIndex={-1} aria-label="Profile photo" disabled={feedback.busy || photoBusy} aria-invalid={Boolean(photoError || feedback.errors.avatar)} aria-describedby="profile-photo-help profile-photo-error" onChange={event => void choosePhoto(event.target.files?.[0])} />
               <Button type="button" variant="outline" className="w-full" disabled={feedback.busy || photoBusy} onClick={() => photoInput.current?.click()}>
-                {photoBusy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" aria-hidden="true" />}{photoBusy ? "Preparing photo…" : photo ? "Change photo" : "Upload photo"}
+                {photoBusy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" aria-hidden="true" />}{photoBusy ? "Preparing photo�" : photo ? "Change photo" : "Upload photo"}
               </Button>
               {photo && <Button type="button" variant="ghost" size="sm" disabled={feedback.busy || photoBusy} onClick={() => { setPhotoDraft(null); setPhotoError(""); setSaved(false); }}><Trash2 className="size-3.5" aria-hidden="true" />Remove photo</Button>}
               <p id="profile-photo-help" className="text-xs leading-relaxed text-muted-foreground">JPG, PNG or WebP. Up to 5 MB.<br />Save changes to update your photo.</p>
@@ -454,7 +631,7 @@ export function ProfileForm() {
           </CardContent>
           <CardFooter className="justify-end gap-3 border-t pt-5">
             <Button type="submit" className="h-11 w-full sm:w-auto" disabled={feedback.busy || photoBusy || feedback.remaining > 0}>
-              {feedback.busy ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" aria-hidden="true" />}{feedback.busy ? "Saving…" : "Save changes"}
+              {feedback.busy ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" aria-hidden="true" />}{feedback.busy ? "Saving�" : "Save changes"}
             </Button>
           </CardFooter>
         </Card>
@@ -488,7 +665,7 @@ export function AccountMenu() {
         onClick={logout}
       >
         <LogOut aria-hidden="true" />
-        {busy ? "Signing out…" : "Sign out"}
+        {busy ? "Signing out�" : "Sign out"}
       </Button>
     </div>
   );
