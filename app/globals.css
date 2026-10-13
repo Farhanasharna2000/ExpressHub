@@ -56,7 +56,7 @@ p { color: var(--text-muted); }
 .public-main { max-width: 1240px; margin: auto; padding: 48px 32px 80px; min-height: 70vh; }
 .public-main.auth-main { display: grid; align-items: center; min-height: 100vh; min-height: 100dvh; padding-block: 24px; }
 @media (max-width: 1024px) {
-  .public-main.auth-main { padding-block: 6px; }
+  .public-main.auth-main { min-height: 0; align-items: start; padding-block: 6px; }
 }
 .site-footer { border-top: 1px solid var(--line); font-size: .85rem; flex-wrap: wrap; }
 .public-header { padding: 18px 32px; }
