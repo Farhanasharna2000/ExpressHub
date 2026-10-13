@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Courier and logistics management API built with Next.js and Prisma",
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0",
-    "build": "prisma generate && next build",
-    "start": "next start --hostname 0.0.0.0",
+    "dev": "node api.js && next dev --hostname 0.0.0.0",
+    "build": "node api.js && prisma generate && next build",
+    "start": "node api.js && next start --hostname 0.0.0.0",
     "typecheck": "tsc --noEmit",
     "test:auth": "node --test tests/auth.test.mjs",
     "test:auth:integration": "node tests/auth.integration.mjs",
