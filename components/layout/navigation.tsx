@@ -98,10 +98,11 @@ export function Navigation({ role }: { role?: UserRole }) {
         variant="secondary"
         className="menu-toggle"
         aria-expanded={open}
+        aria-label={open ? "Close menu" : "Open menu"}
         aria-controls="primary-navigation"
         onClick={() => setOpenAt(open ? null : pathname)}
       >
-        Menu {open ? <X className="size-4" aria-hidden="true" /> : <Menu className="size-4" aria-hidden="true" />}
+        {open ? <X className="size-4" aria-hidden="true" /> : <Menu className="size-4" aria-hidden="true" />}
       </Button>
       <nav
         id="primary-navigation"
