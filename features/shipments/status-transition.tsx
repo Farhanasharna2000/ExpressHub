@@ -1,5 +1,8 @@
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { transitionFormSchema } from "@/lib/client/form-schemas";
 import { useState, useRef } from "react";
 import { Loader2, ArrowRight, CheckCircle, AlertTriangle, XCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,8 +35,9 @@ export function StatusTransitionControl({
   const allowed = getAllowedTransitions(shipment.status, role);
 
   const [activeTarget, setActiveTarget] = useState<ShipmentStatus | null>(null);
-  const [note, setNote] = useState("");
-  const [noteError, setNoteError] = useState("");
+  const form = useForm({ mode: "onChange", resolver: zodResolver(transitionFormSchema(activeTarget !== null && isNoteRequired(activeTarget))), defaultValues: { note: "" } });
+  const note = form.watch("note");
+  const noteError = form.formState.errors.note?.message;
   const [busy, setBusy] = useState(false);
   const [mutationError, setMutationError] = useState<unknown>(null);
   const [lastActionSuccess, setLastActionSuccess] = useState<string | null>(null);
@@ -56,33 +60,21 @@ export function StatusTransitionControl({
 
   function openDialog(target: ShipmentStatus) {
     setActiveTarget(target);
-    setNote("");
-    setNoteError("");
+    form.reset();
     setMutationError(null);
   }
 
   function closeDialog() {
     if (!pendingRef.current) {
       setActiveTarget(null);
-      setNote("");
-      setNoteError("");
+      form.reset();
     }
   }
 
-  async function executeTransition(target: ShipmentStatus, providedNote?: string) {
+  async function executeTransition(target: ShipmentStatus) {
     if (pendingRef.current) return;
 
-    if (isNoteRequired(target)) {
-      const cleanNote = (providedNote ?? note).trim();
-      if (cleanNote.length < 3) {
-        setNoteError("A note of at least 3 characters is required.");
-        return;
-      }
-      if (cleanNote.length > 1000) {
-        setNoteError("Note must not exceed 1000 characters.");
-        return;
-      }
-    }
+    if (!await form.trigger(undefined, { shouldFocus: true }) || pendingRef.current) return;
 
     pendingRef.current = true;
     setBusy(true);
@@ -94,7 +86,7 @@ export function StatusTransitionControl({
         status: target,
         expectedStatus: shipment.status,
       };
-      const clean = (providedNote ?? note).trim();
+      const clean = form.getValues("note").trim();
       if (clean) payload.note = clean;
 
       await store.api.request(`/shipments/${encodeURIComponent(shipment.id)}/status`, {
@@ -106,8 +98,7 @@ export function StatusTransitionControl({
       setLastActionSuccess(msg);
       toast.success("Update Confirmed", msg);
       setActiveTarget(null);
-      setNote("");
-      setNoteError("");
+      form.reset();
       onSuccess();
     } catch (err) {
       setMutationError(err);
@@ -225,11 +216,9 @@ export function StatusTransitionControl({
                 <textarea
                   id="transition-note"
                   rows={3}
-                  value={note}
-                  onChange={(e) => {
-                    setNote(e.target.value);
-                    if (noteError) setNoteError("");
-                  }}
+                  {...form.register("note")}
+                  aria-invalid={Boolean(noteError)}
+                  aria-describedby={noteError ? "transition-note-error" : undefined}
                   disabled={busy}
                   maxLength={1000}
                   placeholder={
@@ -247,7 +236,7 @@ export function StatusTransitionControl({
                   <span>{activeTarget && isNoteRequired(activeTarget) ? "Minimum 3 characters" : ""}</span>
                   <span>{note.length} / 1000</span>
                 </div>
-                {noteError && <p className="text-xs text-destructive mt-1">{noteError}</p>}
+                {noteError && <p id="transition-note-error" role="alert" className="text-xs text-destructive mt-1">{noteError}</p>}
               </div>
 
               <div className="flex justify-end gap-3 pt-2">

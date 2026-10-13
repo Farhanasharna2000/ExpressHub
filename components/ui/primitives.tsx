@@ -7,7 +7,7 @@ import { NativeSelect } from "./native-select";
 import { Badge } from "./badge";
 import { Alert, AlertTitle, AlertDescription } from "./alert";
 import Link from "next/link";
-import type { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, ReactNode, Ref } from "react";
 import type { ShipmentStatus, PaymentStatus } from "@/types/api";
 
 export function Button({ variant = "primary", className = "", type = "button", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "danger" }) {
@@ -23,10 +23,10 @@ type Field = { id: string; label: string; hint?: string; error?: string };
 function descriptionIds(id: string, hint?: string, error?: string, extra?: string) {
   return [extra, hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
 }
-export function Input({ id, label, hint, error, ...props }: InputHTMLAttributes<HTMLInputElement> & Field) {
+export function Input({ id, label, hint, error, ...props }: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> } & Field) {
   return <div className="field"><Label htmlFor={id}>{label}</Label><ShadcnInput {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])} />{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{error}</small>}</div>;
 }
-export function Select({ id, label, hint, error, children, ...props }: Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & Field) {
+export function Select({ id, label, hint, error, children, ...props }: Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & { ref?: Ref<HTMLSelectElement> } & Field) {
   return <div className="field"><Label htmlFor={id}>{label}</Label><NativeSelect {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])}>{children}</NativeSelect>{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{error}</small>}</div>;
 }
 const labels: Record<ShipmentStatus | PaymentStatus, string> = { CREATED: "Created", PICKED_UP: "Picked up", IN_TRANSIT: "In transit", OUT_FOR_DELIVERY: "Out for delivery", DELIVERED: "Delivered", FAILED: "Failed", RETURNED: "Returned", CANCELLED: "Cancelled", PENDING: "Pending", PAID: "Paid", REFUND_PENDING: "Refund pending", REFUNDED: "Refunded" };

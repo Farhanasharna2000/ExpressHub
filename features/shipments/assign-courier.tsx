@@ -1,5 +1,8 @@
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { courierFormSchema } from "@/lib/client/form-schemas";
 import { useEffect, useState, useRef } from "react";
 import { UserCheck, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +28,8 @@ export function AssignCourierControl({
   const [loadingCouriers, setLoadingCouriers] = useState(false);
   const [couriersError, setCouriersError] = useState<unknown>(null);
 
-  const [selectedCourierId, setSelectedCourierId] = useState(shipment.courierId ?? "");
+  const form = useForm({ mode: "onChange", resolver: zodResolver(courierFormSchema), defaultValues: { courierId: shipment.courierId ?? "" } });
+  const selectedCourierId = form.watch("courierId");
   const [busy, setBusy] = useState(false);
   const [mutationError, setMutationError] = useState<unknown>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
@@ -35,8 +39,8 @@ export function AssignCourierControl({
 
   // Sync selected ID when shipment changes
   useEffect(() => {
-    setSelectedCourierId(shipment.courierId ?? "");
-  }, [shipment.courierId]);
+    form.reset({ courierId: shipment.courierId ?? "" });
+  }, [shipment.courierId, form.reset]);
 
   // Load active couriers for admin selection
   async function loadCouriers() {
@@ -62,6 +66,7 @@ export function AssignCourierControl({
     if (pendingRef.current || !selectedCourierId || !assignable) return;
     if (selectedCourierId === (shipment.courierId ?? "")) return;
 
+    if (!await form.trigger(undefined, { shouldFocus: true }) || pendingRef.current) return;
     pendingRef.current = true;
     setBusy(true);
     setMutationError(null);
@@ -153,8 +158,8 @@ export function AssignCourierControl({
               <div className="flex gap-2 mt-1">
                 <select
                   id="courier-select"
-                  value={selectedCourierId}
-                  onChange={(e) => setSelectedCourierId(e.target.value)}
+                  {...form.register("courierId")}
+                  aria-invalid={Boolean(form.formState.errors.courierId)}
                   disabled={busy || loadingCouriers}
                   className="flex-1 h-10 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
@@ -165,6 +170,7 @@ export function AssignCourierControl({
                     </option>
                   ))}
                 </select>
+                {form.formState.errors.courierId && <p role="alert" className="text-xs text-destructive">{form.formState.errors.courierId.message}</p>}
                 <Button
                   variant="outline"
                   size="icon"

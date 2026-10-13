@@ -1,5 +1,8 @@
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { archiveFormSchema, roleFormSchema } from "@/lib/client/form-schemas";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
@@ -32,7 +35,8 @@ export function AdminUserDetailView({ id }: { id: string }) {
 
   // Role modification state
   const [roleModalOpen, setRoleModalOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<UserRole>("CUSTOMER");
+  const roleForm = useForm({ mode: "onChange", resolver: zodResolver(roleFormSchema), defaultValues: { role: "CUSTOMER" as UserRole } });
+  const selectedRole = roleForm.watch("role");
   const [roleBusy, setRoleBusy] = useState(false);
   const [roleError, setRoleError] = useState<unknown>(null);
 
@@ -43,8 +47,8 @@ export function AdminUserDetailView({ id }: { id: string }) {
 
   // Soft delete state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteReason, setDeleteReason] = useState("");
-  const [deleteReasonError, setDeleteReasonError] = useState("");
+  const deleteForm = useForm({ mode: "onChange", resolver: zodResolver(archiveFormSchema("A deletion reason")), defaultValues: { reason: "" } });
+  const deleteReasonError = deleteForm.formState.errors.reason?.message;
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<unknown>(null);
   const [deletedConfirmed, setDeletedConfirmed] = useState(false);
@@ -53,7 +57,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
 
   // Handle Role Change
   async function handleChangeRole() {
-    if (!targetUser || isSelf || roleBusy) return;
+    if (!targetUser || isSelf || roleBusy || !await roleForm.trigger()) return;
     setRoleBusy(true);
     setRoleError(null);
     setFeedback(null);
@@ -103,11 +107,8 @@ export function AdminUserDetailView({ id }: { id: string }) {
   // Handle Soft Deletion
   async function handleSoftDelete() {
     if (!targetUser || isSelf || deleteBusy) return;
-    const cleanReason = deleteReason.trim();
-    if (cleanReason.length < 3) {
-      setDeleteReasonError("A deletion reason of at least 3 characters is required.");
-      return;
-    }
+    if (!await deleteForm.trigger(undefined, { shouldFocus: true })) return;
+    const cleanReason = deleteForm.getValues("reason").trim();
 
     setDeleteBusy(true);
     setDeleteError(null);
@@ -269,7 +270,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          setSelectedRole(targetUser.role);
+                          roleForm.reset({ role: targetUser.role });
                           setRoleModalOpen(true);
                         }}
                       >
@@ -313,8 +314,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
                       variant="destructive"
                       size="sm"
                       onClick={() => {
-                        setDeleteReason("");
-                        setDeleteReasonError("");
+                        deleteForm.reset();
                         setDeleteModalOpen(true);
                       }}
                     >
@@ -347,8 +347,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
                   </label>
                   <select
                     id="select-user-role"
-                    value={selectedRole}
-                    onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                    {...roleForm.register("role")}
                     disabled={roleBusy}
                     className="w-full h-10 mt-1 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
@@ -424,17 +423,14 @@ export function AdminUserDetailView({ id }: { id: string }) {
                   <textarea
                     id="delete-reason"
                     rows={3}
-                    value={deleteReason}
-                    onChange={(e) => {
-                      setDeleteReason(e.target.value);
-                      if (deleteReasonError) setDeleteReasonError("");
-                    }}
-                    placeholder="State reason for archiving this account (e.g., Requested by customer, Fraudulent activity, Offboarded courier)..."
+                    {...deleteForm.register("reason")}
+                    aria-invalid={Boolean(deleteReasonError)}
+                    aria-describedby={deleteReasonError ? "delete-reason-error" : undefined}
                     disabled={deleteBusy}
                     className="w-full mt-1 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   />
                   {deleteReasonError && (
-                    <p className="text-xs text-destructive mt-1">{deleteReasonError}</p>
+                    <p id="delete-reason-error" role="alert" className="text-xs text-destructive mt-1">{deleteReasonError}</p>
                   )}
                 </div>
 

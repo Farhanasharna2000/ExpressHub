@@ -1,5 +1,6 @@
 "use client";
 
+import type { Ref } from "react";
 import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -7,8 +8,10 @@ const presets = [0.5, 1, 2, 3, 5, 10];
 const minimum = 0.001;
 const maximum = 9999999.999;
 
-export function WeightInput({ value, onChange, error, disabled = false }: {
+export function WeightInput({ value, onChange, onBlur, ref, error, disabled = false }: {
   value: string;
+  onBlur?: () => void;
+  ref?: Ref<HTMLInputElement>;
   onChange: (value: string) => void;
   error?: string;
   disabled?: boolean;
@@ -28,7 +31,7 @@ export function WeightInput({ value, onChange, error, disabled = false }: {
           <Button type="button" variant="ghost" size="icon" className="shrink-0 rounded-lg text-muted-foreground" aria-label="Decrease weight by 0.5 kg" disabled={disabled || !value || numeric <= minimum} onClick={() => adjust(-1)}>
             <Minus className="size-4" aria-hidden="true" />
           </Button>
-          <input id="parcelWeightKg" name="parcelWeightKg" type="number" inputMode="decimal" required min={minimum} max={maximum} step="0.001"
+          <input ref={ref} onBlur={onBlur} id="parcelWeightKg" name="parcelWeightKg" type="number" inputMode="decimal" required min={minimum} max={maximum} step="0.001"
             value={value} onChange={event => onChange(event.target.value)} disabled={disabled}
             aria-invalid={Boolean(error)} aria-describedby={error ? "parcelWeightKg-error" : undefined}
             className="w-0 min-w-0 flex-1 appearance-none border-0 bg-transparent py-2 text-right text-base font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />

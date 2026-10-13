@@ -48,6 +48,27 @@ export function bookingPayload(draft: BookingDraft) {
     ...(draft.pickupScheduledAt ? { pickupScheduledAt: localToISO(draft.pickupScheduledAt) } : {}),
   };
 }
+// Keep browser strings in form state; validate the transformed API payload per step.
+export function bookingFormSchema(step = 3) {
+  return z.object({
+    pickupContactName: z.string(), pickupContactPhone: z.string(), pickupAddress: z.string(),
+    deliveryContactName: z.string(), deliveryContactPhone: z.string(), deliveryAddress: z.string(),
+    parcelWeightKg: z.string(), packageDescription: z.string(), pickupScheduledAt: z.string(),
+  }).superRefine((draft, context) => {
+    let payload;
+    try { payload = step < 2 ? draft : bookingPayload(draft); }
+    catch (error) {
+      context.addIssue({ code: "custom", path: ["pickupScheduledAt"], message: error instanceof Error ? error.message : "Invalid date" });
+      return;
+    }
+    const schema = step === 0 ? pickupFields : step === 1 ? deliveryFields : step === 2 ? parcelFields : bookingSchema;
+    const result = schema.safeParse(payload);
+    if (!result.success) for (const issue of result.error.issues) {
+      context.addIssue({ code: "custom", path: issue.path, message: issue.message });
+    }
+  });
+}
+
 export interface Shipment extends Omit<BookingInput, "parcelWeightKg" | "parcelLengthCm" | "parcelWidthCm" | "parcelHeightCm" | "packageDescription" | "pickupScheduledAt"> {
   id: string; trackingNumber: string; status: ShipmentStatus; paymentStatus: PaymentStatus;
   customerId: string; courierId: string | null;

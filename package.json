@@ -27,7 +27,7 @@
     "prisma:migrate:status": "prisma migrate status",
     "prisma:seed": "node prisma/seed.mjs",
     "prisma:seed:pricing": "node prisma/seed-pricing.mjs",
-    "test:frontend": "node --test tests/frontend-auth.test.mjs tests/frontend-shipments.test.mjs tests/frontend-payments.test.mjs tests/frontend-operations.test.mjs tests/frontend-admin.test.mjs tests/frontend-workflows.test.mjs",
+    "test:frontend": "node --test tests/form-validation.test.mjs tests/frontend-auth.test.mjs tests/frontend-shipments.test.mjs tests/frontend-payments.test.mjs tests/frontend-operations.test.mjs tests/frontend-admin.test.mjs tests/frontend-workflows.test.mjs",
     "test:frontend:browser": "playwright test"
   },
   "prisma": {
@@ -47,6 +47,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
     "@prisma/client": "^5.22.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@upstash/ratelimit": "^2.2.0",
@@ -62,6 +63,7 @@
     "radix-ui": "^1.7.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-hook-form": "^7.90.0",
     "stripe": "^23.0.0",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.3",

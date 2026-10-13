@@ -31,3 +31,23 @@ export const profileFields = z
     avatar: profilePhotoSchema,
   })
   .strict();
+
+// UI adapters preserve API semantics for empty optional fields.
+export const profileFormFields = profileFields.extend({
+  phone: z.string().transform(value => value.trim() || null).pipe(phone.nullable()),
+});
+
+export function authFormSchema(register: boolean) {
+  return loginFields.extend({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+  }).transform((value, context) => {
+    const input = register ? { ...value, phone: value.phone?.trim() || undefined } : { email: value.email, password: value.password };
+    const result = (register ? registrationFields : loginFields).safeParse(input);
+    if (!result.success) {
+      for (const issue of result.error.issues) context.addIssue({ code: "custom", path: issue.path, message: issue.message });
+      return z.NEVER;
+    }
+    return result.data;
+  });
+}

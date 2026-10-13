@@ -147,3 +147,20 @@ test("unavailable shipment never renders private details or cancellation control
   await expect(page.getByText(fixture.pickupAddress)).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Cancel shipment", exact: true })).toHaveCount(0);
 });
+
+test("booking focuses invalid fields and retains values when returning to a step", async ({ page }) => {
+  const calls = await setup(page);
+  await page.goto("/customer/shipments/new");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByLabel("Pickup contact name")).toBeFocused();
+  await expect(page.getByLabel("Pickup contact name")).toHaveAttribute("aria-invalid", "true");
+  await page.getByLabel("Pickup contact name").fill(fixture.pickupContactName);
+  await page.getByLabel("Pickup phone").fill(fixture.pickupContactPhone);
+  await page.getByLabel("Pickup address").fill(fixture.pickupAddress);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByLabel("Recipient name")).toBeVisible();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await expect(page.getByLabel("Pickup contact name")).toHaveValue(fixture.pickupContactName);
+  await expect(page.getByLabel("Pickup phone")).toHaveValue(fixture.pickupContactPhone);
+  expect(calls.filter(call => call.method === "POST" && call.url.pathname.endsWith("/shipments"))).toHaveLength(0);
+});

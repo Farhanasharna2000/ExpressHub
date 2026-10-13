@@ -113,3 +113,17 @@ test("workspace navigation works at both widths with a keyboard skip link", asyn
   await expect(page.getByRole("heading", { name: "My payments" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
+
+test("server field errors remain editable and focus the affected input", async ({ page }) => {
+  await mockAuth(page);
+  await page.route("**/api/v1/auth/register", route => route.fulfill({ status: 400, json: { success: false, message: "Validation failed", errors: [{ path: "email", message: "Email is already registered" }] } }));
+  await page.goto("/register");
+  await page.getByLabel("Full name").fill("New Customer");
+  await page.getByLabel("Email address").fill("taken@example.com");
+  await page.getByLabel("Password", { exact: true }).fill("secure-password-123");
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page.getByText("Email is already registered")).toBeVisible();
+  await expect(page.getByLabel("Email address")).toBeFocused();
+  await page.getByLabel("Email address").fill("available@example.com");
+  await expect(page.getByText("Email is already registered")).toHaveCount(0);
+});

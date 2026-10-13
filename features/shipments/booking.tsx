@@ -1,7 +1,9 @@
 "use client";
 
+import { Controller, useForm, type FieldErrors } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Loader2, Package, MapPin, Phone, Pencil, CalendarClock, Scale, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +12,7 @@ import { Input } from "@/components/ui/primitives";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage, fieldErrors } from "@/lib/client/api";
-import { bookingPayload, bookingSchema, pickupFields, deliveryFields, parcelFields, emptyDraft, dateTime, type BookingDraft, type Shipment } from "./contracts";
+import { bookingPayload, bookingSchema, bookingFormSchema, emptyDraft, dateTime, type BookingDraft, type Shipment } from "./contracts";
 import { useRetryDelay } from "./use-resource";
 import { WeightInput } from "./weight-input";
 
@@ -20,9 +22,10 @@ const fieldStep = (key: string) => key.startsWith("pickup") && key !== "pickupSc
 export function ShipmentBooking() {
   const { store } = useSession();
   const router = useRouter();
-  const [draft, setDraft] = useState<BookingDraft>(emptyDraft);
   const [step, setStep] = useState(0);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const form = useForm<BookingDraft>({ resolver: zodResolver(bookingFormSchema(step)), defaultValues: emptyDraft, shouldFocusError: false });
+  const draft = form.watch();
+  const errors = form.formState.errors;
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [uncertain, setUncertain] = useState(false);
@@ -39,11 +42,12 @@ export function ShipmentBooking() {
   }, [step]);
 
   function input(key: keyof BookingDraft, label: string, options: { type?: string; maxLength?: number; hint?: string; min?: string; max?: string; step?: string; required?: boolean } = {}) {
-    return <Input id={key} name={key} label={label} value={draft[key]} onChange={event => setDraft(value => ({ ...value, [key]: event.target.value }))} error={errors[key]} disabled={busy || uncertain} {...options} />;
+    return <Input id={key} {...form.register(key)} label={label} error={errors[key]?.message} disabled={busy || uncertain} {...options} />;
   }
   function report(failure: unknown) {
     setError(failure);
-    const mapped = fieldErrors(failure); setErrors(mapped);
+    const mapped = fieldErrors(failure);
+    for (const [key, message] of Object.entries(mapped)) form.setError(key as keyof BookingDraft, { type: "server", message });
     const first = Object.keys(mapped)[0];
     if (first) setStep(fieldStep(first));
     requestAnimationFrame(() => {
@@ -51,20 +55,17 @@ export function ShipmentBooking() {
       if (target instanceof HTMLElement) target.focus();
     });
   }
-  function validate() {
-    let payload;
-    try { payload = bookingPayload(draft); }
-    catch (error) { throw new ApiError(400, "Check the pickup time.", [{ path: "pickupScheduledAt", message: error instanceof Error ? error.message : "Invalid date" }]); }
-    const result = (step === 0 ? pickupFields : step === 1 ? deliveryFields : step === 2 ? parcelFields : bookingSchema).safeParse(step < 2 ? draft : payload);
-    if (!result.success) throw new ApiError(400, "Check the highlighted fields.", result.error.issues.map(issue => ({ path: issue.path.join("."), message: issue.message })));
-    return result.data;
+  function invalid(fields: FieldErrors<BookingDraft>) {
+    const first = Object.keys(fields)[0] as keyof BookingDraft | undefined;
+    if (first) {
+      setStep(fieldStep(first));
+      requestAnimationFrame(() => form.setFocus(first));
+    }
   }
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submit(draft: BookingDraft) {
     if (submitting.current || uncertain || delay) return;
-    setError(null); setErrors({});
+    setError(null); form.clearErrors();
     try {
-      validate();
       if (step < 3) { setStep(step + 1); return; }
       const payload = bookingSchema.parse(bookingPayload(draft));
       submitting.current = true; setBusy(true);
@@ -105,15 +106,12 @@ export function ShipmentBooking() {
     <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> My shipments</Link>
     <div className="page-heading"><div><p className="eyebrow">Make your next move</p><h1>Book a shipment</h1><p>A few details to get your parcel on its way.</p></div><Package aria-hidden="true" className="size-9 text-primary" /></div>
     <ol className="shipment-steps" aria-label="Booking progress">{steps.map((name, index) => <li key={name} aria-current={step === index ? "step" : undefined}><span>{index < step ? <Check className="size-4" aria-hidden="true" /> : index + 1}</span>{name}</li>)}</ol>
-    <form ref={formRef} onSubmit={submit} noValidate aria-busy={busy} className="booking-layout">
+    <form ref={formRef} onSubmit={form.handleSubmit(submit, invalid)} noValidate aria-busy={busy} className="booking-layout">
       <Card><CardHeader><CardTitle><h2 ref={heading} tabIndex={-1}>{["Where should we pick up?", "Where is it going?", "Tell us about your parcel", "Review your shipment"][step]}</h2></CardTitle><CardDescription>{["Add the sender’s contact details and pickup address.", "Add the recipient’s contact details and full delivery address.", "Enter the parcel weight and an optional description.", "Check the details below before creating your shipment."][step]}</CardDescription></CardHeader>
         <CardContent className="space-y-6">
           {step === 0 && <div className="form-grid">{input("pickupContactName", "Pickup contact name", { required: true, maxLength: 100 })}{input("pickupContactPhone", "Pickup phone", { type: "tel", required: true, maxLength: 30 })}{input("pickupAddress", "Pickup address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
           {step === 1 && <div className="form-grid">{input("deliveryContactName", "Recipient name", { required: true, maxLength: 100 })}{input("deliveryContactPhone", "Recipient phone", { type: "tel", required: true, maxLength: 30 })}{input("deliveryAddress", "Delivery address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
-          {step === 2 && <div className="form-grid"><WeightInput value={draft.parcelWeightKg} disabled={busy || uncertain} error={errors.parcelWeightKg} onChange={value => {
-            setDraft(current => ({ ...current, parcelWeightKg: value }));
-            setErrors(current => { const next = { ...current }; delete next.parcelWeightKg; return next; });
-          }} />{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : `Choose a future time in your device timezone: ${timezone}.` })}</div>}
+          {step === 2 && <div className="form-grid"><Controller name="parcelWeightKg" control={form.control} render={({ field, fieldState }) => <WeightInput {...field} disabled={busy || uncertain} error={fieldState.error?.message} />} />{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : `Choose a future time in your device timezone: ${timezone}.` })}</div>}
           {step === 3 && (
             <div className="space-y-5">
               <div className="grid gap-4 md:grid-cols-2">
@@ -146,7 +144,7 @@ export function ShipmentBooking() {
               </section>
             </div>
           )}
-          <div className="flex flex-wrap justify-between gap-3 border-t pt-6"><Button type="button" variant="outline" disabled={step === 0 || busy || uncertain} onClick={() => { setStep(step - 1); setErrors({}); setError(null); }}><ArrowLeft />Back</Button><Button type="submit" className="min-h-11" disabled={busy || uncertain || delay > 0}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{busy ? "Creating shipment…" : step === 3 ? "Create shipment" : "Continue"}</Button></div>
+          <div className="flex flex-wrap justify-between gap-3 border-t pt-6"><Button type="button" variant="outline" disabled={step === 0 || busy || uncertain} onClick={() => { setStep(step - 1); form.clearErrors(); setError(null); }}><ArrowLeft />Back</Button><Button type="submit" className="min-h-11" disabled={busy || uncertain || delay > 0}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{busy ? "Creating shipment…" : step === 3 ? "Create shipment" : "Continue"}</Button></div>
         </CardContent>
       </Card>
       <Card className="self-start border-primary/15 bg-primary/5 shadow-none">

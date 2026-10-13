@@ -4,7 +4,10 @@ import Image from "next/image";
 import { Camera, Upload, UserRound, Save, Trash2, Sparkles, Truck, ShieldAlert } from "lucide-react";
 import { prepareProfilePhoto } from "./profile-photo";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { useForm, type FieldValues, type Path, type UseFormReturn } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -32,7 +35,7 @@ import { toast } from "@/components/ui/toast";
 import { ApiError, errorMessage, fieldErrors } from "@/lib/client/api";
 import { useSession } from "./provider";
 import { safeReturnUrl } from "./session";
-import { loginFields, registrationFields, profileFields } from "./validation";
+import { authFormSchema, profileFormFields } from "./validation";
 
 export const DEMO_ROLES = [
   {
@@ -76,11 +79,10 @@ export const DEMO_ROLES = [
   },
 ];
 
-function useFeedback() {
+function useFeedback<T extends FieldValues, Output extends FieldValues>(form: UseFormReturn<T, unknown, Output>, formRef: RefObject<HTMLFormElement | null>) {
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
   const [error, setError] = useState<unknown>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [remaining, setRemaining] = useState(0);
   useEffect(() => {
     const retryAt = error instanceof ApiError ? error.retryAt : 0;
@@ -90,25 +92,24 @@ function useFeedback() {
     const id = window.setInterval(update, 1000);
     return () => clearInterval(id);
   }, [error]);
-  function fail(error: unknown, form: HTMLFormElement) {
+  function fail(error: unknown) {
     setError(error);
     const fields = fieldErrors(error);
-    setErrors(fields);
+    for (const [name, message] of Object.entries(fields)) form.setError(name as Path<T>, { type: "server", message });
     if (!fields || Object.keys(fields).length === 0) {
       toast.error("We couldn�t complete that request", errorMessage(error), {
         dataAttribute: { "data-form-error": "true" },
       });
     }
     requestAnimationFrame(() => {
-      const target = form.elements.namedItem(Object.keys(fields)[0]);
+      const target = formRef.current?.elements.namedItem(Object.keys(fields)[0]);
       if (target instanceof HTMLElement) target.focus();
-      else form.querySelector<HTMLElement>("[data-form-error]")?.focus();
+      else formRef.current?.querySelector<HTMLElement>("[data-form-error]")?.focus();
     });
   }
   return {
     busy,
     error,
-    errors,
     remaining,
     fail,
     start: () => {
@@ -116,7 +117,7 @@ function useFeedback() {
       submitting.current = true;
       setBusy(true);
       setError(null);
-      setErrors({});
+      form.clearErrors();
       return true;
     },
     finish: () => {
@@ -134,21 +135,15 @@ function FormError({
 }) {
   return null;
 }
-function validationError(issues: { path: PropertyKey[]; message: string }[]) {
-  return new ApiError(
-    400,
-    "Please check the highlighted fields.",
-    issues.map((issue) => ({
-      path: issue.path.join("."),
-      message: issue.message,
-    })),
-  );
-}
-
 export function AuthForm({ register = false }: { register?: boolean }) {
   const { store, status, user, error: sessionError } = useSession();
   const router = useRouter();
-  const feedback = useFeedback();
+  const formRef = useRef<HTMLFormElement>(null);
+  const form = useForm<z.input<ReturnType<typeof authFormSchema>>, unknown, z.output<ReturnType<typeof authFormSchema>>>({
+    resolver: zodResolver(authFormSchema(register)),
+    defaultValues: register ? { name: "", email: "", password: "", phone: "" } : { email: "", password: "" },
+  });
+  const feedback = useFeedback(form, formRef);
   const [visible, setVisible] = useState(false);
   const [demoRoleBusy, setDemoRoleBusy] = useState<string | null>(null);
 
@@ -176,13 +171,8 @@ export function AuthForm({ register = false }: { register?: boolean }) {
     if (!feedback.start()) return;
     setDemoRoleBusy(demo.role);
 
-    const form = document.querySelector<HTMLFormElement>("form.form-grid");
-    if (form) {
-      const emailInput = form.elements.namedItem("email");
-      const passwordInput = form.elements.namedItem("password");
-      if (emailInput instanceof HTMLInputElement) emailInput.value = demo.email;
-      if (passwordInput instanceof HTMLInputElement) passwordInput.value = demo.password;
-    }
+    form.setValue("email", demo.email);
+    form.setValue("password", demo.password);
 
     try {
       const current = await store.authenticate("login", {
@@ -200,38 +190,19 @@ export function AuthForm({ register = false }: { register?: boolean }) {
         ),
       );
     } catch (error) {
-      if (form) feedback.fail(error, form);
+      feedback.fail(error);
     } finally {
       setDemoRoleBusy(null);
       feedback.finish();
     }
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submit(input: { name?: string; email: string; password: string; phone?: string }) {
     if (!feedback.start()) return;
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const input = {
-      email: String(data.get("email") ?? ""),
-      password: String(data.get("password") ?? ""),
-      ...(register
-        ? {
-            name: String(data.get("name") ?? ""),
-            ...(String(data.get("phone") ?? "").trim()
-              ? { phone: String(data.get("phone")) }
-              : {}),
-          }
-        : {}),
-    };
     try {
-      const parsed = (register ? registrationFields : loginFields).safeParse(
-        input,
-      );
-      if (!parsed.success) throw validationError(parsed.error.issues);
       const current = await store.authenticate(
         register ? "register" : "login",
-        parsed.data,
+        input,
       );
       toast.success(
         register ? "Account created" : "Welcome back",
@@ -245,7 +216,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
         ),
       );
     } catch (error) {
-      feedback.fail(error, form);
+      feedback.fail(error);
     } finally {
       feedback.finish();
     }
@@ -428,7 +399,8 @@ export function AuthForm({ register = false }: { register?: boolean }) {
           )}
 
           <form
-            onSubmit={submit}
+            ref={formRef}
+            onSubmit={form.handleSubmit(submit)}
             noValidate
             className="form-grid"
             aria-busy={feedback.busy}
@@ -445,31 +417,31 @@ export function AuthForm({ register = false }: { register?: boolean }) {
             {register && (
               <Input
                 id="name"
-                name="name"
+                {...form.register("name")}
                 label="Full name"
                 autoComplete="name"
                 required
                 maxLength={100}
-                error={feedback.errors.name}
+                error={form.formState.errors.name?.message}
                 disabled={feedback.busy}
               />
             )}
             <Input
               id="email"
-              name="email"
+              {...form.register("email")}
               label="Email address"
               placeholder="you@example.com"
               type="email"
               autoComplete="email"
               required
               maxLength={254}
-              error={feedback.errors.email}
+              error={form.formState.errors.email?.message}
               disabled={feedback.busy}
             />
             <div className="password-field">
               <Input
                 id="password"
-                name="password"
+                {...form.register("password")}
                 label="Password"
                 type={visible ? "text" : "password"}
                 autoComplete={register ? "new-password" : "current-password"}
@@ -479,7 +451,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                     ? "At least 12 characters, up to 72 UTF-8 bytes."
                     : undefined
                 }
-                error={feedback.errors.password}
+                error={form.formState.errors.password?.message}
                 disabled={feedback.busy}
               />
               <Button
@@ -496,12 +468,12 @@ export function AuthForm({ register = false }: { register?: boolean }) {
             {register && (
               <Input
                 id="phone"
-                name="phone"
+                {...form.register("phone")}
                 label="Phone number (optional)"
                 type="tel"
                 autoComplete="tel"
                 maxLength={30}
-                error={feedback.errors.phone}
+                error={form.formState.errors.phone?.message}
                 disabled={feedback.busy}
               />
             )}
@@ -537,9 +509,18 @@ export function AuthForm({ register = false }: { register?: boolean }) {
 }
 export function ProfileForm() {
   const { user, store } = useSession();
-  const feedback = useFeedback();
+  const formRef = useRef<HTMLFormElement>(null);
+  const form = useForm<z.input<typeof profileFormFields>, unknown, z.output<typeof profileFormFields>>({
+    resolver: zodResolver(profileFormFields),
+    defaultValues: { name: user?.name ?? "", email: user?.email ?? "", phone: user?.phone ?? "", avatar: undefined },
+  });
+  const feedback = useFeedback(form, formRef);
+  useEffect(() => {
+    if (user) form.reset({ name: user.name, email: user.email, phone: user.phone ?? "", avatar: undefined });
+  }, [user, form.reset]);
   const [saved, setSaved] = useState(false);
-  const [photoDraft, setPhotoDraft] = useState<string | null | undefined>(undefined);
+  const photoDraft = form.watch("avatar");
+  const setPhotoDraft = (value: string | null | undefined) => form.setValue("avatar", value, { shouldDirty: true, shouldValidate: true });
   const [photoError, setPhotoError] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
   const photoInput = useRef<HTMLInputElement>(null);
@@ -557,32 +538,17 @@ export function ProfileForm() {
     }
     finally { photoPending.current = false; setPhotoBusy(false); if (photoInput.current) photoInput.current.value = ""; }
   }
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submit(input: z.output<typeof profileFormFields>) {
     if (photoPending.current || !feedback.start()) return;
     setSaved(false);
-    const form = event.currentTarget;
-    const data = new FormData(form);
     try {
-      const parsed = profileFields.safeParse({
-        ...(photoDraft !== undefined ? { avatar: photoDraft } : {}),
-        name: data.get("name"),
-        email: data.get("email"),
-        phone: String(data.get("phone") ?? "").trim() || null,
-      });
-      if (!parsed.success) throw validationError(parsed.error.issues);
-      const updated = await store.updateProfile(parsed.data);
-      for (const field of ["name", "email", "phone"] as const) {
-        const input = form.elements.namedItem(field);
-        if (input instanceof HTMLInputElement)
-          input.value = updated[field] ?? "";
-      }
-      setPhotoDraft(undefined);
+      const updated = await store.updateProfile(input);
+      form.reset({ name: updated.name, email: updated.email, phone: updated.phone ?? "", avatar: undefined });
       setPhotoError("");
       setSaved(true);
       toast.success("Profile updated", "Your changes have been saved.");
     } catch (error) {
-      feedback.fail(error, form);
+      feedback.fail(error);
     } finally {
       feedback.finish();
     }
@@ -593,7 +559,7 @@ export function ProfileForm() {
       <div className="page-heading">
         <div><p className="eyebrow">Account settings</p><h1>Your profile</h1><p>Manage your photo and personal details.</p></div>
       </div>
-      <form onSubmit={submit} onChange={() => setSaved(false)} noValidate aria-busy={feedback.busy || photoBusy} className="grid items-start gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
+      <form ref={formRef} onSubmit={form.handleSubmit(submit)} onChange={() => setSaved(false)} noValidate aria-busy={feedback.busy || photoBusy} className="grid items-start gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
         <Card className="gap-0 overflow-hidden pt-0">
           <div className="h-24 bg-linear-to-br from-[#196547] via-[#287b59] to-[#b2cc98]" />
           <CardContent className="relative -mt-12 space-y-5 text-center">
@@ -605,13 +571,13 @@ export function ProfileForm() {
             </div>
             <div className="min-w-0"><h2 className="break-words text-xl font-semibold">{user.name}</h2><p className="mt-1 break-all text-sm text-muted-foreground">{user.email}</p><span className="mt-3 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold capitalize text-primary">{user.role.toLowerCase()}</span></div>
             <div className="space-y-3 border-t pt-5">
-              <input ref={photoInput} id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" tabIndex={-1} aria-label="Profile photo" disabled={feedback.busy || photoBusy} aria-invalid={Boolean(photoError || feedback.errors.avatar)} aria-describedby="profile-photo-help profile-photo-error" onChange={event => void choosePhoto(event.target.files?.[0])} />
+              <input ref={photoInput} id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" tabIndex={-1} aria-label="Profile photo" disabled={feedback.busy || photoBusy} aria-invalid={Boolean(photoError || form.formState.errors.avatar?.message)} aria-describedby="profile-photo-help profile-photo-error" onChange={event => void choosePhoto(event.target.files?.[0])} />
               <Button type="button" variant="outline" className="w-full" disabled={feedback.busy || photoBusy} onClick={() => photoInput.current?.click()}>
                 {photoBusy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" aria-hidden="true" />}{photoBusy ? "Preparing photo�" : photo ? "Change photo" : "Upload photo"}
               </Button>
               {photo && <Button type="button" variant="ghost" size="sm" disabled={feedback.busy || photoBusy} onClick={() => { setPhotoDraft(null); setPhotoError(""); setSaved(false); }}><Trash2 className="size-3.5" aria-hidden="true" />Remove photo</Button>}
               <p id="profile-photo-help" className="text-xs leading-relaxed text-muted-foreground">JPG, PNG or WebP. Up to 5 MB.<br />Save changes to update your photo.</p>
-              <p id="profile-photo-error" role={photoError || feedback.errors.avatar ? "alert" : undefined} className="text-sm text-destructive">{photoError || feedback.errors.avatar}</p>
+              <p id="profile-photo-error" role={photoError || form.formState.errors.avatar?.message ? "alert" : undefined} className="text-sm text-destructive">{photoError || form.formState.errors.avatar?.message}</p>
             </div>
           </CardContent>
         </Card>
@@ -622,10 +588,10 @@ export function ProfileForm() {
           </CardHeader>
           <CardContent className="space-y-6 py-6">
             <FormError error={feedback.error} remaining={feedback.remaining} />
-            <Input id="profile-name" name="name" label="Full name" defaultValue={user.name} autoComplete="name" maxLength={100} required disabled={feedback.busy} error={feedback.errors.name} />
+            <Input id="profile-name" {...form.register("name")} label="Full name" autoComplete="name" maxLength={100} required disabled={feedback.busy} error={form.formState.errors.name?.message} />
             <div className="grid gap-6 md:grid-cols-2">
-              <Input id="profile-email" name="email" label="Email address" type="email" defaultValue={user.email} autoComplete="email" maxLength={254} required disabled={feedback.busy} error={feedback.errors.email} />
-              <Input id="profile-phone" name="phone" label="Phone number (optional)" type="tel" defaultValue={user.phone ?? ""} autoComplete="tel" maxLength={30} disabled={feedback.busy} error={feedback.errors.phone} />
+              <Input id="profile-email" {...form.register("email")} label="Email address" type="email" autoComplete="email" maxLength={254} required disabled={feedback.busy} error={form.formState.errors.email?.message} />
+              <Input id="profile-phone" {...form.register("phone")} label="Phone number (optional)" type="tel" autoComplete="tel" maxLength={30} disabled={feedback.busy} error={form.formState.errors.phone?.message} />
             </div>
             <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-4"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" /><div><p className="text-sm font-medium">Account access</p><p className="mt-1 text-xs text-muted-foreground">Your {user.role.toLowerCase()} role is managed by your administrator.</p></div></div>
           </CardContent>

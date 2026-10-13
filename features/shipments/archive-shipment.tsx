@@ -1,5 +1,8 @@
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { archiveFormSchema } from "@/lib/client/form-schemas";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, Trash2, Loader2, AlertCircle } from "lucide-react";
@@ -25,20 +28,16 @@ export function ArchiveShipmentControl({
   const { store } = useSession();
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [reason, setReason] = useState("");
-  const [reasonError, setReasonError] = useState("");
+  const form = useForm({ mode: "onChange", resolver: zodResolver(archiveFormSchema("An archival reason")), defaultValues: { reason: "" } });
+  const reasonError = form.formState.errors.reason?.message;
   const [busy, setBusy] = useState(false);
   const [mutationError, setMutationError] = useState<unknown>(null);
 
   const archivable = isShipmentArchivable(shipment.status);
 
   async function handleArchive() {
-    const cleanReason = reason.trim();
-    if (cleanReason.length < 3) {
-      setReasonError("An archival reason of at least 3 characters is required.");
-      return;
-    }
-
+    if (busy || !await form.trigger(undefined, { shouldFocus: true })) return;
+    const cleanReason = form.getValues("reason").trim();
     setBusy(true);
     setMutationError(null);
 
@@ -88,8 +87,7 @@ export function ArchiveShipmentControl({
               variant="destructive"
               size="sm"
               onClick={() => {
-                setReason("");
-                setReasonError("");
+                form.reset();
                 setMutationError(null);
                 setModalOpen(true);
               }}
@@ -126,16 +124,14 @@ export function ArchiveShipmentControl({
                 <textarea
                   id="shipment-archive-reason"
                   rows={3}
-                  value={reason}
-                  onChange={(e) => {
-                    setReason(e.target.value);
-                    if (reasonError) setReasonError("");
-                  }}
+                  {...form.register("reason")}
+                  aria-invalid={Boolean(reasonError)}
+                  aria-describedby={reasonError ? "archive-reason-error" : undefined}
                   disabled={busy}
                   placeholder="e.g., Routine archival of delivered shipment, Customer request, Billing cycle closure..."
                   className="w-full mt-1 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
-                {reasonError && <p className="text-xs text-destructive mt-1">{reasonError}</p>}
+                {reasonError && <p id="archive-reason-error" role="alert" className="text-xs text-destructive mt-1">{reasonError}</p>}
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
