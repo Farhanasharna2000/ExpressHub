@@ -54,6 +54,7 @@ p { color: var(--text-muted); }
 .public-header, .site-footer { max-width: 1240px; margin: auto; padding: 24px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .public-header { position: sticky; top: 0; z-index: 30; background: var(--paper); border-bottom: 1px solid var(--line); }
 .public-main { max-width: 1240px; margin: auto; padding: 48px 32px 80px; min-height: 70vh; }
+.public-main:has(.auth-page) { padding-block: 24px; min-height: 0; }
 .site-footer { border-top: 1px solid var(--line); font-size: .85rem; flex-wrap: wrap; }
 .public-header { padding: 18px 32px; }
 .nav-links { display: flex; align-items: center; gap: 6px; }

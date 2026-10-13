@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { LogOut, X, Menu } from "lucide-react";
@@ -145,12 +146,19 @@ export function Navigation({ role }: { role?: UserRole }) {
             >
               Profile
             </Link>
-            <div className="flex items-center gap-2 px-2 py-1 text-xs">
+            <div className="flex items-center gap-2.5 px-2 py-1 text-xs">
+              <div className="size-6 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0 border border-[var(--line)]">
+                <Image
+                  src={user.avatar || "/avatar-placeholder.svg"}
+                  alt={user.name}
+                  width={24}
+                  height={24}
+                  unoptimized={Boolean(user.avatar)}
+                  className="size-full object-cover"
+                />
+              </div>
               <span className="font-semibold text-[var(--ink)] truncate">
                 {user.name}
-              </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[#e5ecdf] text-[#196547] uppercase">
-                {user.role}
               </span>
             </div>
             <button

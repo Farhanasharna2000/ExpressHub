@@ -4,7 +4,20 @@ import { ResourceSkeleton, ResourceRefresh } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { History, Search, RotateCcw, ExternalLink, Code2 } from "lucide-react";
+import {
+  History,
+  Search,
+  RotateCcw,
+  ExternalLink,
+  Code2,
+  SlidersHorizontal,
+  Layers,
+  Calendar,
+  Clock,
+  X,
+  ArrowUpDown,
+  FileText,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -20,7 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/interactive";
 import { queryString, errorMessage } from "@/lib/client/api";
 import { dateTime, localToISO, toLocalInput } from "@/features/shipments/contracts";
-import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
+import { useResource, useRetryDelay, type ResourceResult } from "@/features/shipments/use-resource";
 import {
   formatAuditAction,
   readAuditLogQuery,
@@ -61,7 +74,7 @@ export function AdminAuditLogsView() {
     }
   }, [serialized]);
 
-  const { data, loading, refreshing, error, reload } = useResource<AuditLogList>(
+  const { data, loading, refreshing, error, reload }: ResourceResult<AuditLogList> = useResource<AuditLogList>(
     query.value ? `/admin/audit-logs${queryString(query.value)}` : null
   );
   const delay = useRetryDelay(error);
@@ -184,6 +197,27 @@ export function AdminAuditLogsView() {
     },
   ];
 
+  const isDateSort = (params.get("sortBy") ?? "createdAt") === "createdAt";
+
+  const quickEntityPresets = [
+    { label: "All Records", value: "", dotColor: "bg-muted-foreground" },
+    { label: "Shipments", value: "SHIPMENT", dotColor: "bg-blue-500" },
+    { label: "Users", value: "USER", dotColor: "bg-emerald-500" },
+    { label: "Payments", value: "PAYMENT", dotColor: "bg-purple-500" },
+    { label: "Rates & Pricing", value: "PRICING_RULE", dotColor: "bg-amber-500" },
+    { label: "Hubs & Stations", value: "HUB", dotColor: "bg-sky-500" },
+  ];
+
+  const activeCount = [
+    Boolean(actionSearch.trim()),
+    Boolean(params.get("entityType")),
+    Boolean(params.get("entityId")),
+    Boolean(params.get("from")),
+    Boolean(params.get("to")),
+    Boolean(params.get("sortBy") && params.get("sortBy") !== "createdAt"),
+    Boolean(params.get("order") && (isDateSort ? params.get("order") !== "desc" : params.get("order") !== "asc")),
+  ].filter(Boolean).length;
+
   const filtered = Boolean(
     query.value &&
       [
@@ -192,6 +226,8 @@ export function AdminAuditLogsView() {
         query.value.entityId,
         query.value.from,
         query.value.to,
+        params.get("sortBy") && params.get("sortBy") !== "createdAt",
+        params.get("order") && (isDateSort ? params.get("order") !== "desc" : params.get("order") !== "asc"),
       ].some(Boolean)
   );
 
@@ -205,67 +241,427 @@ export function AdminAuditLogsView() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="size-4" />
-            Filter Audit Ledger
-          </CardTitle>
+      <Card className="shipment-filter-panel gap-0 overflow-hidden py-0 shadow-sm border border-border/80">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b px-5 py-4 sm:px-6 bg-muted/20">
+          <div className="flex items-center gap-3">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs">
+              <History className="size-4.5" aria-hidden="true" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base font-bold text-foreground">
+                  Filter Audit Ledger
+                </CardTitle>
+                {activeCount > 0 ? (
+                  <Badge variant="secondary" className="bg-[#e5ecdf] text-[#196547] border-[#196547]/20 font-semibold text-[11px] px-2">
+                    {activeCount} {activeCount === 1 ? "filter" : "filters"} applied
+                  </Badge>
+                ) : (
+                  <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
+                    Live immutable ledger
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Trace operational mutations, courier status changes, and access events across entities.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-center">
+            {filtered && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={clear}
+                className="h-8 text-xs text-muted-foreground hover:text-destructive font-medium cursor-pointer"
+              >
+                <RotateCcw className="size-3.5 mr-1" aria-hidden="true" />
+                Reset filters
+              </Button>
+            )}
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="shipment-filters">
-            <Input
-              id="audit-action-search"
-              label="Action name"
-              placeholder="e.g. STATUS_UPDATED, CREATED"
-              maxLength={100}
-              value={actionSearch}
-              onChange={(e) => setActionSearch(e.target.value)}
-            />
+
+        {/* Quick Entity Type Pill Bar */}
+        <div className="border-b border-border/60 bg-background/50 px-5 py-2.5 sm:px-6 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-1.5 min-w-max">
+            <span className="text-xs font-semibold text-muted-foreground mr-1 flex items-center gap-1">
+              <Layers className="size-3 text-muted-foreground" /> Entity:
+            </span>
+            {quickEntityPresets.map((preset) => {
+              const isActive = (params.get("entityType") ?? "") === preset.value;
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => update("entityType", preset.value)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full font-medium transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-[#196547] text-white shadow-xs font-semibold"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/40"
+                  }`}
+                >
+                  <span
+                    className={`size-1.5 rounded-full ${
+                      isActive ? "bg-white" : preset.dotColor
+                    }`}
+                  />
+                  <span>{preset.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <CardContent className="space-y-4 px-5 py-5 sm:px-6">
+          {/* Primary Filter Grid: Action Search, Entity Type, Entity ID */}
+          <div className="shipment-filter-primary">
+            <div className="relative min-w-0">
+              <Input
+                id="audit-action-search"
+                label="Action name"
+                placeholder="Search activity (e.g. Status changed, Login)..."
+                maxLength={100}
+                value={actionSearch}
+                onChange={(e) => setActionSearch(e.target.value)}
+                className="shipment-search-input pr-8"
+              />
+              <Search className="pointer-events-none absolute bottom-3.5 left-3.5 size-4 text-muted-foreground" aria-hidden="true" />
+              {actionSearch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActionSearch("");
+                    update("action", "", true);
+                  }}
+                  className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
             <Select
               id="audit-entity-type"
-              label="Entity type"
+              label="Category"
               value={params.get("entityType") ?? ""}
               onChange={(e) => update("entityType", e.target.value)}
             >
-              <option value="">All entity types</option>
+              <option value="">All categories</option>
               <option value="SHIPMENT">Shipment</option>
               <option value="USER">User</option>
               <option value="PAYMENT">Payment</option>
-              <option value="PRICING_RULE">Pricing Rule</option>
+              <option value="PRICING_RULE">Rates & Pricing</option>
+              <option value="HUB">Delivery Hubs</option>
             </Select>
+
             <Input
               id="audit-entity-id"
-              label="Entity ID"
-              placeholder="Specific CUID"
+              label="Record or tracking ID"
+              placeholder="Enter reference or ID"
               value={params.get("entityId") ?? ""}
               onChange={(e) => update("entityId", e.target.value.trim())}
             />
-            <Input
-              id="audit-created-from"
-              label="Recorded from"
-              type="datetime-local"
-              value={toLocalInput(params.get("from") ?? "")}
-              onChange={(e) => dateFilter("from", e.target.value)}
-            />
-            <Input
-              id="audit-created-to"
-              label="Recorded to"
-              type="datetime-local"
-              value={toLocalInput(params.get("to") ?? "")}
-              onChange={(e) => dateFilter("to", e.target.value)}
-            />
-
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">
+
+          {/* Secondary Row: Date Range & Quick Presets */}
+          <div className="pt-4 border-t border-border/60 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              <div className="sm:col-span-1">
+                <Input
+                  id="audit-created-from"
+                  label="Recorded from"
+                  type="datetime-local"
+                  value={toLocalInput(params.get("from") ?? "")}
+                  onChange={(e) => dateFilter("from", e.target.value)}
+                />
+              </div>
+
+              <div className="sm:col-span-1">
+                <Input
+                  id="audit-created-to"
+                  label="Recorded to"
+                  type="datetime-local"
+                  value={toLocalInput(params.get("to") ?? "")}
+                  onChange={(e) => dateFilter("to", e.target.value)}
+                />
+              </div>
+
+              <div className="sm:col-span-2 pb-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground mr-1 font-medium">Quick dates:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const now = new Date();
+                      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                      update("from", startOfDay.toISOString());
+                      update("to", "");
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const now = new Date();
+                      const past7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                      update("from", past7.toISOString());
+                      update("to", "");
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
+                  >
+                    Last 7 days
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const now = new Date();
+                      const past30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                      update("from", past30.toISOString());
+                      update("to", "");
+                    }}
+                    className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
+                  >
+                    Last 30 days
+                  </button>
+                  {(params.has("from") || params.has("to")) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        update("from", "");
+                        update("to", "");
+                      }}
+                      className="text-xs px-2 py-1 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                    >
+                      Clear dates
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Third Row: Display Order / Sorting */}
+          <div className="pt-4 border-t border-border/60 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              <div className="sm:col-span-1">
+                <Select
+                  id="audit-sort-by"
+                  label="Sort by"
+                  value={params.get("sortBy") ?? "createdAt"}
+                  onChange={(e) => {
+                    const nextSort = e.target.value;
+                    const prevSort = params.get("sortBy") ?? "createdAt";
+                    if (nextSort !== "createdAt" && prevSort === "createdAt" && !params.has("order")) {
+                      const next = new URLSearchParams(window.location.search);
+                      next.set("sortBy", nextSort);
+                      next.set("order", "asc");
+                      next.set("page", "1");
+                      window.history.pushState(null, "", `/admin/audit-logs?${next}`);
+                    } else {
+                      update("sortBy", nextSort);
+                    }
+                  }}
+                >
+                  <option value="createdAt">Recorded Date</option>
+                  <option value="action">Action Name</option>
+                </Select>
+              </div>
+
+              <div className="sm:col-span-1">
+                <Select
+                  id="audit-sort-order"
+                  label="Display order"
+                  value={params.get("order") ?? (isDateSort ? "desc" : "asc")}
+                  onChange={(e) => update("order", e.target.value)}
+                >
+                  {isDateSort ? (
+                    <>
+                      <option value="desc">Newest first (Most recent)</option>
+                      <option value="asc">Oldest first (Earliest recorded)</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="asc">A to Z (Alphabetical)</option>
+                      <option value="desc">Z to A (Reverse alphabetical)</option>
+                    </>
+                  )}
+                </Select>
+              </div>
+
+              <div className="sm:col-span-2 pb-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground mr-1 font-medium">Quick sort:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      update("sortBy", "createdAt");
+                      update("order", "desc");
+                    }}
+                    className={`text-xs px-2.5 py-1 rounded-md border border-input font-medium transition-colors cursor-pointer ${
+                      (params.get("sortBy") ?? "createdAt") === "createdAt" && (params.get("order") ?? "desc") === "desc"
+                        ? "bg-primary/10 text-primary border-primary/30"
+                        : "bg-background hover:bg-muted"
+                    }`}
+                  >
+                    Newest first
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      update("sortBy", "createdAt");
+                      update("order", "asc");
+                    }}
+                    className={`text-xs px-2.5 py-1 rounded-md border border-input font-medium transition-colors cursor-pointer ${
+                      params.get("sortBy") === "createdAt" && params.get("order") === "asc"
+                        ? "bg-primary/10 text-primary border-primary/30"
+                        : "bg-background hover:bg-muted"
+                    }`}
+                  >
+                    Oldest first
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      update("sortBy", "action");
+                      update("order", "asc");
+                    }}
+                    className={`text-xs px-2.5 py-1 rounded-md border border-input font-medium transition-colors cursor-pointer ${
+                      params.get("sortBy") === "action" && params.get("order") === "asc"
+                        ? "bg-primary/10 text-primary border-primary/30"
+                        : "bg-background hover:bg-muted"
+                    }`}
+                  >
+                    Action A–Z
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Filter Chips */}
+          {filtered && (
+            <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/60">
+              <span className="text-xs font-semibold text-muted-foreground mr-1">
+                Active filters:
+              </span>
+              {query.value?.action && (
+                <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
+                  <Search className="size-3 text-muted-foreground" />
+                  <span>Action: &ldquo;{query.value.action}&rdquo;</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionSearch("");
+                      update("action", "", true);
+                    }}
+                    className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
+                    title="Remove action filter"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              )}
+              {query.value?.entityType && (
+                <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20 font-medium">
+                  <Layers className="size-3" />
+                  <span>Entity: {query.value.entityType}</span>
+                  <button
+                    type="button"
+                    onClick={() => update("entityType", "")}
+                    className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
+                    title="Remove entity type filter"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              )}
+              {query.value?.entityId && (
+                <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
+                  <FileText className="size-3 text-muted-foreground" />
+                  <span>ID: {query.value.entityId}</span>
+                  <button
+                    type="button"
+                    onClick={() => update("entityId", "")}
+                    className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
+                    title="Remove entity ID filter"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              )}
+              {query.value?.from && (
+                <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
+                  <Calendar className="size-3 text-muted-foreground" />
+                  <span>From: {dateTime(query.value.from)}</span>
+                  <button
+                    type="button"
+                    onClick={() => update("from", "")}
+                    className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
+                    title="Remove from date filter"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              )}
+              {query.value?.to && (
+                <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
+                  <Calendar className="size-3 text-muted-foreground" />
+                  <span>To: {dateTime(query.value.to)}</span>
+                  <button
+                    type="button"
+                    onClick={() => update("to", "")}
+                    className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
+                    title="Remove to date filter"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              )}
+              {(params.has("sortBy") || params.has("order")) && (
+                <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
+                  <ArrowUpDown className="size-3 text-muted-foreground" />
+                  <span>
+                    Sort: {
+                      (params.get("sortBy") ?? "createdAt") === "action"
+                        ? `Action (${(params.get("order") ?? "asc") === "desc" ? "Z to A" : "A to Z"})`
+                        : (params.get("order") === "asc" ? "Oldest first" : "Newest first")
+                    }
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      update("sortBy", "");
+                      update("order", "");
+                    }}
+                    className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
+                    title="Reset sorting"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Footer Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-muted-foreground">
+            <p className="flex items-center gap-1.5">
+              <Clock className="size-3.5" aria-hidden="true" />
               Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
             </p>
-            <Button variant="ghost" onClick={clear}>
-              <RotateCcw className="size-4 mr-1" /> Clear filters
-            </Button>
+            {data && (
+              <span className="font-medium text-foreground">
+                Showing {data.auditLogs.length} of {data.pagination.total} audit trail events
+              </span>
+            )}
           </div>
-          {dateError && <p role="alert" className="text-destructive text-sm">{dateError}</p>}
+
+          {dateError && <p role="alert" className="text-destructive text-sm font-medium">{dateError}</p>}
         </CardContent>
       </Card>
 

@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ArrowRight, LayoutDashboard, LogOut } from "lucide-react";
@@ -36,22 +37,6 @@ export function PublicHeaderAuth() {
   }
 
   if (status === "authenticated" && user) {
-    const initials =
-      user.name
-        .split(" ")
-        .map((p) => p[0])
-        .filter(Boolean)
-        .slice(0, 2)
-        .join("")
-        .toUpperCase() || "U";
-
-    const roleBadgeClasses =
-      user.role === "ADMIN"
-        ? "bg-purple-100 text-purple-800 border-purple-200"
-        : user.role === "COURIER"
-        ? "bg-amber-100 text-amber-800 border-amber-200"
-        : "bg-emerald-100 text-emerald-800 border-emerald-200";
-
     return (
       <div className="hidden sm:flex items-center gap-2.5 shrink-0">
         <Link
@@ -59,16 +44,18 @@ export function PublicHeaderAuth() {
           className="flex items-center gap-2 px-2.5 py-1.5 rounded-full hover:bg-[#e5ecdf]/60 transition-colors border border-[var(--line)] text-inherit no-underline shrink-0"
           title={`Signed in as ${user.name} (${user.email})`}
         >
-          <div className="w-6 h-6 rounded-full bg-[#196547] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-            {initials}
+          <div className="size-7 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0 border border-[var(--line)]">
+            <Image
+              src={user.avatar || "/avatar-placeholder.svg"}
+              alt={user.name}
+              width={28}
+              height={28}
+              unoptimized={Boolean(user.avatar)}
+              className="size-full object-cover"
+            />
           </div>
-          <span className="text-xs font-semibold max-w-[110px] truncate text-[var(--ink)]">
+          <span className="text-xs font-semibold max-w-[130px] truncate text-[var(--ink)]">
             {user.name}
-          </span>
-          <span
-            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border uppercase tracking-wider shrink-0 ${roleBadgeClasses}`}
-          >
-            {user.role}
           </span>
         </Link>
         <Link
@@ -132,7 +119,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             href={roleHome(user.role)}
             className="font-semibold text-[#196547] hover:underline"
           >
-            Go to your {user.role.toLowerCase()} dashboard ({user.name}) <ArrowRight className="inline size-4" aria-hidden="true" />
+            Go to your dashboard ({user.name}) <ArrowRight className="inline size-4" aria-hidden="true" />
           </Link>
         ) : (
           <Link href="/login">Your account <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
