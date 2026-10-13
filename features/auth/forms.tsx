@@ -168,6 +168,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
   const { store, status, user, error: sessionError } = useSession();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const lastSessionNotice = useRef<unknown>(null);
   const form = useForm<
     z.input<ReturnType<typeof authFormSchema>>,
     unknown,
@@ -191,6 +192,16 @@ export function AuthForm({ register = false }: { register?: boolean }) {
         "code" in issue &&
         issue.code === "LOGOUT_FAILED"
     );
+
+  useEffect(() => {
+    if (!sessionError) {
+      lastSessionNotice.current = null;
+      return;
+    }
+    if (logoutFailed || feedback.error || lastSessionNotice.current === sessionError) return;
+    lastSessionNotice.current = sessionError;
+    toast.error("Session notice", errorMessage(sessionError), { id: "auth-session-notice" });
+  }, [sessionError, logoutFailed, feedback.error]);
 
   useEffect(() => {
     if (status === "authenticated" && user) {
@@ -280,9 +291,6 @@ export function AuthForm({ register = false }: { register?: boolean }) {
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-4xl"
       >
-        <div className="mb-4 flex justify-start w-full max-w-[440px] mx-auto lg:hidden">
-          <Brand />
-        </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* ================= STORYSET ANIMATED ILLUSTRATION PANEL (Desktop) ================= */}
           <div className="hidden lg:flex lg:col-span-5 flex-col items-center justify-center p-8 rounded-3xl bg-gradient-to-br from-[#f2f7f0] via-[#e5ecdf]/80 to-[#dce7d9]/60 border border-[var(--line)] shadow-sm relative overflow-hidden text-center">
@@ -326,6 +334,9 @@ export function AuthForm({ register = false }: { register?: boolean }) {
           <div className="lg:col-span-7 w-full max-w-[440px] mx-auto">
             <Card className="rounded-2xl border border-border/80 bg-card shadow-lg sm:shadow-xl">
               <CardHeader className="pt-6 pb-4 px-6 text-center space-y-2">
+                <div className="flex justify-center lg:hidden">
+                  <Brand />
+                </div>
                 {/* Mobile Animated Illustration */}
                 <div className="lg:hidden flex justify-center pb-1">
                   <motion.div
@@ -384,15 +395,6 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                           Retry sign-out
                         </Button>
                       </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {Boolean(sessionError) && !logoutFailed && !feedback.error && (
-                  <Alert>
-                    <AlertTitle>Session notice</AlertTitle>
-                    <AlertDescription className="text-xs">
-                      {errorMessage(sessionError)}
                     </AlertDescription>
                   </Alert>
                 )}

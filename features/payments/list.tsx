@@ -227,8 +227,8 @@ export function PaymentsListView() {
         </CardHeader>
 
         {/* Quick Payment Status Pill Bar */}
-        <div className="border-b border-border/60 bg-background/50 px-5 py-2.5 sm:px-6 overflow-x-auto scrollbar-none">
-          <div className="flex items-center gap-1.5 min-w-max">
+        <div className="border-b border-border/60 bg-background/50 px-5 py-2.5 sm:px-6">
+          <div className="quick-filter-options">
             <span className="text-xs font-semibold text-muted-foreground mr-1 flex items-center gap-1">
               <Filter className="size-3 text-muted-foreground" /> Status:
             </span>

@@ -42,7 +42,10 @@ export function DashboardShell({
       </aside>
       <div className="workspace-body">
         <header className="workspace-header">
-          <Link href="/">ExpressHub workspace</Link>
+          <Link href="/" className="workspace-title">
+            <span className="workspace-title-desktop">ExpressHub workspace</span>
+            <span className="workspace-title-mobile">{currentRole ? `${currentRole.toLowerCase()} workspace` : "Your workspace"}</span>
+          </Link>
           <AccountMenu />
         </header>
         <main id="main-content" tabIndex={-1}>

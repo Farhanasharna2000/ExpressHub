@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LogOut, X, Menu } from "lucide-react";
 import { Button } from "@/components/ui/primitives";
 import type { UserRole } from "@/types/api";
@@ -37,6 +37,18 @@ export function Navigation({ role }: { role?: UserRole }) {
   const [openAt, setOpenAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const open = openAt === pathname;
+  const navigationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function closeOnOutsidePress(event: PointerEvent) {
+      if (event.target instanceof Node && !navigationRef.current?.contains(event.target)) {
+        setOpenAt(null);
+      }
+    }
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePress);
+  }, [open]);
 
   async function handleLogout() {
     if (busy) return;
@@ -93,7 +105,11 @@ export function Navigation({ role }: { role?: UserRole }) {
   if (items.length === 0) return null;
 
   return (
-    <div className={items.every((item) => item.mobileOnly) ? "navigation sm:hidden" : "navigation"}>
+    <div ref={navigationRef} className={items.every((item) => item.mobileOnly) ? "navigation sm:hidden" : "navigation"}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpenAt(null);
+      }}
+    >
       <Button
         variant="secondary"
         className="menu-toggle"
