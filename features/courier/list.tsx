@@ -1,4 +1,5 @@
 "use client";
+import { ResourceSkeleton, ResourceRefresh } from "@/components/ui/skeleton";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -13,7 +14,6 @@ import {
   ResponsiveTable,
   EmptyState,
   ErrorNotice,
-  LoadingState,
   type Column,
 } from "@/components/ui/primitives";
 import { Pagination } from "@/components/ui/interactive";
@@ -119,7 +119,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
   }, [serialized]);
 
   // Using /shipments/my-shipments which is securely scoped to the authenticated courier
-  const { data, loading, error, reload } = useResource<ShipmentList>(
+  const { data, loading, refreshing, error, reload } = useResource<ShipmentList>(
     query.value ? `/shipments/my-shipments${queryString(query.value)}` : null
   );
   const delay = useRetryDelay(error);
@@ -286,7 +286,8 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
         </ErrorNotice>
       )}
 
-      {loading && <LoadingState label="Loading assigned shipments…" />}
+      {refreshing && <ResourceRefresh />}
+      {loading && <ResourceSkeleton variant="list" label="Loading assigned shipments…" />}
 
       {data && (
         <Card>

@@ -1,4 +1,5 @@
 "use client";
+import { ResourceSkeleton, ResourceRefresh } from "@/components/ui/skeleton";
 
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
@@ -16,7 +17,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
   StatusBadge,
-  LoadingState,
   ErrorNotice,
   EmptyState,
 } from "@/components/ui/primitives";
@@ -30,7 +30,7 @@ import {
 
 export function PaymentDetailsView({ id }: { id: string }) {
   const isValidId = z.string().cuid().safeParse(id).success;
-  const { data, loading, error, reload } = useResource<PaymentDetailResponse>(
+  const { data, loading, refreshing, error, reload } = useResource<PaymentDetailResponse>(
     isValidId ? `/payments/${encodeURIComponent(id)}` : null
   );
   const delay = useRetryDelay(error);
@@ -70,15 +70,15 @@ export function PaymentDetailsView({ id }: { id: string }) {
         {isValidId && !error && payment?.status === "PENDING" && (
           <Button
             variant="outline"
-            disabled={loading || delay > 0}
+            disabled={loading || refreshing || delay > 0}
             onClick={() => {
               setPollingCount(0);
               reload();
             }}
             className="gap-2"
           >
-            <RefreshCw className={loading ? "animate-spin size-4" : "size-4"} />
-            {loading ? "Checking payment…" : "Refresh"}
+            <RefreshCw className={loading || refreshing ? "animate-spin size-4" : "size-4"} />
+            {loading || refreshing ? "Checking payment…" : "Refresh"}
           </Button>
         )}
       </div>
@@ -91,7 +91,8 @@ export function PaymentDetailsView({ id }: { id: string }) {
         />
       )}
 
-      {loading && !payment && <LoadingState label="Checking your payment status. Please wait…" />}
+      {refreshing && <ResourceRefresh />}
+      {loading && !payment && <ResourceSkeleton variant="detail" label="Checking your payment status. Please wait…" />}
 
       {!!error && (
         <ErrorNotice

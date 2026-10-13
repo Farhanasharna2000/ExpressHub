@@ -1,4 +1,5 @@
 "use client";
+import { ResourceSkeleton, ResourceRefresh } from "@/components/ui/skeleton";
 
 import Link from "next/link";
 import { useMemo } from "react";
@@ -9,7 +10,6 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import {
   StatusBadge,
   ErrorNotice,
-  LoadingState,
   EmptyState,
 } from "@/components/ui/primitives";
 import { errorMessage, ApiError } from "@/lib/client/api";
@@ -26,7 +26,7 @@ import { ArchiveShipmentControl } from "@/features/shipments/archive-shipment";
 
 export function AdminShipmentDetailView({ id }: { id: string }) {
   const valid = z.cuid().safeParse(id).success;
-  const { data, loading, error, reload } = useResource<{ shipment: ShipmentDetail }>(
+  const { data, loading, refreshing, error, reload } = useResource<{ shipment: ShipmentDetail }>(
     valid ? `/shipments/${encodeURIComponent(id)}` : null
   );
   const delay = useRetryDelay(error);
@@ -58,10 +58,10 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
         {valid && (
           <Button
             variant="outline"
-            disabled={loading || delay > 0}
+            disabled={loading || refreshing || delay > 0}
             onClick={reload}
           >
-            <RefreshCw className={`size-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`size-4 mr-2 ${loading || refreshing ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         )}
@@ -79,7 +79,8 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
         />
       )}
 
-      {loading && <LoadingState label="Loading operational shipment data…" />}
+      {refreshing && <ResourceRefresh />}
+      {loading && <ResourceSkeleton variant="detail" label="Loading operational shipment data…" />}
 
       {!!error && (
         <ErrorNotice

@@ -1,4 +1,5 @@
 "use client";
+import { ResourceSkeleton, ResourceRefresh } from "@/components/ui/skeleton";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ErrorNotice, LoadingState, EmptyState } from "@/components/ui/primitives";
+import { ErrorNotice, EmptyState } from "@/components/ui/primitives";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage } from "@/lib/client/api";
@@ -25,7 +26,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
   const { user: currentActor, store } = useSession();
 
   const valid = z.cuid().safeParse(id).success;
-  const { data, loading, error, reload } = useResource<{ user: CurrentUser }>(
+  const { data, loading, refreshing, error, reload } = useResource<{ user: CurrentUser }>(
     valid ? `/users/${encodeURIComponent(id)}` : null
   );
   const delay = useRetryDelay(error);
@@ -147,8 +148,8 @@ export function AdminUserDetailView({ id }: { id: string }) {
           <p className="font-mono text-sm text-muted-foreground">{id}</p>
         </div>
         {valid && (
-          <Button variant="outline" disabled={loading || delay > 0} onClick={reload}>
-            <RefreshCw className={`size-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+          <Button variant="outline" disabled={loading || refreshing || delay > 0} onClick={reload}>
+            <RefreshCw className={`size-4 mr-2 ${loading || refreshing ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         )}
@@ -181,7 +182,8 @@ export function AdminUserDetailView({ id }: { id: string }) {
         />
       )}
 
-      {loading && <LoadingState label="Loading user account details…" />}
+      {refreshing && <ResourceRefresh />}
+      {loading && <ResourceSkeleton variant="detail" label="Loading user account details…" />}
 
       {!!error && (
         <ErrorNotice

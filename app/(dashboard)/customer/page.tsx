@@ -1,5 +1,5 @@
 import { Suspense } from "react";
 import { ShipmentListView } from "@/features/shipments/list";
-import { LoadingState } from "@/components/ui/primitives";
+import { ResourceSkeleton } from "@/components/ui/skeleton";
 export const metadata = { title: "Your deliveries, together" };
-export default function Page() { return <Suspense fallback={<LoadingState label="Loading shipments…" />}><ShipmentListView recent /></Suspense>; }
+export default function Page() { return <Suspense fallback={<ResourceSkeleton variant="list" label="Loading shipments…" />}><ShipmentListView recent /></Suspense>; }

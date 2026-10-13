@@ -1,8 +1,8 @@
-import { LoadingState } from "@/components/ui/primitives";
+import { ResourceSkeleton } from "@/components/ui/skeleton";
 export default function Loading() {
   return (
     <div id="main-content">
-      <LoadingState />
+      <ResourceSkeleton variant="list" />
     </div>
   );
 }

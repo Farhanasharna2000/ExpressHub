@@ -8,6 +8,7 @@ import { UserCheck, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/toast";
+import { useResource } from "./use-resource";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage } from "@/lib/client/api";
 import type { CurrentUser } from "@/types/api";
@@ -24,9 +25,8 @@ export function AssignCourierControl({
 }: AssignCourierControlProps) {
   const { store } = useSession();
 
-  const [couriers, setCouriers] = useState<CurrentUser[]>([]);
-  const [loadingCouriers, setLoadingCouriers] = useState(false);
-  const [couriersError, setCouriersError] = useState<unknown>(null);
+  const { data: courierData, loading: loadingCouriers, error: couriersError, reload: loadCouriers } = useResource<{ users: CurrentUser[] }>("/users?role=COURIER&isActive=true&limit=100");
+  const couriers = courierData?.users ?? [];
 
   const form = useForm({ mode: "onChange", resolver: zodResolver(courierFormSchema), defaultValues: { courierId: shipment.courierId ?? "" } });
   const selectedCourierId = form.watch("courierId");
@@ -41,26 +41,6 @@ export function AssignCourierControl({
   useEffect(() => {
     form.reset({ courierId: shipment.courierId ?? "" });
   }, [shipment.courierId, form.reset]);
-
-  // Load active couriers for admin selection
-  async function loadCouriers() {
-    setLoadingCouriers(true);
-    setCouriersError(null);
-    try {
-      const res = await store.api.request<{ users: CurrentUser[] }>(
-        "/users?role=COURIER&isActive=true&limit=100"
-      );
-      setCouriers(res.users ?? []);
-    } catch (err) {
-      setCouriersError(err);
-    } finally {
-      setLoadingCouriers(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadCouriers();
-  }, [store]);
 
   async function handleAssign() {
     if (pendingRef.current || !selectedCourierId || !assignable) return;

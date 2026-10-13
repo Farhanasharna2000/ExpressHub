@@ -1,24 +1,29 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/features/auth/provider";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { resourceOptions } from "@/lib/client/query-client";
 import { ApiError } from "@/lib/client/api";
 
 export function useResource<T>(path: string | null) {
-  const { store } = useSession();
-  const [attempt, setAttempt] = useState(0);
-  const key = `${path}:${attempt}`;
-  const [result, setResult] = useState<{ key: string; data?: T; error?: unknown }>({ key: "" });
-  useEffect(() => {
-    if (!path) return;
-    const controller = new AbortController();
-    // The API client serializes filters separately, so split a prebuilt local resource URL here.
-    const [endpoint, query] = path.split("?");
-    void store.api.request<T>(endpoint, { query: Object.fromEntries(new URLSearchParams(query)), signal: controller.signal })
-      .then(data => { if (!controller.signal.aborted) setResult({ key, data }); })
-      .catch(error => { if (!controller.signal.aborted) { setResult({ key, error }); } });
-    return () => controller.abort();
-  }, [path, key, store]);
-  return { data: result.key === key ? result.data : undefined, error: result.key === key ? result.error : undefined, loading: Boolean(path) && (result.key !== key || (!result.data && !result.error)), reload: () => setAttempt(value => value + 1) };
+  const { store, status, user, revision } = useSession();
+  const client = useQueryClient();
+  const identity = `${user?.id ?? "anonymous"}:${user?.role ?? ""}:${revision}`;
+  const options = resourceOptions<T>(store.api, path, identity);
+  const enabled = Boolean(path) && status === "authenticated";
+  const query = useQuery({ ...options, enabled });
+  const reload = useCallback(() => {
+    if (!path || status !== "authenticated") return;
+    const { queryKey } = resourceOptions<T>(store.api, path, identity);
+    void client.invalidateQueries({ queryKey, exact: true }, { cancelRefetch: false });
+  }, [client, store, path, identity, status]);
+  return {
+    data: enabled && !query.isError ? query.data : undefined,
+    error: enabled ? query.error : null,
+    loading: enabled && query.isPending,
+    refreshing: enabled && query.isFetching && !query.isPending,
+    reload,
+  };
 }
 export function useRetryDelay(error: unknown) {
   const [seconds, setSeconds] = useState(0);

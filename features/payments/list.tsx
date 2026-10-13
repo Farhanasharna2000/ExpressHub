@@ -1,4 +1,5 @@
 "use client";
+import { ResourceSkeleton, ResourceRefresh } from "@/components/ui/skeleton";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,7 +12,6 @@ import {
   ResponsiveTable,
   EmptyState,
   ErrorNotice,
-  LoadingState,
   type Column,
 } from "@/components/ui/primitives";
 import { Pagination } from "@/components/ui/interactive";
@@ -98,7 +98,7 @@ export function PaymentsListView() {
   if (filters.shipmentId) query.set("shipmentId", filters.shipmentId);
 
   const resourcePath = `/payments?${query.toString()}`;
-  const { data, loading, error, reload } = useResource<PaymentsListResponse>(resourcePath);
+  const { data, loading, refreshing, error, reload } = useResource<PaymentsListResponse>(resourcePath);
   const delay = useRetryDelay(error);
 
   const payments = data?.payments ?? [];
@@ -134,11 +134,11 @@ export function PaymentsListView() {
         </div>
         <Button
           variant="outline"
-          disabled={loading || delay > 0}
+          disabled={loading || refreshing || delay > 0}
           onClick={reload}
           className="gap-2"
         >
-          <RefreshCw className={loading ? "animate-spin size-4" : "size-4"} />
+          <RefreshCw className={loading || refreshing ? "animate-spin size-4" : "size-4"} />
           {loading ? "Updating payments…" : "Refresh"}
         </Button>
       </div>
@@ -176,7 +176,8 @@ export function PaymentsListView() {
         </CardContent>
       </Card>
 
-      {loading && <LoadingState label="Loading your payment history…" />}
+      {refreshing && <ResourceRefresh />}
+      {loading && <ResourceSkeleton variant="list" label="Loading your payment history…" />}
 
       {!!error && (
         <ErrorNotice

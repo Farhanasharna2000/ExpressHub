@@ -36,6 +36,7 @@ export class ApiClient {
   private cooldowns = new Map<string, ApiError>();
   private requests = new Set<AbortController>();
   private refreshPromise: Promise<void> | null = null;
+  onMutation: (() => void) | null = null;
   onRefresh: (() => Promise<void>) | null = null;
   onExpired: (() => void) | null = null;
   onForbidden: (() => Promise<void>) | null = null;
@@ -89,10 +90,15 @@ export class ApiClient {
     this.requests.add(controller);
     const requestOptions = { ...options, signal: controller.signal };
     const assertCurrent = () => { if (controller.signal.aborted || version !== this.generation) throw new DOMException("Request cancelled", "AbortError"); };
+    const complete = <T>(result: T) => {
+      assertCurrent();
+      if (!["GET", "HEAD", "OPTIONS"].includes((options.method ?? "GET").toUpperCase())) this.onMutation?.();
+      return result;
+    };
     const sentToken = this.token;
     try {
       assertCurrent();
-      try { const result = await this.raw<T>(path, requestOptions, sentToken); assertCurrent(); return result; }
+      try { const result = await this.raw<T>(path, requestOptions, sentToken); return complete(result); }
       catch (error) {
         assertCurrent();
         if (!(error instanceof ApiError)) throw error;
@@ -100,7 +106,7 @@ export class ApiClient {
         if (error.status !== 401) throw error;
         if (this.token === sentToken) await this.refresh();
         assertCurrent();
-        try { const result = await this.raw<T>(path, requestOptions, this.token); assertCurrent(); return result; }
+        try { const result = await this.raw<T>(path, requestOptions, this.token); return complete(result); }
         catch (retryError) { if (retryError instanceof ApiError && retryError.status === 401) this.onExpired?.(); throw retryError; }
       }
     } finally { this.requests.delete(controller); options.signal?.removeEventListener("abort", abort); }

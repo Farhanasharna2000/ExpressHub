@@ -230,6 +230,24 @@ npm run typecheck
 
 ---
 
+## Client data and loading states
+
+TanStack Query backs the shared `useResource` hook. Each session owns an in-memory
+query cache with 30-second freshness and five-minute garbage collection. Query keys
+include account, role, session revision, endpoint, and normalized filters. Requests
+are deduplicated, obsolete requests are cancelled, and stale data refreshes on window
+focus or reconnect. Successful API mutations invalidate resource queries; logout and
+identity changes clear the cache. Nothing is persisted to browser storage.
+
+Automatic query retries are disabled so the API client's token refresh and
+`Retry-After` handling remain in control. Initial page loads use accessible list,
+detail, or dashboard skeletons with reduced-motion support. Background refetches
+keep existing content visible and announce “Updating…”. Checkout verification keeps
+its existing bounded polling flow.
+
+`npm run test:frontend` includes cache isolation, cancellation, invalidation,
+request deduplication, and background-refresh tests.
+
 ## Page route protection
 
 Next.js 16 uses `proxy.ts` for middleware. The proxy protects `/admin`, `/customer`,

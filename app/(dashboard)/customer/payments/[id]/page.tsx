@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { PaymentDetailsView } from "@/features/payments/detail";
-import { LoadingState } from "@/components/ui/primitives";
+import { ResourceSkeleton } from "@/components/ui/skeleton";
 
 export const metadata = { title: "Payment details" };
 
@@ -11,7 +11,7 @@ export default async function PaymentDetailPage({
 }) {
   const { id } = await params;
   return (
-    <Suspense fallback={<LoadingState label="Loading payment details…" />}>
+    <Suspense fallback={<ResourceSkeleton variant="detail" label="Loading payment details…" />}>
       <PaymentDetailsView id={id} />
     </Suspense>
   );

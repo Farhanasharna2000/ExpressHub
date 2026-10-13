@@ -1,5 +1,8 @@
 "use client";
 
+import { ResourceSkeleton, ResourceRefresh } from "@/components/ui/skeleton";
+import { ErrorNotice } from "@/components/ui/primitives";
+import { errorMessage } from "@/lib/client/api";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -11,7 +14,7 @@ import type { ShipmentList } from "@/features/shipments/contracts";
 import { CourierShipmentListView } from "./list";
 
 export function CourierDashboard() {
-  const { data } = useResource<ShipmentList>("/shipments/my-shipments?limit=100");
+  const { data, loading, refreshing, error, reload } = useResource<ShipmentList>("/shipments/my-shipments?limit=100");
 
   const shipments = data?.shipments ?? [];
   const total = data?.pagination.total ?? shipments.length;
@@ -37,6 +40,10 @@ export function CourierDashboard() {
         </Button>
       </div>
 
+      {loading && <ResourceSkeleton variant="dashboard" label="Loading delivery metrics…" />}
+      {refreshing && <ResourceRefresh />}
+      {!!error && <ErrorNotice title="Could not load delivery metrics" action={<Button variant="outline" onClick={reload}>Try again</Button>}>{errorMessage(error)}</ErrorNotice>}
+      {data && <>
       {/* Courier Route Live Banner */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -138,6 +145,7 @@ export function CourierDashboard() {
         </motion.div>
       </div>
 
+      </>}
       {/* Recent Deliveries list */}
       <CourierShipmentListView recent={true} />
     </div>

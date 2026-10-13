@@ -1,4 +1,5 @@
 "use client";
+import { ResourceSkeleton, ResourceRefresh } from "@/components/ui/skeleton";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -8,7 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { Plus, Search, RotateCcw, Package, ShieldCheck, ArrowRight, ArrowDown, SlidersHorizontal, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input, Select, StatusBadge, ResponsiveTable, EmptyState, ErrorNotice, LoadingState, type Column } from "@/components/ui/primitives";
+import { Input, Select, StatusBadge, ResponsiveTable, EmptyState, ErrorNotice, type Column } from "@/components/ui/primitives";
 import { Pagination } from "@/components/ui/interactive";
 import { queryString, errorMessage } from "@/lib/client/api";
 import { dateTime, localToISO, money, paymentStatuses, readShipmentQuery, shipmentStatuses, statusLabel, toLocalInput, type Shipment, type ShipmentList } from "./contracts";
@@ -30,7 +31,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
     try { return { value: readShipmentQuery(new URLSearchParams(serialized)), error: "" }; }
     catch (error) { return { value: null, error: error instanceof Error ? error.message : "Invalid filters" }; }
   }, [serialized]);
-  const { data, loading, error, reload } = useResource<ShipmentList>(query.value ? `/shipments${queryString(query.value)}` : null);
+  const { data, loading, refreshing, error, reload } = useResource<ShipmentList>(query.value ? `/shipments${queryString(query.value)}` : null);
   const delay = useRetryDelay(error);
   const [search, setSearch] = useState(params.get("q") ?? "");
   const [dateError, setDateError] = useState("");
@@ -135,7 +136,8 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
     )}
     {query.error && <ErrorNotice title="Check the list filters" action={<Button variant="outline" onClick={clear}>Reset filters</Button>}>{query.error}</ErrorNotice>}
     {!!error && <ErrorNotice title="Could not load shipments" action={<Button variant="outline" onClick={reload} disabled={delay > 0}>{delay ? `Retry in ${delay}s` : "Try again"}</Button>}>{errorMessage(error)}</ErrorNotice>}
-    {loading && <LoadingState label="Loading shipments…" />}
+    {refreshing && <ResourceRefresh />}
+    {loading && <ResourceSkeleton variant="list" label="Loading shipments…" />}
     {data && <Card><CardContent className="shipment-results"><ResponsiveTable caption={recent ? "Recent shipments" : "Your shipments"} columns={columns} rows={data.shipments} rowKey={shipment => shipment.id} empty={<EmptyState title={data.pagination.total > 0 ? "No shipments on this page" : filtered ? "No matching shipments" : "Your first shipment starts here"} description={data.pagination.total > 0 ? "Return to the first page to see available records." : filtered ? "Try another search or clear your filters." : "Book a shipment to start following its journey."} action={data.pagination.total > 0 ? <Button variant="outline" onClick={() => update("page", "1")}>Go to first page</Button> : filtered ? <Button variant="outline" onClick={clear}>Clear filters</Button> : <Button asChild><Link href="/customer/shipments/new">Book a shipment</Link></Button>} />} />{!recent && <Pagination meta={data.pagination} onPageSizeChange={size => update("limit", String(size))} busy={loading} onPageChange={page => update("page", String(page))} />}{recent && <div className="mt-6"><Button asChild variant="outline"><Link href="/customer/shipments">View all shipments</Link></Button></div>}</CardContent></Card>}
   </div>;
 }

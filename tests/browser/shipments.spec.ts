@@ -166,3 +166,26 @@ test("booking focuses invalid fields and retains values when returning to a step
   await expect(page.getByLabel("Pickup phone")).toHaveValue(fixture.pickupContactPhone);
   expect(calls.filter(call => call.method === "POST" && call.url.pathname.endsWith("/shipments"))).toHaveLength(0);
 });
+
+test("initial detail loads show skeletons and background refresh preserves content", async ({ page }) => {
+  await setup(page);
+  let release!: () => void;
+  let pending = new Promise<void>(resolve => { release = resolve; });
+  await page.route(`**/api/v1/shipments/${id}`, async route => {
+    await pending;
+    await ok(route, { shipment: fixture });
+  });
+  await page.goto(`/customer/shipments/${id}`);
+  await expect(page.locator('[data-skeleton="detail"]')).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Loading shipment details");
+  release();
+  await expect(page.getByText(fixture.trackingNumber, { exact: true })).toBeVisible();
+  await expect(page.locator('[data-skeleton]')).toHaveCount(0);
+  pending = new Promise<void>(resolve => { release = resolve; });
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Updating");
+  await expect(page.getByText(fixture.trackingNumber, { exact: true })).toBeVisible();
+  await expect(page.locator('[data-skeleton]')).toHaveCount(0);
+  release();
+  await expect(page.getByText("Updating…", { exact: true })).toHaveCount(0);
+});

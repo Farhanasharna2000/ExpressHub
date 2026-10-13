@@ -1,3 +1,4 @@
+import { createQueryClient, resourceQueryKey } from "@/lib/client/query-client";
 import { ApiClient, ApiError } from "@/lib/client/api";
 import type { CurrentUser } from "@/types/api";
 
@@ -21,9 +22,13 @@ export class SessionStore {
   private pending: Promise<void> | null = null;
   private epoch = 0;
   private authBusy = false;
+  readonly queryClient = createQueryClient();
   readonly api: ApiClient;
   constructor(api = new ApiClient()) {
     this.api = api;
+    api.onMutation = () => {
+      void this.queryClient.invalidateQueries({ queryKey: resourceQueryKey });
+    };
     api.onExpired = () => this.clear();
     api.onRefresh = () => this.refreshSession();
     api.onForbidden = () => this.revalidate();
@@ -48,6 +53,7 @@ export class SessionStore {
   clear(error: unknown = null) {
     this.epoch++;
     this.api.clear();
+    this.queryClient.clear();
     this.publish(
       { status: error ? "error" : "anonymous", user: null, error },
       true,
@@ -63,6 +69,7 @@ export class SessionStore {
     if (changed) {
       const token = this.api.token;
       this.api.clear();
+      this.queryClient.clear();
       this.api.token = token;
     }
     this.publish({ status: "authenticated", user, error: null }, changed);

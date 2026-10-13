@@ -1,4 +1,5 @@
 "use client";
+import { ResourceSkeleton } from "@/components/ui/skeleton";
 
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
@@ -13,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { StatusBadge, LoadingState, ErrorNotice } from "@/components/ui/primitives";
+import { StatusBadge, ErrorNotice } from "@/components/ui/primitives";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { errorMessage } from "@/lib/client/api";
@@ -178,7 +179,7 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
 
         <CardContent className="space-y-4">
           {loading && !payment && (
-            <LoadingState label="Checking whether your payment was completed. Please wait…" />
+            <ResourceSkeleton variant="detail" label="Checking whether your payment was completed. Please wait…" />
           )}
 
           {!!error && (

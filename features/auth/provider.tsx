@@ -7,6 +7,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import {
   SessionStore,
@@ -39,7 +40,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       window.clearInterval(interval);
     };
   }, [store]);
-  return <Context.Provider value={store}>{children}</Context.Provider>;
+  return <Context.Provider value={store}><QueryClientProvider client={store.queryClient}>{children}</QueryClientProvider></Context.Provider>;
 }
 export function useSession() {
   const store = useContext(Context);

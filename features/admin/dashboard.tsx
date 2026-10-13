@@ -1,4 +1,5 @@
 "use client";
+import { ResourceSkeleton, ResourceRefresh } from "@/components/ui/skeleton";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -6,7 +7,7 @@ import { motion } from "framer-motion";
 import { Users, Package, CreditCard, History, TrendingUp, RefreshCw, Truck, ShieldCheck, AlertTriangle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { ErrorNotice, LoadingState, StatusBadge } from "@/components/ui/primitives";
+import { ErrorNotice,  StatusBadge } from "@/components/ui/primitives";
 import { errorMessage } from "@/lib/client/api";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { statusLabel, money } from "@/features/shipments/contracts";
@@ -14,7 +15,7 @@ import type { DashboardStats } from "./contracts";
 import type { ShipmentStatus, PaymentStatus } from "@/types/api";
 
 export function AdminDashboard() {
-  const { data, loading, error, reload } = useResource<DashboardStats>("/admin/dashboard-stats");
+  const { data, loading, refreshing, error, reload } = useResource<DashboardStats>("/admin/dashboard-stats");
   const delay = useRetryDelay(error);
 
   const stats = data;
@@ -34,8 +35,8 @@ export function AdminDashboard() {
           <p>Real-time telemetry across shipments, logistics fleet, customer accounts, and revenue.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" disabled={loading || delay > 0} onClick={reload}>
-            <RefreshCw className={`size-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+          <Button variant="outline" disabled={loading || refreshing || delay > 0} onClick={reload}>
+            <RefreshCw className={`size-4 mr-2 ${loading || refreshing ? "animate-spin" : ""}`} />
             Refresh
           </Button>
           <Button asChild>
@@ -59,7 +60,8 @@ export function AdminDashboard() {
         </ErrorNotice>
       )}
 
-      {loading && !stats && <LoadingState label="Calculating operations metrics…" />}
+      {refreshing && <ResourceRefresh />}
+      {loading && !stats && <ResourceSkeleton variant="dashboard" label="Calculating operations metrics…" />}
 
       {stats && (
         <>
