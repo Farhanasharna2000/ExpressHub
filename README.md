@@ -1,278 +1,297 @@
-﻿# ExpressHub - Modern Courier & Logistics Platform
+# ExpressHub
 
-ExpressHub is an enterprise-grade, full-stack courier and logistics management application built with **Next.js 16 (App Router)**, **TypeScript**, **Prisma ORM**, **PostgreSQL**, and **Stripe Checkout**. 
+ExpressHub is a courier and logistics application built with Next.js 16, React 19,
+TypeScript, PostgreSQL, and Prisma. Customers book and track shipments, couriers
+manage assigned deliveries, and administrators oversee users, dispatch, payments,
+and audit records.
 
-The platform provides a responsive, accessible web experience featuring three distinct role-based workspaces (**Admin**, **Customer / User**, and **Courier / Provider**), dynamic Framer Motion animations, telemetry analytics, interactive delivery milestone tracking, and end-to-end verified online payments.
+## Project links
 
----
+- [Application](https://express-hub-sepia.vercel.app)
+- [Repository](https://github.com/sharnabetopia/ExpressHub)
+- [API health endpoint](https://express-hub-sepia.vercel.app/api/v1/health)
+- [OpenAPI specification](docs/openapi.json)
+- [Postman collection](docs/postman/ExpressHub.postman_collection.json)
 
-## 🌐 Live Deployment & Repository
+## Features
 
-- **Live Frontend URL:** [https://express-hub-sepia.vercel.app](https://express-hub-sepia.vercel.app)
-- **GitHub Repository:** [https://github.com/sharnabetopia/ExpressHub](https://github.com/sharnabetopia/ExpressHub)
-- **API Health Endpoint:** [https://express-hub-sepia.vercel.app/api/v1/health](https://express-hub-sepia.vercel.app/api/v1/health)
+| Workspace | Features |
+| --- | --- |
+| Customer — `/customer` | Shipment booking, searchable shipment history, tracking events, cancellation of eligible shipments, Stripe Checkout, and payment history |
+| Courier — `/courier` | Assigned shipments, delivery metrics, contact details, and shipment status transitions with required completion or failure notes |
+| Admin — `/admin` | Operations dashboard, shipment and user directories, courier assignment, role and activity management, archival, and audit logs |
+| Shared — `/profile` | Contact details and profile photo upload or removal |
 
----
+The interface includes responsive navigation, URL-based filtering and pagination,
+accessible field errors, toast feedback, and loading skeletons for lists, details,
+and dashboards.
 
-## 📋 Evaluation Requirements Compliance Matrix
+### Forms and validation
 
-| Requirement | Implementation Details | Status |
-|---|---|:---:|
-| **Next.js App Router Architecture** | Built strictly with Next.js App Router (`layout.tsx`, `page.tsx`, `loading.tsx`, `error.tsx`, `not-found.tsx`). Proper server/client boundaries with justified `"use client"` directives and Server Component metadata exports. | ✅ Compliant |
-| **Modern UI/UX & Responsiveness** | Mobile-first, fully responsive design using Tailwind CSS v4, shadcn/ui and Radix UI primitives, Lucide icons, and Framer Motion micro-interactions. | ✅ Compliant |
-| **Authentication & Authorization** | JWT access tokens, HttpOnly cookie rotation, bcryptjs password hashing, role-guarded routes, and conditional UI rendering across 3 distinct roles. | ✅ Compliant |
-| **One-Click Role Login** | Dedicated structured layout on `/login` featuring distinct, one-click **"Demo Login"** buttons for **Admin**, **User (Customer)**, and **Provider (Courier)**. | ✅ Compliant |
-| **API Integration & State Management** | Centralized REST client, global session state management via React Context, resilient error handling, status feedback, and retry backoff. | ✅ Compliant |
-| **Form Handling & Validation** | Zod schema validation on all inputs (matching backend rules with strict UTF-8 password limits, email formatting, and parcel dimensions). | ✅ Compliant |
-| **Payment Integration** | Real **Stripe Checkout** test-mode integration (`PayWithStripeButton`), session redirect, polling return verification (`/checkout/success`, `/checkout/cancel`), and signed webhook processing. No simulated payments. | ✅ Compliant |
-| **Meaningful Commits** | Over 22 descriptive frontend commits adhering to conventional commit standards (`feat:`, `fix:`, `ui:`). | ✅ Compliant |
-| **Demo Credentials** | Full working demo credentials provided for evaluation for all 3 roles, accessible via 1-click buttons or manual entry. | ✅ Compliant |
-| **Production Deployment** | Working live production frontend and backend deployed on Vercel with remote pooled PostgreSQL database. | ✅ Compliant |
+React Hook Form manages authentication, profile, shipment booking, and admin and
+shipment action inputs. Zod schemas validate values through `@hookform/resolvers`.
+Server-side validation remains authoritative.
 
----
+Booking has four stages: **Pickup → Delivery → Parcel → Review**. Each stage validates
+its own fields, retains entered values when navigating back, and maps server errors
+to the relevant field. Parcel inputs include weight, an optional description, and
+an optional future pickup time in the device's timezone. The final price is shown
+on the shipment detail page after booking.
 
-## 🔑 Demo Evaluation Credentials & One-Click Role Login
+### Data fetching and loading states
 
-The application provides a dedicated **One-Click Role Login** interface on the [Login Page](https://express-hub-sepia.vercel.app/login) allowing evaluators to sign in instantly with a single click.
+TanStack Query backs the shared `useResource` hook and the courier selector. Each
+session owns an in-memory cache with:
 
-| Role | Demo Button | Demo Email | Demo Password | Default Workspace | Key Capabilities |
-|---|---|---|---|---|---|
-| **Admin** | **Demo Login: Admin** | `admin@gmail.com` | `ExpressHub123!` | `/admin` | Operational telemetry, user management, courier dispatch & audit trail |
-| **User (Customer)** | **Demo Login: User** | `customer@gmail.com` | `ExpressHub123!` | `/customer` | Multi-step booking wizard, live parcel tracking & Stripe Checkout payments |
-| **Provider (Courier)** | **Demo Login: Provider** | `courier@gmail.com` | `ExpressHub123!` | `/courier` | Assigned route list, delivery status stepper & proof of delivery notes |
+- 30-second freshness and five-minute garbage collection for inactive queries.
+- Keys containing account, role, session revision, endpoint, and normalized filters.
+- Request deduplication, cancellation, and stale-data refetching on focus or reconnect.
+- Resource invalidation after successful API mutations.
+- Cache clearing on logout and identity or role changes.
 
-> 💡 **Quick Evaluation Tip:** Visit [`/login`](https://express-hub-sepia.vercel.app/login) and click any of the 3 role buttons (**"Demo Login: Admin"**, **"Demo Login: User"**, or **"Demo Login: Provider"**). The system will automatically populate credentials, establish a verified session, and redirect you directly to the respective workspace.
+Automatic query retries are disabled. The API client handles access-token refresh
+and `Retry-After` cooldowns. Initial loads use accessible skeletons with reduced-motion
+support; background refreshes retain loaded content and announce “Updating…”.
+Private query data and access tokens are not persisted to browser storage. Checkout
+verification retains its bounded polling flow.
 
----
+### Authentication and route protection
 
-## 🚀 Role-Based Workspaces & Key Features
+Next.js 16 uses **`proxy.ts`**, the renamed middleware convention. It protects
+`/admin`, `/customer`, `/courier`, `/profile`, and `/checkout`, including nested routes.
+Missing, expired, or invalid page cookies redirect to `/login?next=...`, preserving
+the destination and query parameters. Requests for another role's workspace redirect
+to the signed role's home. Login and registration stay reachable for session recovery.
 
-### 👑 1. Administrator Workspace (`/admin`)
-- **Operations Telemetry:** Real-time analytics displaying total parcels, active transit deliveries, completed shipments, and revenue volume.
-- **Shipment Management:** Filterable directory of all system shipments with courier assignment controls and terminal archival.
-- **User Directory:** Filterable user management view allowing administrators to inspect profiles, assign roles, toggle account activity, and safely archive users.
-- **Immutable Audit Trail:** Chronological ledger of state transitions, actor tracking, and JSON mutation inspectors.
+| Credential | Purpose |
+| --- | --- |
+| JWT access token | In-memory bearer credential for API requests; expires after 15 minutes |
+| `expresshub_refresh` | Rotating HTTP-only refresh cookie, scoped to `/api/v1/auth` |
+| `expresshub_page_session` | Signed HTTP-only cookie scoped to `/` for optimistic page-access checks |
 
-### 📦 2. Customer Workspace (`/customer`)
-- **Dashboard Overview:** Quick-access metrics showing active deliveries, recent bookings, and pending payments.
-- **Shipment Booking Wizard (`/customer/shipments/new`):** 3-step shipment booking wizard with dimensional validation, pickup scheduling, and server-calculated dynamic pricing.
-- **Parcel Tracking & Detail (`/customer/shipments/[id]`):** Real-time milestone tracker, route information, recipient contacts, and integrated Stripe Checkout.
-- **Payment Transaction Ledger (`/customer/payments`):** Caller-scoped ledger of all Stripe transactions, payment receipts, and settlement status.
+Cookies use `SameSite=Lax` and `Secure` in production. Page-session cookies use a
+separate audience and token purpose from API tokens. Login, registration, refresh,
+and current-user responses issue them; successful logout and rejected refresh
+sessions clear them. Existing sessions without a page cookie recover through the
+login page's refresh flow.
 
-### 🚚 3. Courier Workspace (`/courier`)
-- **Active Dispatch Overview:** Assigned stops, pending collections, and quick route actions.
-- **Route Cards & Operations (`/courier/shipments`):** Mobile-optimized cards featuring one-click phone links for senders and recipients.
-- **Milestone Stepper (`/courier/shipments/[id]`):** Transition controls for advancing shipments (*Picked Up* → *In Transit* → *Out for Delivery* → *Delivered*) with mandatory delivery proof notes.
+Page checks do not replace authorization. The client session guard and database-backed
+API checks enforce current roles, active accounts, ownership, and revocation. API
+CORS handling remains separate from page redirects.
 
----
+## Technology
 
-## 🛠️ Demonstration Workflows
+| Area | Implementation |
+| --- | --- |
+| Application | Next.js 16 App Router, React 19, TypeScript |
+| Forms | React Hook Form, Zod, `@hookform/resolvers` |
+| Client data | TanStack Query, React Context session provider, shared REST client |
+| UI | Tailwind CSS 4, Radix UI, shadcn-style components, Lucide icons, Framer Motion |
+| Database | PostgreSQL, Prisma 5 |
+| Authentication | JWT, rotating refresh tokens, bcryptjs |
+| Payments | Stripe Checkout and signed webhooks |
+| Rate limiting | Upstash Redis; process-local fallback in development |
+| Testing | Node.js test runner and Playwright |
 
-### Workflow 1: Customer Booking to Verified Stripe Payment
-1. Open [`/login`](https://express-hub-sepia.vercel.app/login) and click **"Demo Login: User"**.
-2. Navigate to **Book Parcel** (`/customer/shipments/new`).
-3. Complete sender pickup, recipient delivery, and parcel specifications (weight, dimensions).
-4. Review calculated pricing and confirm booking.
-5. On the shipment detail page, click **Pay with Stripe Checkout**.
-6. Enter standard Stripe test credentials (e.g. `4242 4242 4242 4242`).
-7. Upon successful payment, Stripe redirects to `/checkout/success` where the transaction is polled, verified, and settled.
-8. View the confirmed **Payment Verified** badge on the shipment detail screen.
+## Local setup
 
-### Workflow 2: Admin Courier Assignment & Operations
-1. Open [`/login`](https://express-hub-sepia.vercel.app/login) and click **"Demo Login: Admin"**.
-2. Navigate to **Shipments** (`/admin/shipments`) and select an unassigned shipment.
-3. Open the **Courier Assignment** panel, choose an active courier from the dropdown, and click **Assign Courier**.
-4. Observe the courier status badge update in real time.
-5. Inspect the immutable audit log under **Audit Logs** (`/admin/audit-logs`) to verify the actor event recorded.
+Use **Node.js 24** for the repository's native TypeScript test helpers, npm, and a
+PostgreSQL database. Stripe test credentials are needed for payment workflows.
 
-### Workflow 3: Courier Delivery Milestone Progression
-1. Open [`/login`](https://express-hub-sepia.vercel.app/login) and click **"Demo Login: Provider"**.
-2. Navigate to **My Deliveries** (`/courier/shipments`) to view assigned parcels.
-3. Click **View & Update** on an assigned shipment.
-4. Advance the delivery status sequentially:
-   - Click **Mark as Picked up**
-   - Click **Mark as In transit**
-   - Click **Mark as Out for delivery**
-   - Click **Mark as Delivered**, input delivery confirmation notes (e.g., *"Handed to recipient in person"*), and confirm.
-5. The shipment transitions to terminal `DELIVERED` status with all timestamps captured.
-
----
-
-## 💻 Tech Stack & Architecture
-
-- **Frontend Framework:** Next.js 16 (App Router with Turbopack)
-- **Programming Language:** TypeScript
-- **Styling & Components:** Tailwind CSS v4, Radix UI Primitives, shadcn/ui components, Framer Motion
-- **Database & ORM:** PostgreSQL with Prisma ORM
-- **Authentication:** JWT (JSON Web Tokens), HttpOnly Refresh Cookies, bcryptjs
-- **State Management & Data Fetching:** React Context (`SessionProvider`), Custom REST client with retry backoff & AbortController
-- **Payment Processing:** Stripe Checkout API & cryptographic webhook signature validation
-- **Rate Limiting:** Upstash Redis with distributed sliding window & local fallback
-- **Testing:** Node.js native test runner & Playwright
-
----
-
-## 📁 Project Structure
-
-```text
-ExpressHub/
-├── app/
-│   ├── (public)/              # Landing page, /login with 1-Click Demo Login, /register
-│   ├── (dashboard)/           # Authenticated role-based workspaces
-│   │   ├── admin/             # Operations telemetry, users, shipments, audit logs
-│   │   ├── customer/          # Bookings, shipment list, details, payments
-│   │   ├── courier/           # Assigned deliveries, milestone updater
-│   │   └── profile/           # Account profile & photo editor
-│   ├── checkout/              # Stripe checkout success & cancel return handlers
-│   ├── api/v1/                # REST API route handlers
-│   │   ├── auth/              # Register, login, refresh-token, logout
-│   │   ├── shipments/         # Creation, assignment, status transitions, search
-│   │   ├── payments/          # Stripe checkout session initiation, webhooks
-│   │   ├── users/             # User directory, profile updates
-│   │   └── admin/             # Dashboard telemetry, audit logs
-│   ├── layout.tsx             # Root layout & theme providers
-│   ├── loading.tsx            # Global loading fallback
-│   ├── error.tsx              # Error boundary with recovery action
-│   └── globals.css            # Responsive layout tokens, status badge styles
-├── components/
-│   ├── layout/                # Shells, navigation headers, sidebars
-│   └── ui/                    # Buttons, Cards, Badges, Dialogs, Motion components
-├── features/
-│   ├── auth/                  # 1-Click demo forms, session store, token refresh
-│   ├── shipments/             # Booking wizards, lists, trackers, assignment
-│   ├── payments/              # Stripe checkout buttons, transaction ledgers
-│   ├── courier/               # Delivery operations, route cards
-│   └── admin/                 # Stats cards, user tables, audit log inspectors
-├── prisma/
-│   ├── schema.prisma          # PostgreSQL relational schema
-│   ├── seed.mjs               # Admin account seed script
-│   └── seed-pricing.mjs       # Dynamic shipping pricing rules seed
-└── tests/                     # 40+ unit, integration, and security tests
-```
-
----
-
-## ⚙️ Environment Variables
-
-Create a `.env` file in the project root based on the following template:
-
-| Variable | Description | Example / Default |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/expresshub?schema=public` |
-| `ALLOWED_ORIGIN` | Permitted frontend origin for CORS | `http://localhost:3000` |
-| `JWT_ACCESS_SECRET` | Secret key for signing JWT access tokens | `64-character-hex-secret` |
-| `STRIPE_SECRET_KEY` | Stripe secret API key (Test Mode) | `sk_test_...` |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | `whsec_...` |
-| `STRIPE_SUCCESS_URL` | Stripe checkout success redirect URL | `http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}` |
-| `STRIPE_CANCEL_URL` | Stripe checkout cancellation return URL | `http://localhost:3000/checkout/cancel` |
-| `UPSTASH_REDIS_REST_URL` | Upstash Redis URL for distributed rate limiting | `https://...upstash.io` |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token | `your-upstash-token` |
-
----
-
-## 🏃 Getting Started Locally
-
-### 1. Prerequisites
-- Node.js (v20 or higher)
-- PostgreSQL database
-- Git
-
-### 2. Installation
 ```bash
-# Clone the repository
 git clone https://github.com/sharnabetopia/ExpressHub.git
 cd ExpressHub
-
-# Install dependencies
-npm install
+npm ci
+cp .env.example .env
 ```
 
-### 3. Database Migration & Seeding
+Edit `.env` before initializing the database. Generate a signing secret with:
+
 ```bash
-# Generate Prisma Client
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
+```
+
+Set the generated value as `JWT_ACCESS_SECRET`, configure `DATABASE_URL`, and fill
+in the three `ADMIN_*` values. Then run:
+
+```bash
 npm run prisma:generate
-
-# Run database migrations
 npm run prisma:migrate:deploy
-
-# Seed pricing rules and initial admin
 npm run prisma:seed:pricing
 npm run prisma:seed
-```
-
-### 4. Run Development Server
-```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [localhost:3000](http://localhost:3000).
 
----
+The pricing seed creates a **100 BDT flat delivery rule** with no additional weight
+fee. It refuses overlapping custom rules. The admin seed creates only the initial
+administrator and refuses to promote an existing non-admin account. Register customer
+accounts through `/register`; an administrator can assign the courier role afterward.
 
-## 🧪 Running the Test Suite
+### Environment variables
 
-The project includes comprehensive test suites across frontend and backend workflows:
+Use [.env.example](.env.example) as the configuration template. Keep real credentials
+in your local environment or deployment secret settings.
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `ALLOWED_ORIGIN` | Exact frontend origin for CORS; `http://localhost:3000` locally |
+| `JWT_ACCESS_SECRET` | Signing secret of at least 32 bytes for access tokens and page-session cookies |
+| `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Initial admin seed inputs; password must be at least 12 characters and at most 72 UTF-8 bytes |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Required for production rate limiting; leave both empty for the local development limiter |
+| `RATE_LIMIT_IP_HEADER` | Optional trusted ingress header: `x-real-ip` or `x-forwarded-for`; ingress must overwrite it with a single IP |
+| `STRIPE_SECRET_KEY` | Stripe test-mode secret API key |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret for the webhook endpoint or local Stripe CLI listener |
+| `STRIPE_SUCCESS_URL` | Default: `http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}` |
+| `STRIPE_CANCEL_URL` | Default: `http://localhost:3000/checkout/cancel` |
+
+Production rate limiting fails closed if Upstash is unavailable or unconfigured.
+There is no process-local production fallback.
+
+### Demo accounts
+
+The login UI includes buttons using these demo credentials. They work only when the
+matching active accounts have been provisioned in the connected database; the seed
+command does not create this complete set.
+
+| Role | Email | Password | Workspace |
+| --- | --- | --- | --- |
+| Admin | `admin@gmail.com` | `ExpressHub123!` | `/admin` |
+| Customer | `customer@gmail.com` | `ExpressHub123!` | `/customer` |
+| Courier | `courier@gmail.com` | `ExpressHub123!` | `/courier` |
+
+Use separate credentials for non-demo accounts.
+
+## Booking and payment workflow
+
+1. Sign in as a customer and open `/customer/shipments/new`.
+2. Complete pickup, delivery, and parcel details, then review and create the shipment.
+3. Check the server-calculated price on its detail page and choose **Pay with Stripe**.
+4. Complete test-mode Checkout. The return page checks payment status; a redirect
+   alone does not confirm payment. Signed webhook processing updates settlement.
+5. As an admin, assign an active courier to an eligible shipment.
+6. As that courier, progress through pickup, transit, out-for-delivery, and delivery.
+   Operational transitions require confirmed payment and an assigned courier.
+
+For local webhook delivery, run the Stripe CLI listener in another terminal:
 
 ```bash
-# Run all frontend integration and workflow tests
-npm run test:frontend
-
-# Run authentication and security tests
-npm run test:auth
-npm run test:security
-
-# Run Stripe payment integration tests
-npm run test:payments
-
-# Run TypeScript typecheck
-npm run typecheck
+stripe listen --forward-to localhost:3000/api/v1/payments/webhook
 ```
 
----
+Copy the listener's signing secret into `STRIPE_WEBHOOK_SECRET` and restart the app.
+`npm run stripe:check` checks configured Stripe test credentials and, for public
+return URLs, webhook subscriptions. A delivered event is still needed to verify
+end-to-end settlement.
 
-## Client data and loading states
+## Build and deployment
 
-TanStack Query backs the shared `useResource` hook. Each session owns an in-memory
-query cache with 30-second freshness and five-minute garbage collection. Query keys
-include account, role, session revision, endpoint, and normalized filters. Requests
-are deduplicated, obsolete requests are cancelled, and stale data refreshes on window
-focus or reconnect. Successful API mutations invalidate resource queries; logout and
-identity changes clear the cache. Nothing is persisted to browser storage.
+```bash
+npm run build
+npm run start
+```
 
-Automatic query retries are disabled so the API client's token refresh and
-`Retry-After` handling remain in control. Initial page loads use accessible list,
-detail, or dashboard skeletons with reduced-motion support. Background refetches
-keep existing content visible and announce “Updating…”. Checkout verification keeps
-its existing bounded polling flow.
+The build generates Prisma Client before compiling Next.js. If a restricted
+environment prevents Turbopack from binding its local worker port, the supported
+webpack build can be used:
 
-`npm run test:frontend` includes cache isolation, cancellation, invalidation,
-request deduplication, and background-refresh tests.
+```bash
+npm run build -- --webpack
+```
 
-## Page route protection
+Configure production environment variables, apply migrations with
+`npm run prisma:migrate:deploy`, and use HTTPS for production cookie handling.
+Set the allowed origin, Stripe return URLs, and webhook endpoint to the deployment's
+actual addresses. Apply seeds deliberately against the intended database.
 
-Next.js 16 uses `proxy.ts` for middleware. The proxy protects `/admin`, `/customer`,
-`/courier`, `/profile`, and `/checkout` (including nested routes), while preserving
-API CORS handling. Missing, expired, or invalid page cookies redirect to
-`/login?next=...`; a different role redirects to its own workspace. Login and
-registration remain accessible so expired or revoked sessions can recover without
-redirect loops.
+## Testing
 
-`expresshub_page_session` is a signed, HTTP-only, SameSite=Lax cookie scoped to `/`
-(Secure in production). It uses `JWT_ACCESS_SECRET` with a separate audience and
-purpose from API access tokens. Login, registration, refresh, and current-user
-responses issue it; logout and rejected refresh sessions clear it. Existing sessions
-without this cookie recover through the login page's normal refresh flow.
+### Type checking and unit tests
 
-This cookie provides optimistic navigation checks only. It cannot refresh a session
-or authenticate an API request. The client session guard and database-backed API
-checks remain authoritative for revocation, disabled accounts, and current roles.
-The refresh cookie remains scoped to `/api/v1/auth`.
+```bash
+npm run typecheck
+npm run test:frontend
+npm run test:auth
+npm run test:security
+npm run test:payments
+npm run test:checkout-return
+npm run test:errors
+```
 
-Run `npm run test:security` for route and cookie checks. The request-level Playwright
-checks in `tests/browser/route-protection.spec.ts` exercise the production proxy
-without launching a browser.
+`test:frontend` covers frontend contracts and workflows, form validation, and query
+cache behavior. `test:security` includes proxy redirects and cookie validation.
+`test:payments` is a unit suite; database integration tests use separate commands.
 
-## 👤 Author
+If the auth unit test picks up external Upstash settings, run it with an isolated
+local limiter (Bash):
 
-**Farhana Sharna**  
-- **GitHub:** [@sharnabetopia](https://github.com/sharnabetopia) / [@Farhanasharna2000](https://github.com/Farhanasharna2000)
+```bash
+NODE_ENV=test UPSTASH_REDIS_REST_URL= UPSTASH_REDIS_REST_TOKEN= npm run test:auth
+```
+
+### Browser and HTTP checks
+
+```bash
+npx playwright install --with-deps chromium
+npm run build
+npm run test:frontend:browser
+```
+
+Playwright starts a dedicated production server at `http://127.0.0.1:3100` with an
+isolated signing secret and runs desktop and mobile Chromium projects. Keep port
+3100 free. `PLAYWRIGHT_CHROMIUM_EXECUTABLE` can select an existing compatible browser.
+On Linux, an error mentioning `libnspr4.so` indicates missing browser system dependencies.
+
+The proxy HTTP tests do not launch a browser:
+
+```bash
+npm run test:frontend:browser -- tests/browser/route-protection.spec.ts --project=desktop
+```
+
+### Database integration tests
+
+Point `DATABASE_URL` at a dedicated development/test database with migrations applied.
+These suites create and remove fixtures; run them individually.
+
+```bash
+npm run test:auth:integration
+npm run test:users:integration
+npm run test:shipments:integration
+npm run test:payments:integration
+npm run test:admin:integration
+npm run test:lists:integration
+npm run test:soft-delete:integration
+npm run test:errors:integration
+```
+
+The payment integration suite uses PostgreSQL with an injected payment provider;
+it does not charge a card or contact Stripe. The error integration suite uses a
+production test server and an intentionally unreachable database.
+
+## Project structure
+
+```text
+app/                  App Router pages, layouts, loading/error boundaries, and API routes
+components/layout/    Workspace shells and navigation
+components/ui/        Shared controls, dialogs, notifications, and skeletons
+features/auth/        Forms, session provider, and session lifecycle
+features/shipments/   Booking, lists, details, actions, and useResource
+features/payments/    Checkout initiation, return verification, and payment views
+features/admin/       Operations dashboard, users, shipments, and audit views
+features/courier/     Assigned delivery dashboard and workflows
+lib/auth/             Token helpers and shared route-access policy
+lib/client/           API client, query client, and action form schemas
+services/             Database-backed business operations
+validators/           Server request validation
+prisma/               Schema, migrations, admin seed, and pricing seed
+proxy.ts              Page-access checks and API CORS handling
+docs/                 API specification, Postman collection, and implementation notes
+tests/                Unit, database integration, and Playwright tests
+```
+
+## Author
+
+**Farhana Sharna** — [@sharnabetopia](https://github.com/sharnabetopia) /
+[@Farhanasharna2000](https://github.com/Farhanasharna2000)
