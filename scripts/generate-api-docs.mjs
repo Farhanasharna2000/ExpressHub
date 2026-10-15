@@ -111,6 +111,12 @@ for (const suffix of ["create", "initiate"]) add("post", `${prefix}/payments/${s
   description:"CUSTOMER owning an undeleted CREATED shipment only. Price and currency come from the server quote. create and initiate are aliases. Only one pending/accepted attempt per shipment. Reuse the same Idempotency-Key after network/provider errors. checkoutUrl can be null when Checkout is no longer pending/open. Initiation never confirms payment; a verified Stripe webhook settles it."
 });
 add("get", `${prefix}/payments/{id}`, "Read payment", {payment}, {message:"Payment fetched successfully",description:"Paying CUSTOMER or ADMIN; another customer receives 404, COURIER receives 403. Retains history for deleted shipments. Provider references and idempotency keys are not exposed."});
+add("post", `${prefix}/payments/{id}/refund`, "Initiate payment refund", {payment:{...payment,status:"REFUNDED",refundedAt:timestamp}}, {
+  message:"Refund initiated successfully",
+  body:object({reason:str(3,1000)},[]),
+  example:{reason:"Customer requested refund"},
+  description:"ADMIN or owning CUSTOMER. Initiates a Stripe refund for a confirmed PAID payment. Updates payment and shipment status to REFUND_PENDING or REFUNDED."
+});
 for (const suffix of ["", "/my-payments"]) add("get", `${prefix}/payments${suffix}`, "List own payments", {payments:[payment],pagination}, {message:"Payments fetched successfully",query:paymentQuery,description:"CUSTOMER or ADMIN only. Both aliases return only the caller's own payments, including retained history for deleted shipments. Sorted by createdAt descending and ID ascending."});
 add("post", `${prefix}/payments/webhook`, "Receive Stripe webhook", {received:true}, {public:true,message:"Webhook received",errors:[400,413,500,503],headers:[{name:"Stripe-Signature",in:"header",required:true,schema:{type:"string"},description:"Stripe-generated signature over the original request bytes; use Stripe CLI for local delivery."}],description:"Provider-only endpoint; no bearer token. Requires original signed JSON body (maximum 256 KiB), valid recent signature and matching account/mode. Server verifies payment metadata, amount and currency against Stripe. Duplicate events are acknowledged without repeating changes; unrelated events are ignored. A 503 requests a retry. Send real signed events through Stripe CLI; the Postman reference body alone cannot simulate a valid payment."});
 const webhook = spec.paths[`${prefix}/payments/webhook`].post;

@@ -3186,6 +3186,92 @@
           "event": []
         },
         {
+          "name": "Initiate payment refund",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payments/{{paymentId}}/refund",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "{{paymentId}}",
+                "refund"
+              ]
+            },
+            "description": "ADMIN or owning CUSTOMER. Initiates a Stripe refund for a confirmed PAID payment. Updates payment and shipment status to REFUND_PENDING or REFUNDED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Customer requested refund\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/payments/{{paymentId}}/refund",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments",
+                    "{{paymentId}}",
+                    "refund"
+                  ]
+                },
+                "description": "ADMIN or owning CUSTOMER. Initiates a Stripe refund for a confirmed PAID payment. Updates payment and shipment status to REFUND_PENDING or REFUNDED.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Customer requested refund\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Refund initiated successfully\",\n  \"data\": {\n    \"payment\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"shipmentId\": \"cm123456789012345678901234\",\n      \"payerId\": \"cm123456789012345678901234\",\n      \"provider\": \"STRIPE\",\n      \"amount\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"REFUNDED\",\n      \"paidAt\": null,\n      \"refundedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
           "name": "List own payments",
           "request": {
             "method": "GET",

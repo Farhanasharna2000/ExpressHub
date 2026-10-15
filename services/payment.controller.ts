@@ -8,9 +8,11 @@ import { AppError } from "@/lib/http/errors";
 import { uniqueQueryParameters } from "@/lib/http/query";
 import { successResponse, tooManyRequestsResponse } from "@/lib/http/responses";
 import { limitApiRequests } from "@/lib/rate-limit";
+import type { PaymentGateway } from "@/lib/payments/stripe";
 import {
   getPayment,
   initiatePayment,
+  initiateRefund,
   listMyPayments,
 } from "@/services/payment.service";
 import {
@@ -18,6 +20,7 @@ import {
   listPaymentsSchema,
   paymentIdSchema,
   paymentIdempotencySchema,
+  refundPaymentSchema,
 } from "@/validators/payment";
 
 /**
@@ -186,3 +189,33 @@ export async function getPaymentById(
     return handlePaymentError(error);
   }
 }
+
+/** Initiates a refund for a confirmed PAID payment. */
+export async function refundPayment(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+  gateway?: PaymentGateway,
+) {
+  try {
+    const actor = await requireUser(request);
+    if (actor.role === "COURIER") {
+      throw new AppError(403, "Payment access is not allowed", "FORBIDDEN");
+    }
+    const id = paymentIdSchema.parse((await context.params).id);
+    let reason: string | undefined;
+    const contentType = request.headers
+      .get("content-type")
+      ?.split(";")[0]
+      .trim()
+      .toLowerCase();
+    if (contentType === "application/json" && request.body) {
+      const input = await parseRequestBody(request, refundPaymentSchema);
+      reason = input?.reason;
+    }
+    const result = await initiateRefund(actor, id, reason, gateway);
+    return successResponse("Refund initiated successfully", result);
+  } catch (error) {
+    return handlePaymentError(error);
+  }
+}
+

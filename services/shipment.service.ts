@@ -5,6 +5,8 @@ import { requireRole, type AuthenticatedUser } from "@/lib/auth/require-user";
 import { AppError } from "@/lib/http/errors";
 import prisma from "@/lib/prisma";
 import { paginateTransaction } from "@/lib/db/pagination";
+import type { PaymentGateway } from "@/lib/payments/stripe";
+import { executeRefund } from "@/services/payment.service";
 import type {
   AssignCourierInput,
   CreateShipmentInput,
@@ -298,6 +300,7 @@ export async function updateShipmentStatus(
   actor: AuthenticatedUser,
   id: string,
   input: ShipmentStatusInput,
+  gateway?: PaymentGateway,
 ) {
   return transaction(async (tx) => {
     const user = await currentActor(tx, actor);
@@ -335,6 +338,24 @@ export async function updateShipmentStatus(
       throw conflict(
         "Resolve or expire the pending Stripe checkout before cancelling the shipment",
       );
+    }
+    if (input.status === "CANCELLED") {
+      const paidPayment = await tx.payment.findFirst({
+        where: { shipmentId: id, status: "PAID" },
+      });
+      if (paidPayment) {
+        await executeRefund(
+          tx,
+          paidPayment,
+          user,
+          input.note ?? "Shipment cancelled by user",
+          gateway,
+        );
+      } else if (before.paymentStatus === "PAID") {
+        throw conflict(
+          "Paid shipment requires an active payment record for refund reconciliation",
+        );
+      }
     }
     if (!["CANCELLED", "RETURNED"].includes(input.status)) {
       if (before.paymentStatus !== "PAID")

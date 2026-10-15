@@ -16,16 +16,18 @@ process.env.STRIPE_CANCEL_URL = "http://localhost:3000/cancel";
 process.env.UPSTASH_REDIS_REST_URL = "";
 process.env.UPSTASH_REDIS_REST_TOKEN = "";
 const { default: prisma } = await import("../lib/prisma.ts");
-const { initiatePayment, processStripeEvent, getPayment } = await import("../services/payment.service.ts");
+const { initiatePayment, processStripeEvent, getPayment, initiateRefund } = await import("../services/payment.service.ts");
 const { updateShipmentStatus } = await import("../services/shipment.service.ts");
 const { signAccessToken } = await import("../lib/auth/tokens.ts");
 const detailRoute = await import("../app/api/v1/payments/[id]/route.ts");
+const refundRoute = await import("../app/api/v1/payments/[id]/refund/route.ts");
+const { refundPayment } = await import("../services/payment.controller.ts");
 const listRoute = await import("../app/api/v1/payments/route.ts");
 const initiateRoute = await import("../app/api/v1/payments/initiate/route.ts");
 const webhookRoute = await import("../app/api/v1/payments/webhook/route.ts");
 const users = [], shipments = [], eventIds = [];
 const sessions = new Map(), intents = new Map(), refunds = new Map(), keys = new Map();
-let failCreate = false;
+let failCreate = false, failRefund = false;
 const gateway = {
   async create(params, key) {
     assert.deepEqual(params.allowed_payment_method_types, ["card"]);
@@ -46,6 +48,20 @@ const gateway = {
   async retrieve(id) { assert.ok(sessions.has(id)); return structuredClone(sessions.get(id)); },
   async intent(id) { assert.ok(intents.has(id)); return structuredClone(intents.get(id)); },
   async refunds(id) { return structuredClone(refunds.get(id) ?? []); },
+  async createRefund(params, key) {
+    if (failRefund) throw new Error("simulated provider refund timeout");
+    const refund = {
+      id: `re_test_${randomUUID()}`,
+      payment_intent: params.payment_intent,
+      amount: params.amount ?? 10029,
+      currency: "bdt",
+      status: "succeeded",
+    };
+    const list = refunds.get(params.payment_intent) ?? [];
+    list.push(refund);
+    refunds.set(params.payment_intent, list);
+    return structuredClone(refund);
+  },
 };
 async function user(role) {
   const row = await prisma.user.create({ data: { name: "Payment Test", email: `${randomUUID()}@example.com`, passwordHash: "not-a-login-hash", role } });
@@ -186,6 +202,63 @@ try {
   await processEvent(event("checkout.session.expired", { id: expiredSession.id }));
   await state(retried.payment.id, "PENDING");
 
+  // BUG-02: Automated refund on cancellation of paid shipments
+  const paidBooking = await shipment(customer);
+  const paidKey = randomUUID();
+  const initPaid = await initiatePayment(customer, paidBooking.id, paidKey, gateway);
+  const paidPaymentId = initPaid.payment.id;
+  const paidSession = await pay(paidPaymentId);
+  await processEvent(event("checkout.session.completed", { id: paidSession.id }));
+  await state(paidPaymentId, "PAID");
+
+  // Cancellation automatically initiates a Stripe refund and reconciles financial state
+  const cancelledShipment = await updateShipmentStatus(customer, paidBooking.id, { status: "CANCELLED", expectedStatus: "CREATED" }, gateway);
+  assert.equal(cancelledShipment.status, "CANCELLED");
+  const cancelledPayment = await state(paidPaymentId, "REFUNDED");
+  assert.ok(cancelledPayment.refundedAt);
+  assert.equal(await prisma.auditLog.count({ where: { paymentId: paidPaymentId, action: "PAYMENT_REFUND_INITIATED" } }), 1);
+
+  // Cancellation rollback on provider failure: shipment and payment remain unchanged
+  const failRefundBooking = await shipment(customer);
+  const failRefundKey = randomUUID();
+  const initFail = await initiatePayment(customer, failRefundBooking.id, failRefundKey, gateway);
+  const failPaymentId = initFail.payment.id;
+  const failSession = await pay(failPaymentId);
+  await processEvent(event("checkout.session.completed", { id: failSession.id }));
+  await state(failPaymentId, "PAID");
+
+  failRefund = true;
+  await assert.rejects(updateShipmentStatus(customer, failRefundBooking.id, { status: "CANCELLED", expectedStatus: "CREATED" }, gateway), { status: 502 });
+  failRefund = false;
+  // Verify transaction rolled back: shipment remains CREATED and payment remains PAID
+  const untouchedShipment = await prisma.shipment.findUniqueOrThrow({ where: { id: failRefundBooking.id } });
+  assert.equal(untouchedShipment.status, "CREATED");
+  assert.equal(untouchedShipment.paymentStatus, "PAID");
+  const untouchedPayment = await prisma.payment.findUniqueOrThrow({ where: { id: failPaymentId } });
+  assert.equal(untouchedPayment.status, "PAID");
+
+  // Programmatic refund endpoint: POST /api/v1/payments/:id/refund
+  const directRefundBooking = await shipment(customer);
+  const directKey = randomUUID();
+  const initDirect = await initiatePayment(customer, directRefundBooking.id, directKey, gateway);
+  const directPaymentId = initDirect.payment.id;
+  const directSession = await pay(directPaymentId);
+  await processEvent(event("checkout.session.completed", { id: directSession.id }));
+  await state(directPaymentId, "PAID");
+
+  const refundContext = { params: Promise.resolve({ id: directPaymentId }) };
+  // Courier cannot access refund endpoint
+  assert.equal((await refundRoute.POST(request(`${directPaymentId}/refund`, courier, {}), refundContext)).status, 403);
+  // Unrelated customer receives 404
+  assert.equal((await refundRoute.POST(request(`${directPaymentId}/refund`, other, {}), refundContext)).status, 404);
+  // Owner can refund via controller with injected test gateway
+  const refundResponse = await refundPayment(request(`${directPaymentId}/refund`, customer, { reason: "Customer requested refund" }), refundContext, gateway);
+  assert.equal(refundResponse.status, 200);
+  assert.equal((await refundResponse.json()).data.payment.status, "REFUNDED");
+  // Cannot refund an already refunded payment
+  assert.equal((await refundPayment(request(`${directPaymentId}/refund`, customer, {}), refundContext, gateway)).status, 409);
+
+
   // Route-level signature checking, ignored events and durable deduplication.
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   const ignored = event("customer.created", { id: "cus_test" });
@@ -207,6 +280,7 @@ try {
       prisma.paymentWebhookEvent.deleteMany({ where: { providerEventId: { in: eventIds } } }),
       prisma.auditLog.deleteMany({ where: { shipmentId: { in: shipments } } }),
       prisma.payment.deleteMany({ where: { shipmentId: { in: shipments } } }),
+      prisma.shipmentEvent.deleteMany({ where: { shipmentId: { in: shipments } } }),
       prisma.shipment.deleteMany({ where: { id: { in: shipments } } }),
       prisma.user.deleteMany({ where: { id: { in: users } } }),
     ]);

@@ -104,9 +104,22 @@ export function ShipmentDetails({ id }: { id: string }) {
             </div>
           </div>
         )}
-        {shipment.status === "CREATED" ? <><p className="text-sm text-muted-foreground">You can request cancellation before pickup. An open Checkout session may prevent cancellation. Cancelling does not automatically refund a payment.</p><Button variant="destructive" disabled={busy || delay > 0} onClick={() => setOpen(true)}>Cancel shipment</Button></> : <p className="text-sm text-muted-foreground">This shipment can no longer be cancelled by a customer.</p>}
+        {shipment.status === "CREATED" ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              {shipment.paymentStatus === "PAID"
+                ? "You can request cancellation before pickup. An automated refund will be initiated for this paid shipment. Note that unconfirmed checkouts do not automatically refund."
+                : "You can request cancellation before pickup. An open Checkout session may prevent cancellation. Cancelling does not automatically refund a payment."}
+            </p>
+            <Button variant="destructive" disabled={busy || delay > 0} onClick={() => setOpen(true)}>
+              Cancel shipment
+            </Button>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">This shipment can no longer be cancelled by a customer.</p>
+        )}
       </CardContent></Card>
-      <Dialog open={open} onOpenChange={value => { if (!pending.current) setOpen(value); }}><DialogContent onEscapeKeyDown={event => { if (pending.current) event.preventDefault(); }} onPointerDownOutside={event => { if (pending.current) event.preventDefault(); }} showCloseButton={!busy}><DialogHeader><DialogTitle>Cancel this shipment?</DialogTitle><DialogDescription>This action cannot be undone. An open Checkout session may block cancellation. Cancelling a shipment does not automatically refund any payment.</DialogDescription></DialogHeader><div className="flex flex-wrap justify-end gap-3"><Button variant="outline" disabled={busy} autoFocus onClick={() => setOpen(false)}>Keep shipment</Button><Button variant="destructive" disabled={busy || delay > 0} onClick={cancel}>{busy && <Loader2 className="animate-spin" />}{busy ? "Cancelling…" : "Confirm cancellation"}</Button></div></DialogContent></Dialog>
+      <Dialog open={open} onOpenChange={value => { if (!pending.current) setOpen(value); }}><DialogContent onEscapeKeyDown={event => { if (pending.current) event.preventDefault(); }} onPointerDownOutside={event => { if (pending.current) event.preventDefault(); }} showCloseButton={!busy}><DialogHeader><DialogTitle>Cancel this shipment?</DialogTitle><DialogDescription>{shipment.paymentStatus === "PAID" ? "This action cannot be undone. An automated refund will be initiated for your payment upon cancellation; unconfirmed checkout sessions do not automatically refund." : "This action cannot be undone. An open Checkout session may block cancellation. Cancelling a shipment does not automatically refund any payment."}</DialogDescription></DialogHeader><div className="flex flex-wrap justify-end gap-3"><Button variant="outline" disabled={busy} autoFocus onClick={() => setOpen(false)}>Keep shipment</Button><Button variant="destructive" disabled={busy || delay > 0} onClick={cancel}>{busy && <Loader2 className="animate-spin" />}{busy ? "Cancelling…" : "Confirm cancellation"}</Button></div></DialogContent></Dialog>
     </>}
   </div>;
 }

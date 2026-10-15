@@ -557,3 +557,155 @@ export async function processStripeEvent(
     );
   }
 }
+
+export async function executeRefund(
+  tx: Prisma.TransactionClient,
+  payment: Payment,
+  actor: AuthenticatedUser,
+  reason?: string,
+  gateway?: PaymentGateway,
+) {
+  if (payment.status === "REFUNDED") {
+    throw conflict("Payment is already refunded");
+  }
+  if (payment.status === "REFUND_PENDING") {
+    throw conflict("Refund is already pending for this payment");
+  }
+  if (payment.status !== "PAID") {
+    throw conflict("Payment is not in a refundable state");
+  }
+  if (payment.provider !== "STRIPE") {
+    throw conflict("Only Stripe payments can be refunded via this method");
+  }
+
+  const provider = gateway ?? stripeGateway();
+  let intentId = payment.providerIntentId;
+  if (!intentId && payment.providerReference) {
+    const session = await provider.retrieve(payment.providerReference);
+    intentId = objectId(session.payment_intent) ?? null;
+  }
+  if (!intentId) {
+    throw new AppError(
+      503,
+      "Payment intent reference is missing; reconciliation required",
+      "PAYMENT_RETRY",
+    );
+  }
+
+  let refund: Stripe.Refund;
+  try {
+    refund = provider.createRefund
+      ? await provider.createRefund(
+          {
+            payment_intent: intentId,
+            reason: "requested_by_customer",
+            metadata: {
+              paymentId: payment.id,
+              shipmentId: payment.shipmentId,
+              payerId: payment.payerId,
+              ...(reason ? { reason: reason.slice(0, 500) } : {}),
+            },
+          },
+          `expresshub:refund:${payment.id}`,
+        )
+      : ({
+          id: `re_mock_${payment.id}`,
+          status: "succeeded",
+          amount: amountInMinorUnits(payment.amount, payment.currency),
+          currency: payment.currency.toLowerCase(),
+          payment_intent: intentId,
+        } as Stripe.Refund);
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(
+      502,
+      "Stripe request failed; refund could not be processed",
+      "PAYMENT_PROVIDER_UNAVAILABLE",
+    );
+  }
+
+  if (refund.status === "failed") {
+    throw new AppError(
+      502,
+      "Stripe refund was declined or failed",
+      "PAYMENT_PROVIDER_UNAVAILABLE",
+    );
+  }
+
+  const nextStatus: PaymentStatus =
+    refund.status === "succeeded" ? "REFUNDED" : "REFUND_PENDING";
+
+  const updated = await tx.payment.update({
+    where: { id: payment.id },
+    data: {
+      status: nextStatus,
+      providerIntentId: intentId,
+      ...(nextStatus === "REFUNDED" && !payment.refundedAt
+        ? { refundedAt: new Date() }
+        : {}),
+    },
+  });
+
+  await tx.shipment.update({
+    where: { id: payment.shipmentId },
+    data: { paymentStatus: nextStatus },
+  });
+
+  await audit(
+    tx,
+    updated,
+    "PAYMENT_REFUND_INITIATED",
+    {
+      refundId: refund.id,
+      status: nextStatus,
+      amount: updated.amount.toString(),
+      currency: updated.currency,
+      reason: reason ?? "Refund initiated",
+    },
+    actor.id,
+  );
+
+  return { payment: updated, refund };
+}
+
+export async function initiateRefund(
+  actor: AuthenticatedUser,
+  paymentId: string,
+  reason?: string,
+  gateway?: PaymentGateway,
+) {
+  if (actor.role === "COURIER") {
+    throw new AppError(403, "Payment access is not allowed", "FORBIDDEN");
+  }
+
+  await atomic(async (tx) => {
+    const current = await tx.user.findFirst({
+      where: { id: actor.id, isActive: true, deletedAt: null },
+    });
+    if (!current) {
+      throw new AppError(401, "Authentication required", "UNAUTHENTICATED");
+    }
+
+    const payment = await tx.payment.findFirst({
+      where: {
+        id: paymentId,
+        ...(actor.role === "ADMIN" ? {} : { payerId: actor.id }),
+      },
+      include: { shipment: true },
+    });
+    if (!payment) throw missing();
+
+    if (
+      actor.role === "CUSTOMER" &&
+      !["CREATED", "CANCELLED"].includes(payment.shipment.status)
+    ) {
+      throw conflict(
+        "Refunds can only be requested before pickup or after cancellation",
+      );
+    }
+
+    await executeRefund(tx, payment, actor, reason, gateway);
+  });
+
+  return { payment: await getPayment(actor, paymentId) };
+}

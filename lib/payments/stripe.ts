@@ -50,6 +50,7 @@ export interface PaymentGateway {
   retrieve(id: string): Promise<Stripe.Checkout.Session>;
   intent(id: string): Promise<Stripe.PaymentIntent>;
   refunds(intentId: string): Promise<Stripe.Refund[]>;
+  createRefund?(params: Stripe.RefundCreateParams, idempotencyKey?: string): Promise<Stripe.Refund>;
 }
 
 // Dependency injection is for tests; application routes always use the real Stripe SDK.
@@ -59,6 +60,7 @@ export function stripeGateway(client = stripeClient()): PaymentGateway {
     retrieve: (id) => client.checkout.sessions.retrieve(id),
     intent: (id) => client.paymentIntents.retrieve(id),
     refunds: (payment_intent) => client.refunds.list({ payment_intent, limit: 100 }).autoPagingToArray({ limit: 1000 }),
+    createRefund: (params, idempotencyKey) => client.refunds.create(params, idempotencyKey ? { idempotencyKey } : undefined),
   };
 }
 

@@ -10,3 +10,9 @@ export const listPaymentsSchema = z.object({
   status: z.enum(PaymentStatus).optional(), shipmentId: z.cuid().optional(),
 }).strict();
 export type ListPaymentsInput = z.infer<typeof listPaymentsSchema>;
+
+export const refundPaymentSchema = z.object({
+  reason: z.string().trim().min(3).max(1000).optional(),
+}).strict();
+export type RefundPaymentInput = z.infer<typeof refundPaymentSchema>;
+

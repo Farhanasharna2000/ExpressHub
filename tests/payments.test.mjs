@@ -12,7 +12,7 @@ process.env.STRIPE_SUCCESS_URL = "http://localhost:3000/success";
 process.env.STRIPE_CANCEL_URL = "http://localhost:3000/cancel";
 process.env.ALLOWED_ORIGIN = "http://localhost:3000";
 const { amountInMinorUnits, checkoutConfiguration, verifyStripeEvent, readWebhookBody, stripeGateway } = await import("../lib/payments/stripe.ts");
-const { initiatePaymentSchema, listPaymentsSchema, paymentIdempotencySchema } = await import("../validators/payment.ts");
+const { initiatePaymentSchema, listPaymentsSchema, paymentIdempotencySchema, refundPaymentSchema } = await import("../validators/payment.ts");
 const { proxy } = await import("../proxy.ts");
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const sign = (payload, timestamp) => stripe.webhooks.generateTestHeaderString({ payload, secret: process.env.STRIPE_WEBHOOK_SECRET, timestamp });
@@ -72,6 +72,11 @@ test("payment input rejects price/status injection and unbounded pagination", ()
   for (const query of [{ page: "0" }, { limit: "101" }, { status: "SUCCESS" }, { payerId: shipmentId }]) {
     assert.equal(listPaymentsSchema.safeParse(query).success, false);
   }
+  assert.equal(refundPaymentSchema.safeParse({}).success, true);
+  assert.equal(refundPaymentSchema.safeParse({ reason: "Customer requested refund" }).success, true);
+  for (const bad of [{ reason: "no" }, { reason: 123 }, { extra: "disallowed" }]) {
+    assert.equal(refundPaymentSchema.safeParse(bad).success, false);
+  }
 });
 
 test("CORS permits the Idempotency-Key used by browser checkout requests", () => {
@@ -86,9 +91,13 @@ test("Stripe adapter passes the provider idempotency key and retrieves all refun
   const client = {
     checkout: { sessions: { create: async (params, options) => ({ params, options }), retrieve: async (id) => id } },
     paymentIntents: { retrieve: async (id) => id },
-    refunds: { list: (params) => ({ autoPagingToArray: async (options) => ({ params, options }) }) },
+    refunds: {
+      list: (params) => ({ autoPagingToArray: async (options) => ({ params, options }) }),
+      create: async (params, options) => ({ params, options }),
+    },
   };
   const gateway = stripeGateway(client);
   assert.deepEqual(await gateway.create({ mode: "payment" }, "key"), { params: { mode: "payment" }, options: { idempotencyKey: "key" } });
   assert.deepEqual(await gateway.refunds("pi_test"), { params: { payment_intent: "pi_test", limit: 100 }, options: { limit: 1000 } });
+  assert.deepEqual(await gateway.createRefund({ payment_intent: "pi_test" }, "refund_key"), { params: { payment_intent: "pi_test" }, options: { idempotencyKey: "refund_key" } });
 });
