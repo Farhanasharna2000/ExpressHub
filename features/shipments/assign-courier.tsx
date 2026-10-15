@@ -40,7 +40,7 @@ export function AssignCourierControl({
   // Sync selected ID when shipment changes
   useEffect(() => {
     form.reset({ courierId: shipment.courierId ?? "" });
-  }, [shipment.courierId, form.reset]);
+  }, [shipment.courierId, form]);
 
   async function handleAssign() {
     if (pendingRef.current || !selectedCourierId || !assignable) return;

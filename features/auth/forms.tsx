@@ -560,7 +560,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                   </span>
                 ) : (
                   <span>
-                    Don't have an account?{" "}
+                    Don&apos;t have an account?{" "}
                     <Link
                       href="/register"
                       className="font-semibold text-primary hover:underline"
@@ -604,7 +604,7 @@ export function ProfileForm() {
         avatar: undefined,
       });
     }
-  }, [user, form.reset]);
+  }, [user, form]);
 
   const [saved, setSaved] = useState(false);
   const photoDraft = form.watch("avatar");
