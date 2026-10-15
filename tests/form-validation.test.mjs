@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 const { authFormSchema, profileFormFields } = await import('../features/auth/validation.ts');
 const { bookingFormSchema, bookingPayload, emptyDraft } = await import('../features/shipments/contracts.ts');
-const { archiveFormSchema, transitionFormSchema } = await import('../lib/client/form-schemas.ts');
+const { archiveFormSchema, courierFormSchema, transitionFormSchema } = await import('../lib/client/form-schemas.ts');
 
 test('auth forms normalize optional fields and enforce registration password rules', () => {
   assert.deepEqual(authFormSchema(false).parse({ email: ' A@EXAMPLE.COM ', password: 'x', name: '', phone: '' }), { email: 'a@example.com', password: 'x' });
@@ -38,4 +38,7 @@ test('action dialogs validate trimmed required text and length limits', () => {
   assert.equal(transitionFormSchema(false).safeParse({ note: '' }).success, true);
   assert.equal(transitionFormSchema(false).safeParse({ note: 'x' }).success, false);
   assert.equal(transitionFormSchema(false).safeParse({ note: 'x'.repeat(1001) }).success, false);
+  assert.equal(courierFormSchema.safeParse({ courierId: '' }).success, false);
+  assert.equal(courierFormSchema.safeParse({ courierId: 'not-a-cuid' }).success, false);
+  assert.equal(courierFormSchema.safeParse({ courierId: 'clh1234567890123456789012' }).success, true);
 });

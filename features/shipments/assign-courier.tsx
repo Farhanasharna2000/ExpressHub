@@ -150,7 +150,6 @@ export function AssignCourierControl({
                     </option>
                   ))}
                 </select>
-                {form.formState.errors.courierId && <p role="alert" className="text-xs text-destructive">{form.formState.errors.courierId.message}</p>}
                 <Button
                   variant="outline"
                   size="icon"
@@ -161,6 +160,11 @@ export function AssignCourierControl({
                   <RefreshCw className={`size-4 ${loadingCouriers ? "animate-spin" : ""}`} />
                 </Button>
               </div>
+              {form.formState.errors.courierId && (
+                <p role="alert" className="text-xs text-destructive mt-1">
+                  {form.formState.errors.courierId.message}
+                </p>
+              )}
               {!!couriersError && (
                 <p className="text-xs text-destructive mt-1">
                   Could not load couriers: {errorMessage(couriersError)}
