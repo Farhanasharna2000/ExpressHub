@@ -2,7 +2,7 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 
-import { RateLimitError, toErrorResponse } from "@/lib/http/errors";
+import { RateLimitError, toErrorResponse, type ErrorResponseOptions } from "@/lib/http/errors";
 
 export function successResponse<T>(message: string, data: T, status = 200) {
   return NextResponse.json(
@@ -11,12 +11,17 @@ export function successResponse<T>(message: string, data: T, status = 200) {
   );
 }
 
-export function errorResponse(error: unknown) {
+export function errorResponse(error: unknown, options?: ErrorResponseOptions) {
   if (error instanceof RateLimitError) return tooManyRequestsResponse(error.reset);
-  const result = toErrorResponse(error);
+  const result = toErrorResponse(error, options);
+  const headers: Record<string, string> = { "Cache-Control": "no-store" };
+  if (result.status === 500 && "incidentId" in result.body && typeof result.body.incidentId === "string") {
+    headers["X-Incident-Id"] = result.body.incidentId;
+    headers["X-Error-Id"] = result.body.incidentId;
+  }
   return NextResponse.json(result.body, {
     status: result.status,
-    headers: { "Cache-Control": "no-store" },
+    headers,
   });
 }
 

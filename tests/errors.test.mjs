@@ -2,7 +2,7 @@ import "./helpers/typescript.mjs";
 import assert from "node:assert/strict";
 import { test, mock } from "node:test";
 import { z } from "zod";
-const { AppError } = await import("../lib/http/errors.ts");
+const { AppError, registerTelemetryReporter } = await import("../lib/http/errors.ts");
 const { errorResponse, successResponse, tooManyRequestsResponse } = await import("../lib/http/responses.ts");
 const { handleRouteError, parseRequestBody } = await import("../lib/auth/route-helpers.ts");
 
@@ -22,14 +22,87 @@ test("shared error handler preserves application status/code and validation fiel
   assert.equal(body.errors[0].input, undefined);
 });
 
-test("unexpected errors do not expose exception contents in responses or logs", async () => {
+test("unexpected errors generate error IDs, log structured telemetry, and shield client responses", async () => {
   const logger = mock.method(console, "error", () => {});
   try {
-    const response = handleRouteError(new Error("secret-password SQL provider-payload"));
+    const rawError = new Error("secret-password SQL provider-payload");
+    const response = handleRouteError(rawError);
     assert.equal(response.status, 500);
-    assert.deepEqual(await response.json(), { success: false, message: "Something went wrong", errors: [{ code: "INTERNAL_SERVER_ERROR" }] });
-    assert.deepEqual(logger.mock.calls[0].arguments, ["Unhandled API error"]);
-  } finally { logger.mock.restore(); }
+    assert.equal(response.headers.get("cache-control"), "no-store");
+
+    const body = await response.json();
+    assert.equal(body.success, false);
+    assert.equal(body.message, "Something went wrong");
+    assert.deepEqual(body.errors, [{ code: "INTERNAL_SERVER_ERROR" }]);
+    assert.ok(typeof body.incidentId === "string" && body.incidentId.length > 0);
+    assert.equal(body.errorId, body.incidentId);
+    assert.equal(response.headers.get("x-incident-id"), body.incidentId);
+    assert.equal(response.headers.get("x-error-id"), body.incidentId);
+
+    // Client response must never leak the secret details
+    const serializedBody = JSON.stringify(body);
+    assert.ok(!serializedBody.includes("secret-password"));
+    assert.ok(!serializedBody.includes("provider-payload"));
+
+    // Server log must retain structured JSON with incidentId, error message, and stack trace
+    assert.equal(logger.mock.calls.length, 1);
+    const parsedLog = JSON.parse(logger.mock.calls[0].arguments[0]);
+    assert.equal(parsedLog.level, "error");
+    assert.equal(parsedLog.incidentId, body.incidentId);
+    assert.equal(parsedLog.errorId, body.errorId);
+    assert.equal(parsedLog.error.message, "secret-password SQL provider-payload");
+    assert.ok(typeof parsedLog.error.stack === "string" && parsedLog.error.stack.includes("secret-password"));
+    assert.ok(Number.isFinite(Date.parse(parsedLog.timestamp)));
+  } finally {
+    logger.mock.restore();
+  }
+});
+
+test("unexpected errors dispatch APM telemetry and respect correlation IDs", async () => {
+  const logger = mock.method(console, "error", () => {});
+  const apmCalls = [];
+  registerTelemetryReporter((err, ctx) => apmCalls.push({ err, ctx }));
+  try {
+    const customReq = new Request("http://localhost/api/v1/test", {
+      headers: { "x-correlation-id": "custom-trace-uuid-12345" },
+    });
+    const err = new Error("database deadlock occurred");
+    const response = handleRouteError(err, customReq);
+    assert.equal(response.status, 500);
+    const body = await response.json();
+    assert.equal(body.incidentId, "custom-trace-uuid-12345");
+    assert.equal(body.errorId, "custom-trace-uuid-12345");
+    assert.equal(response.headers.get("x-incident-id"), "custom-trace-uuid-12345");
+
+    assert.equal(apmCalls.length, 1);
+    assert.equal(apmCalls[0].err, err);
+    assert.equal(apmCalls[0].ctx.incidentId, "custom-trace-uuid-12345");
+    assert.equal(apmCalls[0].ctx.errorId, "custom-trace-uuid-12345");
+  } finally {
+    registerTelemetryReporter(null);
+    logger.mock.restore();
+  }
+});
+
+test("global Sentry is invoked when no custom APM reporter is registered", async () => {
+  const logger = mock.method(console, "error", () => {});
+  const sentryCalls = [];
+  globalThis.Sentry = {
+    captureException: (err, captureContext) => sentryCalls.push({ err, captureContext }),
+  };
+  try {
+    const err = new Error("sentry-captured unexpected error");
+    const response = handleRouteError(err);
+    assert.equal(response.status, 500);
+    const body = await response.json();
+    assert.equal(sentryCalls.length, 1);
+    assert.equal(sentryCalls[0].err, err);
+    assert.equal(sentryCalls[0].captureContext.tags.incidentId, body.incidentId);
+    assert.equal(sentryCalls[0].captureContext.tags.errorId, body.errorId);
+  } finally {
+    delete globalThis.Sentry;
+    logger.mock.restore();
+  }
 });
 
 test("body validation produces consistent errors for malformed, oversized and invalid JSON", async () => {

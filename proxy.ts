@@ -90,7 +90,8 @@ export function proxy(request: NextRequest) {
 
     return response;
   } catch (error) {
-    const response = errorResponse(error);
+    const correlationId = request.headers.get("x-correlation-id") || request.headers.get("x-request-id") || undefined;
+    const response = errorResponse(error, correlationId ? { correlationId } : undefined);
     response.headers.set("Vary", "Origin");
     return response;
   }

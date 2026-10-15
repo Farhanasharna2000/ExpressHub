@@ -5,7 +5,7 @@ export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUND_PENDING" | "
 export interface PaginationMeta { page: number; limit: number; total: number; totalPages: number }
 export type ApiResponse<T> =
   | { success: true; message: string; data: T }
-  | { success: false; message: string; errors: unknown[] }
+  | { success: false; message: string; errors: unknown[]; incidentId?: string; errorId?: string }
   | { error: { message: string; code?: string } };
 export interface CurrentUser {
   id: string; name: string; email: string; phone: string | null;

@@ -12014,6 +12014,16 @@
             "minLength": 1,
             "maxLength": 2000
           },
+          "incidentId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "errorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
           "errors": {
             "type": "array",
             "items": {

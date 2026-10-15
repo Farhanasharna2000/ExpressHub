@@ -1,7 +1,14 @@
 import type { ApiResponse } from "@/types/api";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public errors: unknown[] = [], public retryAt = 0) {
+  constructor(
+    public status: number,
+    message: string,
+    public errors: unknown[] = [],
+    public retryAt = 0,
+    public incidentId?: string,
+    public errorId?: string,
+  ) {
     super(message); this.name = "ApiError";
   }
 }
@@ -12,7 +19,12 @@ export function errorMessage(error: unknown): string {
   if (error.status === 404) return "This record is unavailable. Return to the list and refresh.";
   if (error.status === 409) return `${error.message}. Refresh the details before trying again.`;
   if (error.status === 429) return "Too many requests. Please wait before trying again.";
-  if (error.status >= 500) return "The service is temporarily unavailable. Please try again shortly.";
+  if (error.status >= 500) {
+    const trackingId = error.incidentId || error.errorId;
+    return trackingId
+      ? `The service is temporarily unavailable (Error ID: ${trackingId}). Please try again shortly.`
+      : "The service is temporarily unavailable. Please try again shortly.";
+  }
   return error.message;
 }
 export function fieldErrors(error: unknown): Record<string, string> {
@@ -86,7 +98,15 @@ export class ApiClient {
               ? [{ code: (envelope.error as { code: string }).code }]
               : []
           : [];
-      const error = new ApiError(response.status, parsedMessage, parsedErrors, Number.isFinite(retryAt) ? retryAt : 0);
+      const incidentId =
+        envelope && typeof envelope === "object" && "incidentId" in envelope && typeof envelope.incidentId === "string"
+          ? envelope.incidentId
+          : undefined;
+      const errorId =
+        envelope && typeof envelope === "object" && "errorId" in envelope && typeof envelope.errorId === "string"
+          ? envelope.errorId
+          : incidentId;
+      const error = new ApiError(response.status, parsedMessage, parsedErrors, Number.isFinite(retryAt) ? retryAt : 0, incidentId, errorId);
       if (response.status === 429 && error.retryAt) this.cooldowns.set(path, error);
       throw error;
     }

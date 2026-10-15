@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { type ZodType } from "zod";
 
 import { isAllowedCookieRequest, refreshTokenCookie, pageSessionCookie, signPageSession, verifyAccessToken, type AccessTokenClaims } from "@/lib/auth/tokens";
-import { AppError } from "@/lib/http/errors";
+import { AppError, type ErrorResponseOptions } from "@/lib/http/errors";
 import { errorResponse, tooManyRequestsResponse } from "@/lib/http/responses";
 import { getRateLimitIdentifier, limitApiRequests } from "@/lib/rate-limit";
 import { rateLimitDiagnostics } from "@/lib/rate-limit-diagnostics";
@@ -78,8 +78,21 @@ export function ensureAllowedCookieOrigin(request: Request) {
   }
 }
 
-export function handleRouteError(error: unknown) {
-  return errorResponse(error);
+export function handleRouteError(
+  error: unknown,
+  optionsOrRequest?: ErrorResponseOptions | Request,
+) {
+  let options: ErrorResponseOptions | undefined;
+  if (optionsOrRequest && "headers" in optionsOrRequest && typeof optionsOrRequest.headers?.get === "function") {
+    const correlationId =
+      optionsOrRequest.headers.get("x-correlation-id") ||
+      optionsOrRequest.headers.get("x-request-id") ||
+      undefined;
+    options = correlationId ? { correlationId } : undefined;
+  } else if (optionsOrRequest && typeof optionsOrRequest === "object" && "correlationId" in optionsOrRequest) {
+    options = optionsOrRequest as ErrorResponseOptions;
+  }
+  return errorResponse(error, options);
 }
 
 export function setRefreshCookie(
