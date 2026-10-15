@@ -4,6 +4,7 @@ import { Prisma, UserRole } from "@prisma/client";
 import { requireRole, type AuthenticatedUser } from "@/lib/auth/require-user";
 import { AppError } from "@/lib/http/errors";
 import prisma from "@/lib/prisma";
+import { paginateTransaction } from "@/lib/db/pagination";
 import type { ListUsersInput, UpdateProfileInput } from "@/validators/user";
 
 const profileSelect = {
@@ -125,27 +126,21 @@ export async function listUsers(
         }
       : {}),
   };
-  const [users, total] = await prisma.$transaction(
-    [
+  const { items: users, pagination } = await paginateTransaction(
+    (bounds) => [
       prisma.user.findMany({
         where,
         select: profileSelect,
-        skip: (input.page - 1) * input.limit,
-        take: input.limit,
+        ...bounds,
         orderBy: [{ [input.sortBy]: input.order }, { id: "asc" }],
       }),
       prisma.user.count({ where }),
     ],
-    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    input,
   );
   return {
     users,
-    pagination: {
-      page: input.page,
-      limit: input.limit,
-      total,
-      totalPages: Math.ceil(total / input.limit),
-    },
+    pagination,
   };
 }
 

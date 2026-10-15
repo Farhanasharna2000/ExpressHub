@@ -182,17 +182,20 @@ export function useToast() {
 
 export function Toaster() {
   const { toasts } = useToast();
+  const visibleToasts = toasts.filter(
+    (item) => item.tone === "success" || item.tone === "error" || item.tone === "info"
+  );
 
   return (
     <Toast.Provider duration={6000} swipeDirection="right">
       <Portal.Root>
-        {toasts.map((item) => {
+        {visibleToasts.map((item) => {
           const Icon =
             item.tone === "success"
               ? CircleCheck
               : item.tone === "info"
-                ? Info
-                : CircleAlert;
+              ? Info
+              : CircleAlert;
 
           return (
             <Toast.Root
@@ -205,10 +208,13 @@ export function Toaster() {
               }}
               type="foreground"
               className={cn(
-                "pointer-events-auto flex w-full items-start gap-3 rounded-xl border bg-card p-4 text-card-foreground shadow-lg transition-all",
-                item.tone === "success" && "border-emerald-600/30 bg-emerald-50/90 text-emerald-950 dark:bg-emerald-950/20 dark:text-emerald-100",
-                item.tone === "error" && "border-red-200 bg-red-50 text-red-950 shadow-md dark:border-destructive/40 dark:bg-red-950/90 dark:text-red-100",
-                item.tone === "info" && "border-primary/30 bg-primary/5 text-foreground",
+                "pointer-events-auto flex w-full items-start gap-3 rounded-xl border p-4 shadow-xl transition-all",
+                item.tone === "success" &&
+                  "border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-50",
+                item.tone === "error" &&
+                  "border-red-300 bg-red-50 text-red-950 dark:border-red-800 dark:bg-red-950 dark:text-red-50",
+                item.tone === "info" &&
+                  "border-sky-300 bg-sky-50 text-sky-950 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-50",
                 "data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full"
               )}
               {...(item.dataAttribute || {})}
@@ -218,7 +224,7 @@ export function Toaster() {
                   "mt-0.5 size-5 shrink-0",
                   item.tone === "success" && "text-emerald-600 dark:text-emerald-400",
                   item.tone === "error" && "text-destructive",
-                  item.tone === "info" && "text-primary"
+                  item.tone === "info" && "text-sky-600 dark:text-sky-400"
                 )}
                 aria-hidden="true"
               />
@@ -234,7 +240,9 @@ export function Toaster() {
                       "break-words text-sm",
                       item.tone === "success"
                         ? "text-emerald-800 dark:text-emerald-200"
-                        : "text-muted-foreground",
+                        : item.tone === "info"
+                        ? "text-sky-800 dark:text-sky-200"
+                        : "text-red-800 dark:text-red-200",
                       item.title && "mt-1"
                     )}
                   >
@@ -249,7 +257,7 @@ export function Toaster() {
               </div>
               <Toast.Close
                 aria-label="Dismiss notification"
-                className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="rounded p-1 text-muted-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground"
               >
                 <X className="size-4" aria-hidden="true" />
               </Toast.Close>

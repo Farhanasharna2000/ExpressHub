@@ -4,6 +4,7 @@ import { Prisma, ShipmentStatus, type Shipment } from "@prisma/client";
 import { requireRole, type AuthenticatedUser } from "@/lib/auth/require-user";
 import { AppError } from "@/lib/http/errors";
 import prisma from "@/lib/prisma";
+import { paginateTransaction } from "@/lib/db/pagination";
 import type {
   AssignCourierInput,
   CreateShipmentInput,
@@ -226,26 +227,20 @@ export async function listShipments(
         }
       : {}),
   };
-  const [shipments, total] = await prisma.$transaction(
-    [
+  const { items: shipments, pagination } = await paginateTransaction(
+    (bounds) => [
       prisma.shipment.findMany({
         where,
-        skip: (input.page - 1) * input.limit,
-        take: input.limit,
+        ...bounds,
         orderBy: [{ [input.sortBy]: input.order }, { id: "asc" }],
       }),
       prisma.shipment.count({ where }),
     ],
-    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    input,
   );
   return {
     shipments,
-    pagination: {
-      page: input.page,
-      limit: input.limit,
-      total,
-      totalPages: Math.ceil(total / input.limit),
-    },
+    pagination,
   };
 }
 

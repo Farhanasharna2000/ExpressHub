@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { Prisma, type Payment, type PaymentStatus } from "@prisma/client";
 import type Stripe from "stripe";
 import prisma from "@/lib/prisma";
+import { paginateTransaction } from "@/lib/db/pagination";
 import { requireRole, type AuthenticatedUser } from "@/lib/auth/require-user";
 import { AppError } from "@/lib/http/errors";
 import {
@@ -102,27 +103,21 @@ export async function listMyPayments(
     status: input.status,
     shipmentId: input.shipmentId,
   };
-  const [payments, total] = await prisma.$transaction(
-    [
+  const { items: payments, pagination } = await paginateTransaction(
+    (bounds) => [
       prisma.payment.findMany({
         where,
         select: safeSelect,
-        skip: (input.page - 1) * input.limit,
-        take: input.limit,
+        ...bounds,
         orderBy: [{ createdAt: "desc" }, { id: "asc" }],
       }),
       prisma.payment.count({ where }),
     ],
-    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    input,
   );
   return {
     payments,
-    pagination: {
-      page: input.page,
-      limit: input.limit,
-      total,
-      totalPages: Math.ceil(total / input.limit),
-    },
+    pagination,
   };
 }
 

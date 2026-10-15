@@ -6,6 +6,7 @@ import {
   UserRole,
 } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { paginateTransaction } from "@/lib/db/pagination";
 import { requireRole, type AuthenticatedUser } from "@/lib/auth/require-user";
 import type { ListAuditLogsInput } from "@/validators/admin";
 
@@ -98,12 +99,11 @@ export async function listAuditLogs(
       lte: input.to ? new Date(input.to) : undefined,
     },
   };
-  const [auditLogs, total] = await prisma.$transaction(
-    [
+  const { items: auditLogs, pagination } = await paginateTransaction(
+    (bounds) => [
       prisma.auditLog.findMany({
         where,
-        skip: (input.page - 1) * input.limit,
-        take: input.limit,
+        ...bounds,
         orderBy: [{ [input.sortBy]: input.order }, { id: "asc" }],
         // Do not join entire users/payments: they contain passwords and provider data.
         select: {
@@ -120,15 +120,10 @@ export async function listAuditLogs(
       }),
       prisma.auditLog.count({ where }),
     ],
-    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    input,
   );
   return {
     auditLogs,
-    pagination: {
-      page: input.page,
-      limit: input.limit,
-      total,
-      totalPages: Math.ceil(total / input.limit),
-    },
+    pagination,
   };
 }
