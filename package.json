@@ -11,7 +11,7 @@
     "test:auth:integration": "node tests/auth.integration.mjs",
     "test:users:integration": "node tests/users.integration.mjs",
     "test:shipments:integration": "node tests/shipments.integration.mjs",
-    "test:payments": "node --test tests/payments.test.mjs",
+    "test:payments": "node --test tests/payments.test.mjs tests/payment-controller.test.mjs",
     "test:checkout-return": "node --test tests/checkout-return.test.mjs",
     "stripe:check": "node scripts/check-stripe.mjs",
     "test:payments:integration": "node tests/payments.integration.mjs",
