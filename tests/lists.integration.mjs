@@ -9,7 +9,7 @@ process.env.JWT_ACCESS_SECRET = randomUUID().repeat(2);
 const { default: prisma } = await import("../lib/prisma.ts");
 const { signAccessToken } = await import("../lib/auth/tokens.ts");
 const routes = {};
-for (const path of ["shipments", "shipments/search", "shipments/my-shipments", "users", "payments/my-payments", "admin/shipments", "admin/audit-logs"]) {
+for (const path of ["shipments", "shipments/search", "shipments/my-shipments", "users", "payments", "admin/shipments", "admin/audit-logs"]) {
   routes[path] = await import(`../app/api/v1/${path}/route.ts`);
 }
 const userIds = [], shipmentIds = [];

@@ -20,7 +20,7 @@ const { initiatePayment, processStripeEvent, getPayment } = await import("../ser
 const { updateShipmentStatus } = await import("../services/shipment.service.ts");
 const { signAccessToken } = await import("../lib/auth/tokens.ts");
 const detailRoute = await import("../app/api/v1/payments/[id]/route.ts");
-const listRoute = await import("../app/api/v1/payments/my-payments/route.ts");
+const listRoute = await import("../app/api/v1/payments/route.ts");
 const initiateRoute = await import("../app/api/v1/payments/initiate/route.ts");
 const webhookRoute = await import("../app/api/v1/payments/webhook/route.ts");
 const users = [], shipments = [], eventIds = [];
@@ -118,11 +118,11 @@ try {
   assert.equal(detail.headers.get("cache-control"), "no-store");
   const safe = (await detail.json()).data.payment;
   for (const field of ["checkoutRequest", "idempotencyKey", "providerReference", "checkoutUrl"]) assert.equal(safe[field], undefined);
-  assert.equal((await listRoute.GET(request("my-payments?page=1&page=2", customer))).status, 400);
-  assert.equal((await listRoute.GET(request("my-payments?limit=101", customer))).status, 400);
-  const list = await listRoute.GET(request("my-payments?limit=1", customer));
+  assert.equal((await listRoute.GET(request("?page=1&page=2", customer))).status, 400);
+  assert.equal((await listRoute.GET(request("?limit=101", customer))).status, 400);
+  const list = await listRoute.GET(request("?limit=1", customer));
   assert.equal((await list.json()).data.pagination.total, 1);
-  const empty = await listRoute.GET(request("my-payments", other));
+  const empty = await listRoute.GET(request("", other));
   assert.equal((await empty.json()).data.pagination.total, 0);
   assert.equal((await initiateRoute.POST(request("initiate", customer, { shipmentId: booking.id }))).status, 400);
   assert.equal((await initiateRoute.POST(request("initiate", customer, { shipmentId: booking.id, amount: 1 }, { "idempotency-key": randomUUID() }))).status, 400);
