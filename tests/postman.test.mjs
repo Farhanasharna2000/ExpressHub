@@ -32,7 +32,7 @@ test('refresh resolves actual account instead of trusting stale role metadata',(
  assert.equal(state.courierToken,'fresh');assert.equal(state.currentRole,'COURIER');assert.equal(state.adminToken,'old');assert.equal(state.userId,'target');
 });
 test('payment retries retain key; changed shipment starts a new attempt',()=>{
- const request=find('/payments/create');
+ const request=find('/payments/initiate');
  assert.equal(execute(request,'prerequest',{}, {shipmentId:'one',paymentAttemptShipmentId:'one',idempotencyKey:'keep'}).idempotencyKey,'keep');
  const state=execute(request,'prerequest',{}, {shipmentId:'two',paymentAttemptShipmentId:'one',idempotencyKey:'old'});
  assert.equal(state.idempotencyKey,'generated-uuid');assert.equal(state.paymentAttemptShipmentId,'two');
@@ -48,7 +48,7 @@ test('login and payment scripts work without an environment',()=>{
  const data={accessToken:'saved',user:{id:'customer-1',role:'CUSTOMER'}};
  const state=execute(find('/auth/login'),'test',data,{userId:'target'},false);
  assert.equal(state.accessToken,'saved');assert.equal(state.customerToken,'saved');assert.equal(state.userId,'target');
- const payment=execute(find('/payments/create'),'prerequest',{}, {shipmentId:'one'},false);
+ const payment=execute(find('/payments/initiate'),'prerequest',{}, {shipmentId:'one'},false);
  assert.equal(payment.idempotencyKey,'generated-uuid');
  const logout=execute(find('/auth/logout'),'test',{},state,false);
  assert.equal(logout.accessToken,undefined);
