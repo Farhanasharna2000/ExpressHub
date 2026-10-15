@@ -78,3 +78,36 @@ test('return URLs remain constrained to the signed role', () => {
   for (const url of ['https://evil.test', '//evil.test', '/admin', '/customer/../admin', '/customer/%2e%2e/admin']) assert.equal(safeReturnUrl(url, 'CUSTOMER'), '/customer');
   assert.equal(safeReturnUrl('/customer/shipments?q=Dhaka%20City&page=2', 'CUSTOMER'), '/customer/shipments?q=Dhaka%20City&page=2');
 });
+
+test('proxy error responses strictly adhere to application API error envelope and include Vary Origin', async () => {
+  const disallowedOrigin = new NextRequest('https://expresshub.test/api/v1/users', {
+    headers: { origin: 'https://unauthorized.origin' },
+  });
+  const resDisallowedOrigin = proxy(disallowedOrigin);
+  assert.equal(resDisallowedOrigin.status, 403);
+  assert.equal(resDisallowedOrigin.headers.get('cache-control'), 'no-store');
+  assert.equal(resDisallowedOrigin.headers.get('vary'), 'Origin');
+  assert.deepEqual(await resDisallowedOrigin.json(), {
+    success: false,
+    message: 'Request origin is not allowed',
+    errors: [{ code: 'ORIGIN_NOT_ALLOWED' }],
+  });
+
+  const badPreflight = new NextRequest('https://expresshub.test/api/v1/users', {
+    method: 'OPTIONS',
+    headers: {
+      origin: 'http://localhost:3000',
+      'access-control-request-method': 'TRACE',
+    },
+  });
+  const resBadPreflight = proxy(badPreflight);
+  assert.equal(resBadPreflight.status, 403);
+  assert.equal(resBadPreflight.headers.get('cache-control'), 'no-store');
+  assert.equal(resBadPreflight.headers.get('vary'), 'Origin');
+  assert.deepEqual(await resBadPreflight.json(), {
+    success: false,
+    message: 'Preflight method or headers are not allowed',
+    errors: [{ code: 'CORS_NOT_ALLOWED' }],
+  });
+});
+

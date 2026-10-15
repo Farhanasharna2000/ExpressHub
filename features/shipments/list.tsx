@@ -483,6 +483,31 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                     )}
                   </div>
                 </div>
+
+                <div className="sm:col-span-1">
+                  <Select
+                    id="sort-by"
+                    label="Sort by"
+                    value={params.get("sortBy") ?? "createdAt"}
+                    onChange={(e) => update("sortBy", e.target.value)}
+                  >
+                    <option value="createdAt">Created date</option>
+                    <option value="updatedAt">Last updated</option>
+                    <option value="price">Price</option>
+                  </Select>
+                </div>
+
+                <div className="sm:col-span-1">
+                  <Select
+                    id="sort-order"
+                    label="Order"
+                    value={params.get("order") ?? "desc"}
+                    onChange={(e) => update("order", e.target.value)}
+                  >
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
+                  </Select>
+                </div>
               </div>
             </div>
 

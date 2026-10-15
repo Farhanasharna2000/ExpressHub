@@ -25,7 +25,7 @@ test("profile photo upload, persistence, removal, and mobile layout", async ({ p
   await expect(page.getByAltText("Your profile photo")).toBeVisible();
   await page.getByLabel("Full name").fill("Alex Updated");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("Your changes have been saved.")).toBeVisible();
+  await expect(page.getByText("Your changes have been saved.").first()).toBeVisible();
   expect(current.avatar).toMatch(/^data:image\/jpeg;base64,/);
   await page.reload();
   await expect(page.getByAltText("Your profile photo")).toBeVisible();
@@ -33,11 +33,11 @@ test("profile photo upload, persistence, removal, and mobile layout", async ({ p
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole("button", { name: "Remove photo" }).click();
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("Your changes have been saved.")).toBeVisible();
+  await expect(page.getByText("Your changes have been saved.").first()).toBeVisible();
   expect(current.avatar).toBeNull();
   await page.reload();
   await expect(page.getByRole("button", { name: "Upload photo" })).toBeVisible();
   await expect(page.getByAltText("Your profile photo")).toHaveCount(0);
   await page.getByLabel("Profile photo", { exact: true }).setInputFiles({ name: "bad.txt", mimeType: "text/plain", buffer: Buffer.from("invalid") });
-  await expect(page.getByText("Choose a JPG, PNG, or WebP image.")).toBeVisible();
+  await expect(page.getByText("Choose a JPG, PNG, or WebP image.").first()).toBeVisible();
 });

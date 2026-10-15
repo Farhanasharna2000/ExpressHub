@@ -115,11 +115,17 @@ function useFeedback<T extends FieldValues, Output extends FieldValues>(
         dataAttribute: { "data-form-error": "true" },
       });
     }
-    requestAnimationFrame(() => {
-      const target = formRef.current?.elements.namedItem(Object.keys(fields)[0]);
-      if (target instanceof HTMLElement) target.focus();
-      else formRef.current?.querySelector<HTMLElement>("[data-form-error]")?.focus();
-    });
+    setTimeout(() => {
+      const fieldName = Object.keys(fields)[0];
+      if (fieldName) {
+        try {
+          form.setFocus(fieldName as Path<T>);
+        } catch {}
+        const el = document.getElementById(fieldName) || formRef.current?.elements.namedItem(fieldName) || formRef.current?.querySelector<HTMLElement>(`[name="${fieldName}"]`);
+        if (el instanceof HTMLElement) el.focus();
+        else formRef.current?.querySelector<HTMLElement>("[data-form-error]")?.focus();
+      }
+    }, 50);
   }
 
   return {
@@ -357,7 +363,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
 
                 <div>
                   <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
-                    {register ? "Create your account" : "Sign in "}
+                    <h2>{register ? "Create your account" : "Sign in"}</h2>
                   </CardTitle>
                   <CardDescription className="text-xs text-muted-foreground mt-1">
                     {register

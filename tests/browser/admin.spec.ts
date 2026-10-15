@@ -97,16 +97,16 @@ test("Admin logs in, inspects dashboard stats, manages users, and reviews audit 
   // 1. Visit admin dashboard overview
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Operations Overview" })).toBeVisible();
-  await expect(page.getByText("120")).toBeVisible(); // total shipments
-  await expect(page.getByText("42")).toBeVisible(); // total users
+  await expect(page.getByText("120", { exact: true })).toBeVisible(); // total shipments
+  await expect(page.getByText("42", { exact: true })).toBeVisible(); // total users
 
   // 2. Navigate to user directory
   await page.goto("/admin/users");
   await expect(page.getByRole("heading", { name: "User Management" })).toBeVisible();
-  await expect(page.getByText("Customer Jane")).toBeVisible();
+  await expect(page.locator(".table-desktop:visible, .table-mobile:visible").getByRole("link", { name: "Customer Jane" })).toBeVisible();
 
   // 3. Navigate to audit logs
   await page.goto("/admin/audit-logs");
   await expect(page.getByRole("heading", { name: "Audit Logs" })).toBeVisible();
-  await expect(page.getByText("Role updated")).toBeVisible();
+  await expect(page.locator(".table-desktop:visible, .table-mobile:visible").getByText("Role updated")).toBeVisible();
 });

@@ -102,7 +102,7 @@ test("Courier logs in, views assigned deliveries, and progresses delivery to com
 
   // 2. Navigate to assigned deliveries
   await page.goto("/courier/shipments");
-  await expect(page.getByText("EH-OPS-789")).toBeVisible();
+  await expect(page.locator(".table-desktop:visible, .table-mobile:visible").getByText("EH-OPS-789")).toBeVisible();
 
   // 3. Open delivery detail
   await page.goto(`/courier/shipments/${shipmentId}`);
@@ -116,5 +116,5 @@ test("Courier logs in, views assigned deliveries, and progresses delivery to com
   await pickupBtn.click();
 
   // 5. Check confirmation toast or updated state
-  await expect(page.getByText(/status successfully transitioned/i)).toBeVisible();
+  await expect(page.getByText(/status successfully transitioned/i).first()).toBeVisible();
 });

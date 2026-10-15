@@ -156,13 +156,15 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
             )}
           </div>
           <CardTitle className="text-2xl">
-            {payment?.status === "PAID"
-              ? "Payment complete"
-              : payment && payment.status !== "PENDING"
-                ? `Payment ${statusLabel(payment.status).toLowerCase()}`
-                : type === "cancel"
-                  ? "Checkout closed"
-                  : loading || paymentId ? "Checking your payment" : "Payment status unavailable"}
+            <h2>
+              {payment?.status === "PAID"
+                ? "Payment complete"
+                : payment && payment.status !== "PENDING"
+                  ? `Payment ${statusLabel(payment.status).toLowerCase()}`
+                  : type === "cancel"
+                    ? "Checkout closed"
+                    : loading || paymentId ? "Checking your payment" : "Payment status unavailable"}
+            </h2>
           </CardTitle>
           {payment?.status !== "PAID" && <CardDescription className="text-sm mt-1">
             {payment?.status === "FAILED"

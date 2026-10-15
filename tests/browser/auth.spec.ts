@@ -27,7 +27,7 @@ async function mockAuth(page: Page, role = "CUSTOMER", restored = false) {
 test("login, profile update, reload restoration, and logout", async ({ page }) => {
   await mockAuth(page);
   await page.goto("/customer");
-  await expect(page.getByRole("heading", { name: "Sign in to ExpressHub" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Sign in/i })).toBeVisible();
   await page.getByLabel("Email address").fill("alex@example.com");
   await page.getByLabel("Password", { exact: true }).fill("secure-password-123");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
@@ -36,11 +36,11 @@ test("login, profile update, reload restoration, and logout", async ({ page }) =
   await expect(page.getByLabel("Full name")).toHaveValue("Alex Sender");
   await page.getByLabel("Full name").fill("Alex Updated");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("Your changes have been saved.")).toBeVisible();
+  await expect(page.getByText("Your changes have been saved.").first()).toBeVisible();
   await page.reload(); await expect(page.getByLabel("Full name")).toHaveValue("Alex Updated");
   expect(await page.evaluate(() => JSON.stringify(localStorage) + JSON.stringify(sessionStorage))).not.toContain("test-access-token");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Sign in to ExpressHub" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Sign in/i })).toBeVisible();
   await page.goto("/profile"); await expect(page).toHaveURL(/\/login\?next=/);
 });
 
@@ -71,7 +71,7 @@ test("invalid credentials are announced, no retry loop, and form remains usable"
   const calls = await mockAuth(page); await page.route("**/api/v1/auth/login", route => route.fulfill({ status: 401, json: { success: false, message: "Invalid email or password", errors: [] } }));
   await page.goto("/login"); await page.getByLabel("Email address").fill("alex@example.com"); await page.getByLabel("Password", { exact: true }).fill("wrong");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.locator("[data-form-error]")).toContainText("Invalid email or password");
+  await expect(page.locator("[data-form-error]").first()).toContainText("Invalid email or password");
   expect(calls.filter(c => c.path.endsWith("refresh-token"))).toHaveLength(1);
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeEnabled();
 });
@@ -92,7 +92,7 @@ test("rate limits disable retry until Retry-After elapses", async ({ page }) => 
   await page.goto("/login"); await page.getByLabel("Email address").fill("alex@example.com"); await page.getByLabel("Password", { exact: true }).fill("password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeDisabled();
-  await expect(page.locator("[data-form-error]")).toContainText("Too many requests");
+  await expect(page.locator("[data-form-error]").first()).toContainText("Too many requests");
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeEnabled({ timeout: 5000 });
 });
 

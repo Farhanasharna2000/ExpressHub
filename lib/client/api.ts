@@ -63,10 +63,30 @@ export class ApiClient {
     }
     let envelope: ApiResponse<T>;
     try { envelope = await response.json(); } catch { throw new ApiError(response.ok ? 502 : response.status, "The server returned an unreadable response"); }
-    if (!response.ok || !envelope || envelope.success !== true) {
+    if (!response.ok || !envelope || !("success" in envelope && envelope.success === true)) {
       const retry = response.headers.get("Retry-After");
       const retryAt = retry ? (/^\d+$/.test(retry) ? Date.now() + Number(retry) * 1000 : Date.parse(retry)) : 0;
-      const error = new ApiError(response.status, envelope && "message" in envelope ? envelope.message : "Request failed", envelope && "errors" in envelope ? envelope.errors : [], Number.isFinite(retryAt) ? retryAt : 0);
+      const parsedMessage =
+        envelope && typeof envelope === "object"
+          ? "message" in envelope && typeof envelope.message === "string"
+            ? envelope.message
+            : "error" in envelope
+              ? typeof envelope.error === "string"
+                ? envelope.error
+                : typeof envelope.error === "object" && envelope.error && "message" in envelope.error && typeof envelope.error.message === "string"
+                  ? envelope.error.message
+                  : "Request failed"
+              : "Request failed"
+          : "Request failed";
+      const parsedErrors =
+        envelope && typeof envelope === "object"
+          ? "errors" in envelope && Array.isArray(envelope.errors)
+            ? envelope.errors
+            : "error" in envelope && typeof envelope.error === "object" && envelope.error && "code" in envelope.error
+              ? [{ code: (envelope.error as { code: string }).code }]
+              : []
+          : [];
+      const error = new ApiError(response.status, parsedMessage, parsedErrors, Number.isFinite(retryAt) ? retryAt : 0);
       if (response.status === 429 && error.retryAt) this.cooldowns.set(path, error);
       throw error;
     }
