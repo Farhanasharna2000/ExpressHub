@@ -10,20 +10,16 @@ import { Truck, PackageCheck, Clock, CheckCircle2, Navigation } from "lucide-rea
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useResource } from "@/features/shipments/use-resource";
-import type { ShipmentList } from "@/features/shipments/contracts";
+import type { CourierDashboardStats } from "./contracts";
 import { CourierShipmentListView } from "./list";
 
 export function CourierDashboard() {
-  const { data, loading, refreshing, error, reload } = useResource<ShipmentList>("/shipments/my-shipments?limit=100");
+  const { data: stats, loading, refreshing, error, reload } = useResource<CourierDashboardStats>("/courier/stats");
 
-  const shipments = data?.shipments ?? [];
-  const total = data?.pagination.total ?? shipments.length;
-
-  const readyPickup = shipments.filter((s) => s.status === "CREATED").length;
-  const inRoute = shipments.filter((s) =>
-    ["PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(s.status)
-  ).length;
-  const delivered = shipments.filter((s) => s.status === "DELIVERED").length;
+  const total = stats?.total ?? 0;
+  const readyPickup = stats?.readyPickup ?? 0;
+  const inRoute = stats?.inRoute ?? 0;
+  const delivered = stats?.delivered ?? 0;
 
   return (
     <div className="page-stack">
@@ -43,7 +39,7 @@ export function CourierDashboard() {
       {loading && <ResourceSkeleton variant="dashboard" label="Loading delivery metrics…" />}
       {refreshing && <ResourceRefresh />}
       {!!error && <ErrorNotice title="Could not load delivery metrics" action={<Button variant="outline" onClick={reload}>Try again</Button>}>{errorMessage(error)}</ErrorNotice>}
-      {data && <>
+      {stats && <>
       {/* Courier Route Live Banner */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}

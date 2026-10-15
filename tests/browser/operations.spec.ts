@@ -66,6 +66,24 @@ async function setupCourier(page: Page) {
         },
       });
     }
+    if (url.pathname.endsWith("/courier/stats")) {
+      return ok(route, {
+        total: 1,
+        readyPickup: 1,
+        inRoute: 0,
+        delivered: 0,
+        byStatus: {
+          CREATED: 1,
+          PICKED_UP: 0,
+          IN_TRANSIT: 0,
+          OUT_FOR_DELIVERY: 0,
+          DELIVERED: 0,
+          FAILED: 0,
+          RETURNED: 0,
+          CANCELLED: 0,
+        },
+      });
+    }
     if (url.pathname.endsWith("/shipments/my-shipments")) {
       return ok(route, {
         shipments: [shipment],

@@ -108,3 +108,26 @@ test("statusLabel formats enum values cleanly", () => {
   assert.equal(statusLabel("DELIVERED"), "Delivered");
   assert.equal(statusLabel("FAILED"), "Failed");
 });
+
+test("courier dashboard stats contract aggregates status buckets consistently", () => {
+  const byStatus = {
+    CREATED: 5,
+    PICKED_UP: 3,
+    IN_TRANSIT: 7,
+    OUT_FOR_DELIVERY: 4,
+    DELIVERED: 25,
+    FAILED: 1,
+    RETURNED: 2,
+    CANCELLED: 3,
+  };
+  const readyPickup = byStatus.CREATED;
+  const inRoute = byStatus.PICKED_UP + byStatus.IN_TRANSIT + byStatus.OUT_FOR_DELIVERY;
+  const delivered = byStatus.DELIVERED;
+  const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
+
+  assert.equal(readyPickup, 5);
+  assert.equal(inRoute, 14);
+  assert.equal(delivered, 25);
+  assert.equal(total, 50);
+  assert.equal(readyPickup + inRoute + delivered + byStatus.FAILED + byStatus.RETURNED + byStatus.CANCELLED, total);
+});

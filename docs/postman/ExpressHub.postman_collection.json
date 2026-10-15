@@ -2699,6 +2699,67 @@
       ]
     },
     {
+      "name": "courier",
+      "item": [
+        {
+          "name": "Read courier statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courier/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courier",
+                "stats"
+              ]
+            },
+            "description": "COURIER or ADMIN only. Aggregates all assigned non-deleted shipments by status."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/courier/stats",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "courier",
+                    "stats"
+                  ]
+                },
+                "description": "COURIER or ADMIN only. Aggregates all assigned non-deleted shipments by status."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Courier statistics fetched successfully\",\n  \"data\": {\n    \"total\": 10,\n    \"readyPickup\": 2,\n    \"inRoute\": 3,\n    \"delivered\": 5,\n    \"byStatus\": {\n      \"CREATED\": 2,\n      \"PICKED_UP\": 0,\n      \"IN_TRANSIT\": 3,\n      \"OUT_FOR_DELIVERY\": 0,\n      \"DELIVERED\": 5,\n      \"FAILED\": 0,\n      \"RETURNED\": 0,\n      \"CANCELLED\": 0\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
       "name": "health",
       "item": [
         {
