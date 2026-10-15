@@ -9,7 +9,7 @@ process.env.JWT_ACCESS_SECRET = randomUUID().repeat(2);
 const { default: prisma } = await import("../lib/prisma.ts");
 const { signAccessToken } = await import("../lib/auth/tokens.ts");
 const routes = {};
-for (const path of ["shipments", "shipments/search", "shipments/my-shipments", "users", "payments/my-payments", "admin/shipments", "admin/users", "admin/audit-logs"]) {
+for (const path of ["shipments", "shipments/search", "shipments/my-shipments", "users", "payments/my-payments", "admin/shipments", "admin/audit-logs"]) {
   routes[path] = await import(`../app/api/v1/${path}/route.ts`);
 }
 const userIds = [], shipmentIds = [];
@@ -73,12 +73,12 @@ try {
     if (order === "asc") assert.equal(result.data.shipments.at(-1).id, expected);
     else assert.equal(result.data.shipments[0].id, expensive.id);
   }
-  for (const path of ["users", "admin/users"]) {
+  for (const path of ["users"]) {
     const result = await call(path, admin, { q: marker.toUpperCase(), role: "CUSTOMER", isActive: "true", limit: "1", sortBy: "name", order: "asc" });
     assert.equal(result.data.pagination.total, 2);
     assert.equal(result.data.users[0].id, [customer.id, other.id].sort()[0]);
   }
-  // Query validation must agree across all list handlers, including Admin aliases.
+  // Query validation must agree across all list handlers.
   for (const path of Object.keys(routes)) {
     const actor = path.startsWith("admin/") || path === "users" ? admin : customer;
     for (const query of ["page=0", "page=-1", "page=1.5", "page=1e2", "page=1000001", "limit=101", "limit=", "limit=01", "page=1&page=2", "unknown=1"]) {
@@ -89,7 +89,7 @@ try {
     { from: "2026-02-11T00:00:00Z", to: "2026-02-10T00:00:00Z" }]) {
     assert.equal((await call("shipments", customer, query)).status, 400);
   }
-  console.info("List integration passed: combined search/status/payment/date filters, timezone boundaries, numeric sorting, tied pagination, role scopes, deletion exclusion and consistent query rejection across eight routes.");
+  console.info("List integration passed: combined search/status/payment/date filters, timezone boundaries, numeric sorting, tied pagination, role scopes, deletion exclusion and consistent query rejection across seven routes.");
 } finally {
   try {
     if (userIds.length) await prisma.$transaction([

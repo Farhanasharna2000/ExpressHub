@@ -12,7 +12,7 @@ const { default: prisma } = await import("../lib/prisma.ts");
 const { signAccessToken } = await import("../lib/auth/tokens.ts");
 const routes = {
   "dashboard-stats": await import("../app/api/v1/admin/dashboard-stats/route.ts"),
-  users: await import("../app/api/v1/admin/users/route.ts"),
+  users: await import("../app/api/v1/users/route.ts"),
   shipments: await import("../app/api/v1/admin/shipments/route.ts"),
   "audit-logs": await import("../app/api/v1/admin/audit-logs/route.ts"),
   role: await import("../app/api/v1/admin/users/[id]/role/route.ts"),
