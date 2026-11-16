@@ -9124,7 +9124,7 @@
           "ai"
         ],
         "summary": "Read AI feature availability",
-        "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER.",
+        "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER.",
         "parameters": [],
         "responses": {
           "200": {
@@ -9156,10 +9156,14 @@
                       "properties": {
                         "assistant": {
                           "type": "boolean"
+                        },
+                        "bookingDraft": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
-                        "assistant"
+                        "assistant",
+                        "bookingDraft"
                       ]
                     }
                   },
@@ -9173,7 +9177,8 @@
                   "success": true,
                   "message": "AI status fetched successfully",
                   "data": {
-                    "assistant": true
+                    "assistant": true,
+                    "bookingDraft": true
                   }
                 }
               }
@@ -9322,7 +9327,7 @@
             }
           },
           "503": {
-            "description": "Required backend/configuration unavailable.",
+            "description": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9330,13 +9335,344 @@
                 },
                 "example": {
                   "success": false,
-                  "message": "Required backend/configuration unavailable.",
+                  "message": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
                   "errors": [
                     {
-                      "code": "SERVICE_UNAVAILABLE"
+                      "code": "AI_UNAVAILABLE"
                     }
                   ]
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/booking-draft": {
+      "post": {
+        "operationId": "post__api_v1_ai_booking_draft",
+        "tags": [
+          "ai"
+        ],
+        "summary": "Draft a booking from a description",
+        "description": "CUSTOMER only. Never creates a shipment: returns booking form values extracted from free text (English, Bangla or Banglish) for the customer to review and submit through POST /shipments. Each value is checked with the shipment validator; invalid or unstated fields are omitted and required ones listed in missing. Rate limited per user (10 requests per 15 minutes). 422 AI_REFUSED when the text cannot be used; 503 AI_UNAVAILABLE, AI_BUSY or AI_QUOTA_EXCEEDED; 502 AI_UPSTREAM_ERROR. Writes an AI_BOOKING_DRAFT audit record with field names and token counts, never the text.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "draft": {
+                          "type": "object",
+                          "properties": {
+                            "pickupContactName": {
+                              "type": "string"
+                            },
+                            "pickupContactPhone": {
+                              "type": "string"
+                            },
+                            "pickupAddress": {
+                              "type": "string"
+                            },
+                            "deliveryContactName": {
+                              "type": "string"
+                            },
+                            "deliveryContactPhone": {
+                              "type": "string"
+                            },
+                            "deliveryAddress": {
+                              "type": "string"
+                            },
+                            "packageDescription": {
+                              "type": "string"
+                            },
+                            "parcelWeightKg": {
+                              "type": "integer"
+                            },
+                            "pickupScheduledAt": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "pickupContactName",
+                            "pickupContactPhone",
+                            "pickupAddress",
+                            "deliveryContactName",
+                            "deliveryContactPhone",
+                            "deliveryAddress",
+                            "packageDescription",
+                            "parcelWeightKg",
+                            "pickupScheduledAt"
+                          ]
+                        },
+                        "filled": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "missing": {
+                          "type": "array",
+                          "items": {}
+                        },
+                        "note": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "draft",
+                        "filled",
+                        "missing",
+                        "note"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Booking draft prepared",
+                  "data": {
+                    "draft": {
+                      "pickupContactName": "Rina",
+                      "pickupContactPhone": "01700000000",
+                      "pickupAddress": "House 12, Road 5, Gulshan 1, Dhaka",
+                      "deliveryContactName": "Rahim",
+                      "deliveryContactPhone": "01800000000",
+                      "deliveryAddress": "Agrabad, Chattogram",
+                      "packageDescription": "Books",
+                      "parcelWeightKg": 2,
+                      "pickupScheduledAt": "2026-11-17T10:00:00+06:00"
+                    },
+                    "filled": [
+                      "pickupContactName",
+                      "pickupContactPhone",
+                      "pickupAddress",
+                      "deliveryContactName",
+                      "deliveryContactPhone",
+                      "deliveryAddress",
+                      "packageDescription",
+                      "parcelWeightKg",
+                      "pickupScheduledAt"
+                    ],
+                    "missing": [],
+                    "note": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON request exceeds 16 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Expected application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The description could not be used for a booking.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "The description could not be used for a booking.",
+                  "errors": [
+                    {
+                      "code": "AI_REFUSED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The AI provider returned an error or unreadable output; try again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "The AI provider returned an error or unreadable output; try again.",
+                  "errors": [
+                    {
+                      "code": "AI_UPSTREAM_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
+                  "errors": [
+                    {
+                      "code": "AI_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 1500
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "text": "Send a 2 kg box of books from Rina, 01700000000, House 12, Road 5, Gulshan 1, Dhaka to Rahim, 01800000000, Agrabad, Chattogram. Pickup tomorrow at 10am."
               }
             }
           }
@@ -9566,7 +9902,7 @@
             }
           },
           "502": {
-            "description": "Stripe request failed; retry with the same Idempotency-Key.",
+            "description": "The AI provider returned an error or unreadable output; try again.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9574,10 +9910,10 @@
                 },
                 "example": {
                   "success": false,
-                  "message": "Stripe request failed; retry with the same Idempotency-Key.",
+                  "message": "The AI provider returned an error or unreadable output; try again.",
                   "errors": [
                     {
-                      "code": "PAYMENT_PROVIDER_UNAVAILABLE"
+                      "code": "AI_UPSTREAM_ERROR"
                     }
                   ]
                 }
@@ -9585,7 +9921,7 @@
             }
           },
           "503": {
-            "description": "Required backend/configuration unavailable.",
+            "description": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9593,10 +9929,10 @@
                 },
                 "example": {
                   "success": false,
-                  "message": "Required backend/configuration unavailable.",
+                  "message": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
                   "errors": [
                     {
-                      "code": "SERVICE_UNAVAILABLE"
+                      "code": "AI_UNAVAILABLE"
                     }
                   ]
                 }

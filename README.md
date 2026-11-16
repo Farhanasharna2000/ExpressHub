@@ -22,6 +22,7 @@ and audit records.
 | Admin — `/admin` | Operations dashboard, shipment and user directories, courier assignment, role and activity management, archival, and audit logs |
 | Shared — `/profile` | Contact details and profile photo upload or removal |
 | AI assistant | Customers and couriers ask about their shipments and payments in plain English or Bangla (see [AI shipment assistant](#ai-shipment-assistant)) |
+| AI booking | Customers describe a parcel in their own words and the booking form fills itself for review (see [AI booking from a description](#ai-booking-from-a-description)) |
 
 The interface includes responsive navigation, URL-based filtering and pagination,
 accessible field errors, toast feedback, and loading skeletons for lists, details,
@@ -131,6 +132,24 @@ its products, so use demo data only with it.
 
 Code: `services/ai/` (assistant loops, tools, prompt, configuration), `validators/ai.ts`,
 `app/api/v1/ai/`, and `features/ai/`. Tests: `npm run test:ai`.
+
+## AI booking from a description
+
+On **Book a shipment**, customers can type or paste a description such as "Send a 2 kg box of
+books from Rina, 01700000000, Gulshan 1, Dhaka to Rahim, 01800000000, Agrabad, Chattogram,
+pickup tomorrow at 10am" and click **Fill the form**. English, Bangla and Banglish all work.
+
+- One structured-output call (`POST /api/v1/ai/booking-draft`) returns the form fields as JSON
+  against a strict schema, on Claude or Gemini.
+- Every value is re-checked with the same validator the booking API uses. Invalid or unstated
+  values are left empty and listed as still needed; the model is told never to invent names,
+  phone numbers or addresses.
+- Relative times such as "tomorrow 10am" are resolved in Bangladesh time and shown in the
+  customer's device timezone.
+- The AI never books. The form opens on the first step that still needs input, or on Review
+  when everything is filled, and the customer submits it as usual.
+- Customers only, 10 drafts per user per 15 minutes, and an `AI_BOOKING_DRAFT` audit record
+  with field names and token counts, never the text.
 
 ## Technology
 
@@ -286,7 +305,7 @@ npm run test:ai
 `test:frontend` covers frontend contracts and workflows, form validation, and query
 cache behavior. `test:security` includes proxy redirects and cookie validation.
 `test:payments` is a unit suite; database integration tests use separate commands.
-`test:ai` covers both assistant providers with mocked clients: request validation, tool
+`test:ai` covers the assistant (both providers) and booking drafts with mocked clients: request validation, tool
 authorization, the tool loop limits, refusals and audit records. It needs no API key.
 
 If the auth unit test picks up external Upstash settings, run it with an isolated

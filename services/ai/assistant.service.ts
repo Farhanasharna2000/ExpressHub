@@ -43,6 +43,12 @@ export interface AssistantDeps extends AssistantBaseDeps {
 
 export type AssistantReply = { reply: string; toolCalls: AssistantToolCall[]; shipments: ShipmentRef[] };
 
+export function claudeFallbackParams(model: string) {
+  return FALLBACK_MODELS.has(model)
+    ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }
+    : {};
+}
+
 export const FALLBACK_REPLY = "Sorry, I couldn't finish that answer. Please try again or open the shipment page directly.";
 export const REFUSAL_REPLY = "Sorry, I can't help with that. I can answer questions about your ExpressHub shipments and payments.";
 
@@ -122,9 +128,7 @@ export async function runAssistant(
   let reply = FALLBACK_REPLY;
   let stopReason: string | null = null;
   let turns = 0;
-  const fallback = FALLBACK_MODELS.has(deps.model)
-    ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }
-    : {};
+  const fallback = claudeFallbackParams(deps.model);
 
   try {
     while (turns < MAX_MODEL_TURNS) {

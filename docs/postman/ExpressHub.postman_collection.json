@@ -2779,7 +2779,7 @@
                 "status"
               ]
             },
-            "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER."
+            "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER."
           },
           "response": [
             {
@@ -2799,7 +2799,7 @@
                     "status"
                   ]
                 },
-                "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER."
+                "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER."
               },
               "status": "OK",
               "code": 200,
@@ -2813,7 +2813,91 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"AI status fetched successfully\",\n  \"data\": {\n    \"assistant\": true\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"AI status fetched successfully\",\n  \"data\": {\n    \"assistant\": true,\n    \"bookingDraft\": true\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Draft a booking from a description",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/booking-draft",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "booking-draft"
+              ]
+            },
+            "description": "CUSTOMER only. Never creates a shipment: returns booking form values extracted from free text (English, Bangla or Banglish) for the customer to review and submit through POST /shipments. Each value is checked with the shipment validator; invalid or unstated fields are omitted and required ones listed in missing. Rate limited per user (10 requests per 15 minutes). 422 AI_REFUSED when the text cannot be used; 503 AI_UNAVAILABLE, AI_BUSY or AI_QUOTA_EXCEEDED; 502 AI_UPSTREAM_ERROR. Writes an AI_BOOKING_DRAFT audit record with field names and token counts, never the text.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Send a 2 kg box of books from Rina, 01700000000, House 12, Road 5, Gulshan 1, Dhaka to Rahim, 01800000000, Agrabad, Chattogram. Pickup tomorrow at 10am.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/ai/booking-draft",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "booking-draft"
+                  ]
+                },
+                "description": "CUSTOMER only. Never creates a shipment: returns booking form values extracted from free text (English, Bangla or Banglish) for the customer to review and submit through POST /shipments. Each value is checked with the shipment validator; invalid or unstated fields are omitted and required ones listed in missing. Rate limited per user (10 requests per 15 minutes). 422 AI_REFUSED when the text cannot be used; 503 AI_UNAVAILABLE, AI_BUSY or AI_QUOTA_EXCEEDED; 502 AI_UPSTREAM_ERROR. Writes an AI_BOOKING_DRAFT audit record with field names and token counts, never the text.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"text\": \"Send a 2 kg box of books from Rina, 01700000000, House 12, Road 5, Gulshan 1, Dhaka to Rahim, 01800000000, Agrabad, Chattogram. Pickup tomorrow at 10am.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Booking draft prepared\",\n  \"data\": {\n    \"draft\": {\n      \"pickupContactName\": \"Rina\",\n      \"pickupContactPhone\": \"01700000000\",\n      \"pickupAddress\": \"House 12, Road 5, Gulshan 1, Dhaka\",\n      \"deliveryContactName\": \"Rahim\",\n      \"deliveryContactPhone\": \"01800000000\",\n      \"deliveryAddress\": \"Agrabad, Chattogram\",\n      \"packageDescription\": \"Books\",\n      \"parcelWeightKg\": 2,\n      \"pickupScheduledAt\": \"2026-11-17T10:00:00+06:00\"\n    },\n    \"filled\": [\n      \"pickupContactName\",\n      \"pickupContactPhone\",\n      \"pickupAddress\",\n      \"deliveryContactName\",\n      \"deliveryContactPhone\",\n      \"deliveryAddress\",\n      \"packageDescription\",\n      \"parcelWeightKg\",\n      \"pickupScheduledAt\"\n    ],\n    \"missing\": [],\n    \"note\": null\n  }\n}"
             }
           ],
           "event": []

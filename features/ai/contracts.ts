@@ -48,3 +48,36 @@ export function waitingMessage(seconds: number) {
   if (seconds < 7) return "Reading the tracking details…";
   return "Almost done…";
 }
+
+export const BOOKING_FIELD_LABELS: Record<string, string> = {
+  pickupContactName: "Pickup contact name",
+  pickupContactPhone: "Pickup phone",
+  pickupAddress: "Pickup address",
+  deliveryContactName: "Recipient name",
+  deliveryContactPhone: "Recipient phone",
+  deliveryAddress: "Delivery address",
+  packageDescription: "Parcel description",
+  parcelWeightKg: "Weight",
+  pickupScheduledAt: "Pickup time",
+};
+
+export type BookingDraftResponse = {
+  draft: Partial<Record<string, string | number>>;
+  filled: string[];
+  missing: string[];
+  note: string | null;
+};
+
+export const BOOKING_EXAMPLE = "Send a 2 kg box of books from Rina, 01700000000, House 12, Road 5, Gulshan 1, Dhaka to Rahim, 01800000000, Agrabad, Chattogram. Pickup tomorrow at 10am.";
+
+// Turns the server draft into the string values the booking form keeps.
+// The pickup time arrives as ISO with an offset and is shown in the device's timezone.
+export function draftToFormValues(draft: BookingDraftResponse["draft"], toLocalInput: (iso: string) => string) {
+  const values: Record<string, string> = {};
+  for (const [key, value] of Object.entries(draft)) {
+    if (value === undefined || value === null || value === "") continue;
+    values[key] = key === "pickupScheduledAt" ? toLocalInput(String(value)) : String(value);
+  }
+  if (values.pickupScheduledAt === "") delete values.pickupScheduledAt;
+  return values;
+}

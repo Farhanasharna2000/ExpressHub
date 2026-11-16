@@ -17,3 +17,9 @@ export const assistantRequestSchema = z.object({
 
 export type AssistantMessage = z.infer<typeof assistantMessageSchema>;
 export type AssistantRequestInput = z.infer<typeof assistantRequestSchema>;
+
+export const bookingDraftRequestSchema = z.object({
+  text: z.string().trim().min(10).max(1500),
+}).strict();
+
+export type BookingDraftRequestInput = z.infer<typeof bookingDraftRequestSchema>;

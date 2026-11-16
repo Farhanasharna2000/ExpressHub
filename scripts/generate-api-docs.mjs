@@ -101,7 +101,14 @@ for (const [method, source, target] of [["get","users","users"],["patch","users/
 add("get", `${prefix}/admin/dashboard-stats`, "Read dashboard statistics", stats, {description:"ADMIN only. No query parameters. One database snapshot. User/shipment counts exclude deletion; active shipments include FAILED. Payment history is retained; amounts are strings grouped by currency/status, not net revenue or refunded amounts."});
 add("get", `${prefix}/courier/stats`, "Read courier statistics", { total: 10, readyPickup: 2, inRoute: 3, delivered: 5, byStatus: { ...counts(statuses.enum), CREATED: 2, IN_TRANSIT: 3, DELIVERED: 5 } }, { tag: "courier", message: "Courier statistics fetched successfully", description: "COURIER or ADMIN only. Aggregates all assigned non-deleted shipments by status." });
 const assistantMessage = { type: "object", properties: { role: enumeration("user", "assistant"), content: { ...str(1, 8000), description: "User messages up to 2000 characters, assistant messages up to 8000." } }, required: ["role", "content"], additionalProperties: false };
-add("get", `${prefix}/ai/status`, "Read AI feature availability", { assistant: true }, { tag: "ai", message: "AI status fetched successfully", description: "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER." });
+add("get", `${prefix}/ai/status`, "Read AI feature availability", { assistant: true, bookingDraft: true }, { tag: "ai", message: "AI status fetched successfully", description: "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER." });
+add("post", `${prefix}/ai/booking-draft`, "Draft a booking from a description", { draft: { pickupContactName: "Rina", pickupContactPhone: "01700000000", pickupAddress: "House 12, Road 5, Gulshan 1, Dhaka", deliveryContactName: "Rahim", deliveryContactPhone: "01800000000", deliveryAddress: "Agrabad, Chattogram", packageDescription: "Books", parcelWeightKg: 2, pickupScheduledAt: "2026-11-17T10:00:00+06:00" }, filled: ["pickupContactName", "pickupContactPhone", "pickupAddress", "deliveryContactName", "deliveryContactPhone", "deliveryAddress", "packageDescription", "parcelWeightKg", "pickupScheduledAt"], missing: [], note: null }, {
+  tag: "ai", message: "Booking draft prepared",
+  body: object({ text: str(10, 1500) }),
+  example: { text: "Send a 2 kg box of books from Rina, 01700000000, House 12, Road 5, Gulshan 1, Dhaka to Rahim, 01800000000, Agrabad, Chattogram. Pickup tomorrow at 10am." },
+  errors: [400, 401, 403, 422, 429, 502, 503],
+  description: "CUSTOMER only. Never creates a shipment: returns booking form values extracted from free text (English, Bangla or Banglish) for the customer to review and submit through POST /shipments. Each value is checked with the shipment validator; invalid or unstated fields are omitted and required ones listed in missing. Rate limited per user (10 requests per 15 minutes). 422 AI_REFUSED when the text cannot be used; 503 AI_UNAVAILABLE, AI_BUSY or AI_QUOTA_EXCEEDED; 502 AI_UPSTREAM_ERROR. Writes an AI_BOOKING_DRAFT audit record with field names and token counts, never the text."
+});
 add("post", `${prefix}/ai/assistant`, "Ask the shipment assistant", { reply: "Your parcel EXH-ABC123 left the Dhaka hub and is in transit to Chattogram.", toolCalls: [{ name: "get_shipment", shipmentId: id.example, ok: true }], shipments: [{ id: id.example, trackingNumber: "EXH-ABC123" }] }, {
   tag: "ai", message: "Assistant replied successfully",
   body: { type: "object", properties: { messages: { type: "array", minItems: 1, maxItems: 20, items: assistantMessage } }, required: ["messages"], additionalProperties: false },
@@ -146,6 +153,20 @@ for (const operation of operations.filter(o=>o.path.includes("/payments"))) {
   if (paymentSchema) {
     paymentSchema.properties.status = payStatuses;
     for (const field of ["paidAt", "refundedAt"]) paymentSchema.properties[field] = {...date,nullable:true};
+  }
+}
+// AI routes share status codes with payments but fail for different reasons.
+const aiErrors = {
+  422: ["The description could not be used for a booking.", "AI_REFUSED"],
+  502: ["The AI provider returned an error or unreadable output; try again.", "AI_UPSTREAM_ERROR"],
+  503: ["AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.", "AI_UNAVAILABLE"],
+};
+for (const operation of operations.filter(o=>o.path.includes("/ai/"))) {
+  for (const [code, [description, errorCode]] of Object.entries(aiErrors)) {
+    const response = operation.op.responses[code];
+    if (!response) continue;
+    response.description = description;
+    response.content["application/json"].example = { success: false, message: description, errors: [{ code: errorCode }] };
   }
 }
 // Broaden action-dependent/nullable response fields instead of implying a single audit event shape.

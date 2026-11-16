@@ -1,22 +1,25 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
-import { ApiError as GeminiApiError, GoogleGenAI, type GenerateContentParameters } from "@google/genai";
+import { ApiError as GeminiApiError, GoogleGenAI, type GenerateContentParameters, type ThinkingLevel } from "@google/genai";
 import type { AuthenticatedUser } from "@/lib/auth/require-user";
 import { AppError, RateLimitError } from "@/lib/http/errors";
 import prisma from "@/lib/prisma";
 import { limitApiRequests } from "@/lib/rate-limit";
 import { rateLimitDiagnostics } from "@/lib/rate-limit-diagnostics";
 import type { AiConfig } from "@/services/ai/config";
-import { runAssistant, type AssistantBaseDeps } from "@/services/ai/assistant.service";
+import { claudeFallbackParams, runAssistant, type AssistantBaseDeps } from "@/services/ai/assistant.service";
+import { draftBooking, type BookingDraftDeps, type JsonGeneration } from "@/services/ai/booking-draft.service";
+import { BOOKING_DRAFT_SCHEMA } from "@/services/ai/prompts/booking";
+import { aiBusy as busy, aiUnavailable as unavailable, aiUpstream as upstream, geminiStatusError } from "@/services/ai/provider-errors";
 import { runGeminiAssistant } from "@/services/ai/gemini-assistant.service";
-import type { AssistantRequestInput } from "@/validators/ai";
+import type { AssistantRequestInput, BookingDraftRequestInput } from "@/validators/ai";
 import { listMyPayments } from "@/services/payment.service";
 import { getShipment, listShipments } from "@/services/shipment.service";
 import { listPaymentsSchema } from "@/validators/payment";
 import { listShipmentsSchema } from "@/validators/shipment";
 
-const ASSISTANT_REQUESTS_PER_WINDOW = 20;
-const ASSISTANT_WINDOW_MS = 15 * 60 * 1000;
+const AI_WINDOW_MS = 15 * 60 * 1000;
+const AI_LIMITS = { "ai-assistant": 20, "ai-booking-draft": 10 } as const;
 
 const PROVIDER_TIMEOUT_MS = 45_000;
 
@@ -38,15 +41,11 @@ function logProviderError(provider: string, status: number | string, error: unkn
   console.error(`Assistant provider error: ${provider} ${status}: ${detail}`);
 }
 
-const busy = () => new AppError(503, "The assistant is busy. Please try again shortly.", "AI_BUSY");
-const unavailable = () => new AppError(503, "The assistant is not available", "AI_UNAVAILABLE");
-const quotaExceeded = () => new AppError(503, "The assistant has reached today's free usage limit. Please try again later.", "AI_QUOTA_EXCEEDED");
-const upstream = () => new AppError(502, "The assistant could not answer right now. Please try again.", "AI_UPSTREAM_ERROR");
 
-export async function enforceAssistantRateLimit(actor: AuthenticatedUser) {
+export async function enforceAssistantRateLimit(actor: AuthenticatedUser, scope: keyof typeof AI_LIMITS = "ai-assistant") {
   let result;
   try {
-    result = await limitApiRequests(actor.id, "ai-assistant", ASSISTANT_REQUESTS_PER_WINDOW, ASSISTANT_WINDOW_MS);
+    result = await limitApiRequests(actor.id, scope, AI_LIMITS[scope], AI_WINDOW_MS);
   } catch (error) {
     console.error("Assistant rate limit check failed", rateLimitDiagnostics(error));
     throw new AppError(503, "The assistant is temporarily unavailable", "RATE_LIMIT_UNAVAILABLE");
@@ -74,9 +73,7 @@ async function generateContent(params: GenerateContentParameters) {
   } catch (error) {
     if (error instanceof GeminiApiError) {
       logProviderError("gemini", error.status, error);
-      if (error.status === 429) throw /per ?day/i.test(error.message) ? quotaExceeded() : busy();
-      if (error.status === 401 || error.status === 403) throw unavailable();
-      throw upstream();
+      throw geminiStatusError(error.status, error.message);
     }
     if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
       logProviderError("gemini", "timeout", error);
@@ -100,18 +97,82 @@ function baseDeps(config: AiConfig): AssistantBaseDeps {
         return (await listMyPayments(actor, input)).payments;
       },
     },
-    async audit(actor, record) {
-      await prisma.auditLog.create({
-        data: {
-          actorId: actor.id,
-          entityType: "USER",
-          entityId: actor.id,
-          action: "AI_ASSISTANT_QUERY",
-          details: record,
-        },
-      });
+    audit: (actor, record) => writeAiAudit(actor, "AI_ASSISTANT_QUERY", record),
+  };
+}
+
+async function writeAiAudit(actor: AuthenticatedUser, action: string, details: object) {
+  await prisma.auditLog.create({
+    data: { actorId: actor.id, entityType: "USER", entityId: actor.id, action, details: JSON.parse(JSON.stringify(details)) },
+  });
+}
+
+async function claudeJson(model: string, request: { system: string; user: string }): Promise<JsonGeneration> {
+  const response = await createMessage({
+    model,
+    max_tokens: 4096,
+    output_config: { effort: "low", format: { type: "json_schema", schema: BOOKING_DRAFT_SCHEMA } },
+    ...claudeFallbackParams(model),
+    system: request.system,
+    messages: [{ role: "user", content: request.user }],
+  });
+  const text = response.content.map((block) => (block.type === "text" ? block.text : "")).join("");
+  return {
+    text,
+    refused: response.stop_reason === "refusal",
+    stopReason: response.stop_reason,
+    usage: {
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+      cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
     },
   };
+}
+
+async function geminiJson(model: string, request: { system: string; user: string }): Promise<JsonGeneration> {
+  const response = await generateContent({
+    model,
+    contents: [{ role: "user", parts: [{ text: request.user }] }],
+    config: {
+      systemInstruction: request.system,
+      responseMimeType: "application/json",
+      responseJsonSchema: BOOKING_DRAFT_SCHEMA,
+      maxOutputTokens: 2048,
+      ...(model.startsWith("gemini-3") ? { thinkingConfig: { thinkingLevel: "LOW" as ThinkingLevel } } : {}),
+    },
+  });
+  const candidate = response.candidates?.[0];
+  const parts = candidate?.content?.parts ?? [];
+  // Only safety blocks count as a refusal. An empty answer for any other reason
+  // (for example MAX_TOKENS) is a provider failure the customer can retry.
+  const blocked = Boolean(response.promptFeedback?.blockReason)
+    || ["SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII"].includes(candidate?.finishReason ?? "");
+  if (!blocked && !candidate?.content) {
+    logProviderError("gemini", candidate?.finishReason ?? "empty", new Error("No content in response"));
+    throw upstream();
+  }
+  const metadata = response.usageMetadata;
+  return {
+    text: parts.filter((part) => part.text && !part.thought).map((part) => part.text).join(""),
+    refused: blocked,
+    stopReason: candidate?.finishReason ?? response.promptFeedback?.blockReason ?? null,
+    usage: {
+      inputTokens: metadata?.promptTokenCount ?? 0,
+      outputTokens: (metadata?.candidatesTokenCount ?? 0) + (metadata?.thoughtsTokenCount ?? 0),
+      cacheReadTokens: metadata?.cachedContentTokenCount ?? 0,
+      cacheWriteTokens: 0,
+    },
+  };
+}
+
+export function runConfiguredBookingDraft(actor: AuthenticatedUser, input: BookingDraftRequestInput, config: AiConfig) {
+  const deps: BookingDraftDeps = {
+    model: config.model,
+    generateJson: (request) => (config.provider === "gemini" ? geminiJson : claudeJson)(config.model, request),
+    audit: (who, details) => writeAiAudit(who, "AI_BOOKING_DRAFT", details),
+  };
+  return draftBooking(actor, input, deps);
 }
 
 export function runConfiguredAssistant(actor: AuthenticatedUser, input: AssistantRequestInput, config: AiConfig) {

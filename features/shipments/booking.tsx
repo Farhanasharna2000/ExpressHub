@@ -15,6 +15,7 @@ import { ApiError, errorMessage, fieldErrors } from "@/lib/client/api";
 import { bookingPayload, bookingSchema, bookingFormSchema, emptyDraft, dateTime, type BookingDraft, type Shipment } from "./contracts";
 import { useRetryDelay } from "./use-resource";
 import { WeightInput } from "./weight-input";
+import { BookingAssist } from "@/features/ai/booking-assist";
 
 const steps = ["Pickup", "Delivery", "Parcel", "Review"];
 const fieldStep = (key: string) => key.startsWith("pickup") && key !== "pickupScheduledAt" ? 0 : key.startsWith("delivery") ? 1 : 2;
@@ -29,6 +30,9 @@ export function ShipmentBooking() {
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [uncertain, setUncertain] = useState(false);
+  // The form is locked while an AI draft is being prepared, so a late draft never overwrites edits or a submission.
+  const [aiBusy, setAiBusy] = useState(false);
+  const locked = busy || uncertain || aiBusy;
   const submitting = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -42,7 +46,7 @@ export function ShipmentBooking() {
   }, [step]);
 
   function input(key: keyof BookingDraft, label: string, options: { type?: string; maxLength?: number; hint?: string; min?: string; max?: string; step?: string; required?: boolean } = {}) {
-    return <Input id={key} {...form.register(key)} label={label} error={errors[key]?.message} disabled={busy || uncertain} {...options} />;
+    return <Input id={key} {...form.register(key)} label={label} error={errors[key]?.message} disabled={locked} {...options} />;
   }
   function report(failure: unknown) {
     setError(failure);
@@ -55,6 +59,14 @@ export function ShipmentBooking() {
       if (target instanceof HTMLElement) target.focus();
     });
   }
+  // Replace the form with the AI draft, then open the first step that still needs input (or Review).
+  // Starting from an empty draft keeps details from an earlier description from mixing in.
+  // The booking error is kept so an active Retry-After wait still applies.
+  function applyDraft(values: Record<string, string>, missing: string[]) {
+    form.reset({ ...emptyDraft, ...values });
+    form.clearErrors();
+    setStep(missing.length ? Math.min(...missing.map(fieldStep)) : 3);
+  }
   function invalid(fields: FieldErrors<BookingDraft>) {
     const first = Object.keys(fields)[0] as keyof BookingDraft | undefined;
     if (first) {
@@ -63,7 +75,7 @@ export function ShipmentBooking() {
     }
   }
   async function submit(draft: BookingDraft) {
-    if (submitting.current || uncertain || delay) return;
+    if (submitting.current || uncertain || delay || aiBusy) return;
     setError(null); form.clearErrors();
     try {
       if (step < 3) { setStep(step + 1); return; }
@@ -105,24 +117,25 @@ export function ShipmentBooking() {
   return <div className="page-stack">
     <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> My shipments</Link>
     <div className="page-heading"><div><p className="eyebrow">Make your next move</p><h1>Book a shipment</h1><p>A few details to get your parcel on its way.</p></div><Package aria-hidden="true" className="size-9 text-primary" /></div>
+    <BookingAssist onApply={applyDraft} onBusyChange={setAiBusy} disabled={busy || uncertain} />
     <ol className="shipment-steps" aria-label="Booking progress">{steps.map((name, index) => <li key={name} aria-current={step === index ? "step" : undefined}><span>{index < step ? <Check className="size-4" aria-hidden="true" /> : index + 1}</span>{name}</li>)}</ol>
     <form ref={formRef} onSubmit={form.handleSubmit(submit, invalid)} noValidate aria-busy={busy} className="booking-layout">
       <Card><CardHeader><CardTitle><h2 ref={heading} tabIndex={-1}>{["Where should we pick up?", "Where is it going?", "Tell us about your parcel", "Review your shipment"][step]}</h2></CardTitle><CardDescription>{["Add the sender’s contact details and pickup address.", "Add the recipient’s contact details and full delivery address.", "Enter the parcel weight and an optional description.", "Check the details below before creating your shipment."][step]}</CardDescription></CardHeader>
         <CardContent className="space-y-6">
           {step === 0 && <div className="form-grid">{input("pickupContactName", "Pickup contact name", { required: true, maxLength: 100 })}{input("pickupContactPhone", "Pickup phone", { type: "tel", required: true, maxLength: 30 })}{input("pickupAddress", "Pickup address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
           {step === 1 && <div className="form-grid">{input("deliveryContactName", "Recipient name", { required: true, maxLength: 100 })}{input("deliveryContactPhone", "Recipient phone", { type: "tel", required: true, maxLength: 30 })}{input("deliveryAddress", "Delivery address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
-          {step === 2 && <div className="form-grid"><Controller name="parcelWeightKg" control={form.control} render={({ field, fieldState }) => <WeightInput {...field} disabled={busy || uncertain} error={fieldState.error?.message} />} />{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : `Choose a future time in your device timezone: ${timezone}.` })}</div>}
+          {step === 2 && <div className="form-grid"><Controller name="parcelWeightKg" control={form.control} render={({ field, fieldState }) => <WeightInput {...field} disabled={locked} error={fieldState.error?.message} />} />{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : `Choose a future time in your device timezone: ${timezone}.` })}</div>}
           {step === 3 && (
             <div className="space-y-5">
               <div className="grid gap-4 md:grid-cols-2">
-                <ReviewAddress title="Pickup" name={draft.pickupContactName} phone={draft.pickupContactPhone} address={draft.pickupAddress} disabled={busy || uncertain} onEdit={() => setStep(0)} />
-                <ReviewAddress title="Delivery" name={draft.deliveryContactName} phone={draft.deliveryContactPhone} address={draft.deliveryAddress} disabled={busy || uncertain} onEdit={() => setStep(1)} />
+                <ReviewAddress title="Pickup" name={draft.pickupContactName} phone={draft.pickupContactPhone} address={draft.pickupAddress} disabled={locked} onEdit={() => setStep(0)} />
+                <ReviewAddress title="Delivery" name={draft.deliveryContactName} phone={draft.deliveryContactPhone} address={draft.deliveryAddress} disabled={locked} onEdit={() => setStep(1)} />
               </div>
 
               <section className="overflow-hidden rounded-xl border bg-background" aria-labelledby="review-parcel-title">
                 <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-5 py-3">
                   <h3 id="review-parcel-title" className="flex items-center gap-2 text-base font-semibold"><Package className="size-4 text-primary" aria-hidden="true" />Parcel details</h3>
-                  <Button type="button" variant="ghost" size="sm" disabled={busy || uncertain} onClick={() => setStep(2)} aria-label="Edit parcel details"><Pencil className="size-3.5" aria-hidden="true" />Edit</Button>
+                  <Button type="button" variant="ghost" size="sm" disabled={locked} onClick={() => setStep(2)} aria-label="Edit parcel details"><Pencil className="size-3.5" aria-hidden="true" />Edit</Button>
                 </div>
                 <div className="space-y-5 p-5">
                   <dl className="grid gap-5 sm:grid-cols-2">
@@ -144,7 +157,7 @@ export function ShipmentBooking() {
               </section>
             </div>
           )}
-          <div className="flex flex-wrap justify-between gap-3 border-t pt-6"><Button type="button" variant="outline" disabled={step === 0 || busy || uncertain} onClick={() => { setStep(step - 1); form.clearErrors(); setError(null); }}><ArrowLeft />Back</Button><Button type="submit" className="min-h-11" disabled={busy || uncertain || delay > 0}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{busy ? "Creating shipment…" : step === 3 ? "Create shipment" : "Continue"}</Button></div>
+          <div className="flex flex-wrap justify-between gap-3 border-t pt-6"><Button type="button" variant="outline" disabled={step === 0 || locked} onClick={() => { setStep(step - 1); form.clearErrors(); setError(null); }}><ArrowLeft />Back</Button><Button type="submit" className="min-h-11" disabled={locked || delay > 0}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{busy ? "Creating shipment…" : step === 3 ? "Create shipment" : "Continue"}</Button></div>
         </CardContent>
       </Card>
       <Card className="self-start border-primary/15 bg-primary/5 shadow-none">
