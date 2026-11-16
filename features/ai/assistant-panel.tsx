@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSession } from "@/features/auth/provider";
 import { useResource } from "@/features/shipments/use-resource";
-import { ApiError, errorMessage } from "@/lib/client/api";
+import { aiErrorMessage } from "./ai-error";
 import {
   MAX_ASSISTANT_INPUT,
   assistantSuggestions,
@@ -20,14 +20,6 @@ import {
   type ChatMessage,
 } from "./contracts";
 
-// Assistant errors carry a specific, safe message and code from the server; show both.
-function assistantError(cause: unknown) {
-  if (cause instanceof ApiError && cause.status >= 500 && !cause.incidentId) {
-    const code = (cause.errors[0] as { code?: unknown } | undefined)?.code;
-    return typeof code === "string" ? `${cause.message} (${code})` : cause.message;
-  }
-  return errorMessage(cause);
-}
 
 export function AssistantLauncher() {
   const { user } = useSession();
@@ -109,7 +101,7 @@ function AssistantPanel({ role, name }: { role: string; name?: string }) {
       setMessages([...next, { role: "assistant", content: result.reply, shipments: result.shipments }]);
     } catch (cause) {
       setMessages(messages);
-      setError({ text: assistantError(cause), retry: content });
+      setError({ text: aiErrorMessage(cause), retry: content });
     } finally {
       setBusy(false);
       inputRef.current?.focus();

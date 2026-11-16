@@ -10,6 +10,9 @@ import type { AiConfig } from "@/services/ai/config";
 import { claudeFallbackParams, runAssistant, type AssistantBaseDeps } from "@/services/ai/assistant.service";
 import { draftBooking, type BookingDraftDeps, type JsonGeneration } from "@/services/ai/booking-draft.service";
 import { BOOKING_DRAFT_SCHEMA } from "@/services/ai/prompts/booking";
+import { OPS_BRIEF_SCHEMA } from "@/services/ai/prompts/ops-brief";
+import { DELAY_THRESHOLD_HOURS, generateOpsBrief, getCachedBrief, type OpsBriefDeps } from "@/services/ai/ops-brief.service";
+import { getOperationsFacts } from "@/services/admin.service";
 import { aiBusy as busy, aiUnavailable as unavailable, aiUpstream as upstream, geminiStatusError } from "@/services/ai/provider-errors";
 import { runGeminiAssistant } from "@/services/ai/gemini-assistant.service";
 import type { AssistantRequestInput, BookingDraftRequestInput } from "@/validators/ai";
@@ -19,7 +22,7 @@ import { listPaymentsSchema } from "@/validators/payment";
 import { listShipmentsSchema } from "@/validators/shipment";
 
 const AI_WINDOW_MS = 15 * 60 * 1000;
-const AI_LIMITS = { "ai-assistant": 20, "ai-booking-draft": 10 } as const;
+const AI_LIMITS = { "ai-assistant": 20, "ai-booking-draft": 10, "ai-ops-brief": 3 } as const;
 
 const PROVIDER_TIMEOUT_MS = 45_000;
 
@@ -107,11 +110,13 @@ async function writeAiAudit(actor: AuthenticatedUser, action: string, details: o
   });
 }
 
-async function claudeJson(model: string, request: { system: string; user: string }): Promise<JsonGeneration> {
+type JsonRequest = { system: string; user: string; schema: Record<string, unknown> };
+
+async function claudeJson(model: string, request: JsonRequest): Promise<JsonGeneration> {
   const response = await createMessage({
     model,
     max_tokens: 4096,
-    output_config: { effort: "low", format: { type: "json_schema", schema: BOOKING_DRAFT_SCHEMA } },
+    output_config: { effort: "low", format: { type: "json_schema", schema: request.schema } },
     ...claudeFallbackParams(model),
     system: request.system,
     messages: [{ role: "user", content: request.user }],
@@ -130,14 +135,14 @@ async function claudeJson(model: string, request: { system: string; user: string
   };
 }
 
-async function geminiJson(model: string, request: { system: string; user: string }): Promise<JsonGeneration> {
+async function geminiJson(model: string, request: JsonRequest): Promise<JsonGeneration> {
   const response = await generateContent({
     model,
     contents: [{ role: "user", parts: [{ text: request.user }] }],
     config: {
       systemInstruction: request.system,
       responseMimeType: "application/json",
-      responseJsonSchema: BOOKING_DRAFT_SCHEMA,
+      responseJsonSchema: request.schema,
       maxOutputTokens: 2048,
       ...(model.startsWith("gemini-3") ? { thinkingConfig: { thinkingLevel: "LOW" as ThinkingLevel } } : {}),
     },
@@ -166,10 +171,14 @@ async function geminiJson(model: string, request: { system: string; user: string
   };
 }
 
+function configuredJson(config: AiConfig) {
+  return (request: JsonRequest) => (config.provider === "gemini" ? geminiJson : claudeJson)(config.model, request);
+}
+
 export function runConfiguredBookingDraft(actor: AuthenticatedUser, input: BookingDraftRequestInput, config: AiConfig) {
   const deps: BookingDraftDeps = {
     model: config.model,
-    generateJson: (request) => (config.provider === "gemini" ? geminiJson : claudeJson)(config.model, request),
+    generateJson: (request) => configuredJson(config)({ ...request, schema: BOOKING_DRAFT_SCHEMA }),
     audit: (who, details) => writeAiAudit(who, "AI_BOOKING_DRAFT", details),
   };
   return draftBooking(actor, input, deps);
@@ -179,4 +188,37 @@ export function runConfiguredAssistant(actor: AuthenticatedUser, input: Assistan
   return config.provider === "gemini"
     ? runGeminiAssistant(actor, input, { ...baseDeps(config), generateContent })
     : runAssistant(actor, input, { ...baseDeps(config), createMessage });
+}
+
+const OPS_BRIEF_ACTION = "AI_OPS_BRIEF";
+
+async function findCachedBrief(actor: AuthenticatedUser, dayStart: Date) {
+  const row = await prisma.auditLog.findFirst({
+    where: { actorId: actor.id, action: OPS_BRIEF_ACTION, createdAt: { gte: dayStart } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: { details: true },
+  });
+  return row?.details ?? null;
+}
+
+// The day's brief is stored in the admin's AI_OPS_BRIEF audit record, which doubles as
+// the per-admin, per-day cache. It holds figures and tracking numbers, no personal data.
+function opsBriefDeps(config: AiConfig): OpsBriefDeps {
+  return {
+    model: config.model,
+    loadFacts: (actor, now, day) => getOperationsFacts(actor, now, day, DELAY_THRESHOLD_HOURS),
+    findCached: findCachedBrief,
+    beforeGenerate: (actor) => enforceAssistantRateLimit(actor, "ai-ops-brief"),
+    generateJson: (request) => configuredJson(config)({ ...request, schema: OPS_BRIEF_SCHEMA }),
+    save: (actor, record) => writeAiAudit(actor, OPS_BRIEF_ACTION, record),
+    auditFailure: (actor, details) => writeAiAudit(actor, "AI_OPS_BRIEF_FAILED", details),
+  };
+}
+
+export function readConfiguredOpsBrief(actor: AuthenticatedUser, config: AiConfig) {
+  return getCachedBrief(actor, opsBriefDeps(config));
+}
+
+export function runConfiguredOpsBrief(actor: AuthenticatedUser, options: { refresh: boolean }, config: AiConfig) {
+  return generateOpsBrief(actor, options, opsBriefDeps(config));
 }
