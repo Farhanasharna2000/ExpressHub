@@ -13,7 +13,7 @@
     "test:users:integration": "node tests/users.integration.mjs",
     "test:shipments:integration": "node tests/shipments.integration.mjs",
     "test:payments": "node --test tests/payments.test.mjs tests/payment-controller.test.mjs",
-    "test:ai": "node --test tests/ai-assistant.test.mjs tests/ai-booking.test.mjs",
+    "test:ai": "node --test tests/ai-assistant.test.mjs tests/ai-booking.test.mjs tests/ai-ops-brief.test.mjs",
     "test:checkout-return": "node --test tests/checkout-return.test.mjs",
     "stripe:check": "node scripts/check-stripe.mjs",
     "test:payments:integration": "node tests/payments.integration.mjs",

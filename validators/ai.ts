@@ -23,3 +23,10 @@ export const bookingDraftRequestSchema = z.object({
 }).strict();
 
 export type BookingDraftRequestInput = z.infer<typeof bookingDraftRequestSchema>;
+
+// refresh: true asks for a new brief even when today's is cached.
+export const opsBriefRequestSchema = z.object({
+  refresh: z.boolean().optional().default(false),
+}).strict();
+
+export type OpsBriefRequestInput = z.infer<typeof opsBriefRequestSchema>;

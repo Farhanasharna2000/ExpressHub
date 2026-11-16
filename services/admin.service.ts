@@ -127,3 +127,66 @@ export async function listAuditLogs(
     pagination,
   };
 }
+
+const IN_TRANSIT_STATUSES: ShipmentStatus[] = ["PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"];
+const CLOSED_STATUSES: ShipmentStatus[] = ["DELIVERED", "RETURNED", "CANCELLED"];
+const BRIEF_EXAMPLES = 5;
+
+// Figures for the AI operations brief. Shipment examples carry only the tracking number,
+// status and age, never customer names, phones or addresses.
+export async function getOperationsFacts(
+  actor: AuthenticatedUser,
+  now: Date,
+  day: { start: Date; label: string },
+  delayThresholdHours: number,
+) {
+  requireRole(actor, "ADMIN");
+  const stats = await getDashboardStats(actor);
+  const delayedBefore = new Date(now.getTime() - delayThresholdHours * 60 * 60 * 1000);
+  const live = { deletedAt: null };
+  // Delay and "failed today" come from shipment events, not updatedAt, which also moves on
+  // payment, refund and archive writes.
+  const delayedWhere: Prisma.ShipmentWhereInput = {
+    ...live,
+    status: { in: IN_TRANSIT_STATUSES },
+    events: { none: { occurredAt: { gte: delayedBefore } } },
+  };
+  const unassignedWhere: Prisma.ShipmentWhereInput = { ...live, paymentStatus: "PAID", courierId: null, status: { notIn: CLOSED_STATUSES } };
+  const select = { id: true, trackingNumber: true, status: true, updatedAt: true } as const;
+
+  const [createdToday, deliveredToday, failedToday, failedCount, recentFailed, delayedCount, delayed, unassignedCount, unassigned, activeCouriers] =
+    await prisma.$transaction(
+      [
+        prisma.shipment.count({ where: { ...live, createdAt: { gte: day.start } } }),
+        prisma.shipment.count({ where: { ...live, status: "DELIVERED", deliveredAt: { gte: day.start } } }),
+        prisma.shipment.count({ where: { ...live, status: "FAILED", events: { some: { toStatus: "FAILED", occurredAt: { gte: day.start } } } } }),
+        prisma.shipment.count({ where: { ...live, status: "FAILED" } }),
+        prisma.shipment.findMany({ where: { ...live, status: "FAILED" }, select, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: BRIEF_EXAMPLES }),
+        prisma.shipment.count({ where: delayedWhere }),
+        prisma.shipment.findMany({ where: delayedWhere, select, orderBy: [{ updatedAt: "asc" }, { id: "asc" }], take: BRIEF_EXAMPLES }),
+        prisma.shipment.count({ where: unassignedWhere }),
+        prisma.shipment.findMany({ where: unassignedWhere, select, orderBy: [{ updatedAt: "asc" }, { id: "asc" }], take: BRIEF_EXAMPLES }),
+        prisma.user.count({ where: { ...live, role: "COURIER", isActive: true } }),
+      ],
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    );
+
+  const ref = (shipment: { id: string; trackingNumber: string; status: ShipmentStatus; updatedAt: Date }) => ({
+    id: shipment.id,
+    trackingNumber: shipment.trackingNumber,
+    status: shipment.status,
+    hoursSinceUpdate: Math.max(0, Math.floor((now.getTime() - shipment.updatedAt.getTime()) / 3_600_000)),
+  });
+
+  return {
+    day: day.label,
+    delayThresholdHours,
+    shipments: { total: stats.shipments.total, active: stats.shipments.active, byStatus: stats.shipments.byStatus },
+    today: { created: createdToday, delivered: deliveredToday, failed: failedToday },
+    failed: { count: failedCount, recent: recentFailed.map(ref) },
+    delayed: { count: delayedCount, oldest: delayed.map(ref) },
+    unassignedPaid: { count: unassignedCount, oldest: unassigned.map(ref) },
+    payments: { pending: stats.payments.byStatus.PENDING, paid: stats.payments.byStatus.PAID, failed: stats.payments.byStatus.FAILED },
+    couriers: { active: activeCouriers },
+  };
+}

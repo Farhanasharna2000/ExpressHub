@@ -23,6 +23,7 @@ and audit records.
 | Shared — `/profile` | Contact details and profile photo upload or removal |
 | AI assistant | Customers and couriers ask about their shipments and payments in plain English or Bangla (see [AI shipment assistant](#ai-shipment-assistant)) |
 | AI booking | Customers describe a parcel in their own words and the booking form fills itself for review (see [AI booking from a description](#ai-booking-from-a-description)) |
+| AI operations brief | Admins get a daily AI summary of failed, delayed and unassigned shipments with next steps, shown beside the figures it used (see [Daily operations brief](#daily-operations-brief)) |
 
 The interface includes responsive navigation, URL-based filtering and pagination,
 accessible field errors, toast feedback, and loading skeletons for lists, details,
@@ -150,6 +151,23 @@ pickup tomorrow at 10am" and click **Fill the form**. English, Bangla and Bangli
   when everything is filled, and the customer submits it as usual.
 - Customers only, 10 drafts per user per 15 minutes, and an `AI_BOOKING_DRAFT` audit record
   with field names and token counts, never the text.
+
+## Daily operations brief
+
+On the admin dashboard, **Daily operations brief** turns today's figures into a short summary
+and up to four suggested next steps, for example "4 paid shipments are waiting for a courier".
+
+- The server collects the figures (`getOperationsFacts` in `services/admin.service.ts`): status
+  counts, today's bookings and deliveries, failed shipments, shipments with no update for 48 hours,
+  paid shipments with no courier and pending payments. Examples carry tracking numbers and ages
+  only, never customer names, phones or addresses.
+- The model receives the figures as data and returns a strict JSON brief. Every number in the text
+  is checked against the figures; anything not found is flagged on screen instead of shown as fact.
+- The card shows the exact figures and the shipments to check, linked to their detail pages, next to
+  the text.
+- One brief per admin per Bangladesh day, saved in an `AI_OPS_BRIEF` audit record that doubles as the
+  cache. Opening the dashboard again costs nothing; **Refresh brief** prepares a new one (3 per 15
+  minutes). `GET /api/v1/ai/ops-brief` reads the saved brief and never calls the provider.
 
 ## Technology
 
@@ -305,7 +323,7 @@ npm run test:ai
 `test:frontend` covers frontend contracts and workflows, form validation, and query
 cache behavior. `test:security` includes proxy redirects and cookie validation.
 `test:payments` is a unit suite; database integration tests use separate commands.
-`test:ai` covers the assistant (both providers) and booking drafts with mocked clients: request validation, tool
+`test:ai` covers the assistant (both providers), booking drafts and the operations brief with mocked clients: request validation, tool
 authorization, the tool loop limits, refusals and audit records. It needs no API key.
 
 If the auth unit test picks up external Upstash settings, run it with an isolated

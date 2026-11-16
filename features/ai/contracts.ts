@@ -81,3 +81,68 @@ export function draftToFormValues(draft: BookingDraftResponse["draft"], toLocalI
   if (values.pickupScheduledAt === "") delete values.pickupScheduledAt;
   return values;
 }
+
+export type BriefShipment = { id: string; trackingNumber: string; status: string; hoursSinceUpdate: number };
+
+export type OpsBrief = {
+  day: string;
+  model: string;
+  generatedAt: string;
+  cached: boolean;
+  brief: { headline: string; summary: string; actions: { title: string; detail: string }[]; unverified: string[] };
+  facts: {
+    delayThresholdHours: number;
+    shipments: { total: number; active: number };
+    today: { created: number; delivered: number; failed: number };
+    failed: { count: number; recent: BriefShipment[] };
+    delayed: { count: number; oldest: BriefShipment[] };
+    unassignedPaid: { count: number; oldest: BriefShipment[] };
+    payments: { pending: number };
+    couriers: { active: number };
+  };
+};
+
+// The figures shown beside the brief, in the order the brief prioritises them.
+export function briefFigures(facts: OpsBrief["facts"]) {
+  return [
+    { label: "Paid, no courier", value: facts.unassignedPaid.count, alert: facts.unassignedPaid.count > 0 },
+    { label: "Failed deliveries", value: facts.failed.count, alert: facts.failed.count > 0 },
+    { label: `No update in ${facts.delayThresholdHours}h`, value: facts.delayed.count, alert: facts.delayed.count > 0 },
+    { label: "Pending payments", value: facts.payments.pending, alert: false },
+    { label: "Booked today", value: facts.today.created, alert: false },
+    { label: "Delivered today", value: facts.today.delivered, alert: false },
+    { label: "Active shipments", value: facts.shipments.active, alert: false },
+    { label: "Active couriers", value: facts.couriers.active, alert: false },
+  ];
+}
+
+// Shipments the admin may want to open, without repeats, most urgent group first.
+export function briefShipments(facts: OpsBrief["facts"], limit = 6) {
+  const seen = new Set<string>();
+  const items: (BriefShipment & { reason: string })[] = [];
+  const groups: [BriefShipment[], string][] = [
+    [facts.unassignedPaid.oldest, "Needs a courier"],
+    [facts.failed.recent, "Failed"],
+    [facts.delayed.oldest, "Delayed"],
+  ];
+  for (const [list, reason] of groups) {
+    for (const shipment of list) {
+      if (seen.has(shipment.id)) continue;
+      seen.add(shipment.id);
+      items.push({ ...shipment, reason });
+    }
+  }
+  return items.slice(0, limit);
+}
+
+// Today's date in Bangladesh (UTC+6), the day a brief belongs to.
+export function bangladeshDate(now = new Date()) {
+  return new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+// The newer of the brief the page loaded and the one just generated, ignoring any brief
+// from an earlier day so an open dashboard does not keep yesterday's brief after midnight.
+export function latestBrief(today: string, ...briefs: (OpsBrief | null | undefined)[]) {
+  return briefs.filter((brief): brief is OpsBrief => Boolean(brief) && brief?.day === today)
+    .sort((a, b) => b.generatedAt.localeCompare(a.generatedAt))[0] ?? null;
+}

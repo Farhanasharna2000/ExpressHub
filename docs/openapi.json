@@ -9124,7 +9124,7 @@
           "ai"
         ],
         "summary": "Read AI feature availability",
-        "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER.",
+        "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN.",
         "parameters": [],
         "responses": {
           "200": {
@@ -9159,11 +9159,15 @@
                         },
                         "bookingDraft": {
                           "type": "boolean"
+                        },
+                        "opsBrief": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
                         "assistant",
-                        "bookingDraft"
+                        "bookingDraft",
+                        "opsBrief"
                       ]
                     }
                   },
@@ -9178,7 +9182,8 @@
                   "message": "AI status fetched successfully",
                   "data": {
                     "assistant": true,
-                    "bookingDraft": true
+                    "bookingDraft": true,
+                    "opsBrief": false
                   }
                 }
               }
@@ -9342,6 +9347,1117 @@
                     }
                   ]
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/ops-brief": {
+      "get": {
+        "operationId": "get__api_v1_ai_ops_brief",
+        "tags": [
+          "ai"
+        ],
+        "summary": "Read today's operations brief",
+        "description": "ADMIN only. Returns the brief this admin prepared today (Bangladesh day), or brief: null. Never calls the AI provider. 503 AI_UNAVAILABLE when AI is disabled.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "brief": {
+                          "type": "object",
+                          "properties": {
+                            "day": {
+                              "type": "string"
+                            },
+                            "model": {
+                              "type": "string"
+                            },
+                            "generatedAt": {
+                              "type": "string"
+                            },
+                            "cached": {
+                              "type": "boolean"
+                            },
+                            "brief": {
+                              "type": "object",
+                              "properties": {
+                                "headline": {
+                                  "type": "string"
+                                },
+                                "summary": {
+                                  "type": "string"
+                                },
+                                "actions": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "detail": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "title",
+                                      "detail"
+                                    ]
+                                  }
+                                },
+                                "unverified": {
+                                  "type": "array",
+                                  "items": {}
+                                }
+                              },
+                              "required": [
+                                "headline",
+                                "summary",
+                                "actions",
+                                "unverified"
+                              ]
+                            },
+                            "facts": {
+                              "type": "object",
+                              "properties": {
+                                "day": {
+                                  "type": "string"
+                                },
+                                "delayThresholdHours": {
+                                  "type": "integer"
+                                },
+                                "shipments": {
+                                  "type": "object",
+                                  "properties": {
+                                    "total": {
+                                      "type": "integer"
+                                    },
+                                    "active": {
+                                      "type": "integer"
+                                    },
+                                    "byStatus": {
+                                      "type": "object",
+                                      "properties": {
+                                        "CREATED": {
+                                          "type": "integer"
+                                        },
+                                        "PICKED_UP": {
+                                          "type": "integer"
+                                        },
+                                        "IN_TRANSIT": {
+                                          "type": "integer"
+                                        },
+                                        "OUT_FOR_DELIVERY": {
+                                          "type": "integer"
+                                        },
+                                        "DELIVERED": {
+                                          "type": "integer"
+                                        },
+                                        "FAILED": {
+                                          "type": "integer"
+                                        },
+                                        "RETURNED": {
+                                          "type": "integer"
+                                        },
+                                        "CANCELLED": {
+                                          "type": "integer"
+                                        }
+                                      },
+                                      "required": [
+                                        "CREATED",
+                                        "PICKED_UP",
+                                        "IN_TRANSIT",
+                                        "OUT_FOR_DELIVERY",
+                                        "DELIVERED",
+                                        "FAILED",
+                                        "RETURNED",
+                                        "CANCELLED"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "total",
+                                    "active",
+                                    "byStatus"
+                                  ]
+                                },
+                                "today": {
+                                  "type": "object",
+                                  "properties": {
+                                    "created": {
+                                      "type": "integer"
+                                    },
+                                    "delivered": {
+                                      "type": "integer"
+                                    },
+                                    "failed": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "created",
+                                    "delivered",
+                                    "failed"
+                                  ]
+                                },
+                                "failed": {
+                                  "type": "object",
+                                  "properties": {
+                                    "count": {
+                                      "type": "integer"
+                                    },
+                                    "recent": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "trackingNumber": {
+                                            "type": "string"
+                                          },
+                                          "status": {
+                                            "type": "string"
+                                          },
+                                          "hoursSinceUpdate": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "trackingNumber",
+                                          "status",
+                                          "hoursSinceUpdate"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "count",
+                                    "recent"
+                                  ]
+                                },
+                                "delayed": {
+                                  "type": "object",
+                                  "properties": {
+                                    "count": {
+                                      "type": "integer"
+                                    },
+                                    "oldest": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "trackingNumber": {
+                                            "type": "string"
+                                          },
+                                          "status": {
+                                            "type": "string"
+                                          },
+                                          "hoursSinceUpdate": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "trackingNumber",
+                                          "status",
+                                          "hoursSinceUpdate"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "count",
+                                    "oldest"
+                                  ]
+                                },
+                                "unassignedPaid": {
+                                  "type": "object",
+                                  "properties": {
+                                    "count": {
+                                      "type": "integer"
+                                    },
+                                    "oldest": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "trackingNumber": {
+                                            "type": "string"
+                                          },
+                                          "status": {
+                                            "type": "string"
+                                          },
+                                          "hoursSinceUpdate": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "trackingNumber",
+                                          "status",
+                                          "hoursSinceUpdate"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "count",
+                                    "oldest"
+                                  ]
+                                },
+                                "payments": {
+                                  "type": "object",
+                                  "properties": {
+                                    "pending": {
+                                      "type": "integer"
+                                    },
+                                    "paid": {
+                                      "type": "integer"
+                                    },
+                                    "failed": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "pending",
+                                    "paid",
+                                    "failed"
+                                  ]
+                                },
+                                "couriers": {
+                                  "type": "object",
+                                  "properties": {
+                                    "active": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "active"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "day",
+                                "delayThresholdHours",
+                                "shipments",
+                                "today",
+                                "failed",
+                                "delayed",
+                                "unassignedPaid",
+                                "payments",
+                                "couriers"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "day",
+                            "model",
+                            "generatedAt",
+                            "cached",
+                            "brief",
+                            "facts"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "brief"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Operations brief fetched",
+                  "data": {
+                    "brief": {
+                      "day": "2026-11-16",
+                      "model": "gemini-3.5-flash-lite",
+                      "generatedAt": "2026-10-10T06:00:00.000Z",
+                      "cached": true,
+                      "brief": {
+                        "headline": "4 paid shipments are waiting for a courier.",
+                        "summary": "6 shipments were booked today and 2 delivered. 1 delivery failed and 2 shipments have had no update for over 48 hours.",
+                        "actions": [
+                          {
+                            "title": "Assign couriers to paid shipments",
+                            "detail": "4 paid shipments have no courier and 9 couriers are active."
+                          }
+                        ],
+                        "unverified": []
+                      },
+                      "facts": {
+                        "day": "2026-11-16",
+                        "delayThresholdHours": 48,
+                        "shipments": {
+                          "total": 40,
+                          "active": 12,
+                          "byStatus": {
+                            "CREATED": 5,
+                            "PICKED_UP": 0,
+                            "IN_TRANSIT": 3,
+                            "OUT_FOR_DELIVERY": 0,
+                            "DELIVERED": 20,
+                            "FAILED": 0,
+                            "RETURNED": 0,
+                            "CANCELLED": 0
+                          }
+                        },
+                        "today": {
+                          "created": 6,
+                          "delivered": 2,
+                          "failed": 1
+                        },
+                        "failed": {
+                          "count": 1,
+                          "recent": [
+                            {
+                              "id": "cm123456789012345678901234",
+                              "trackingNumber": "EH-0123456789ABCDEF01234567",
+                              "status": "FAILED",
+                              "hoursSinceUpdate": 30
+                            }
+                          ]
+                        },
+                        "delayed": {
+                          "count": 2,
+                          "oldest": [
+                            {
+                              "id": "cm123456789012345678901234",
+                              "trackingNumber": "EH-0123456789ABCDEF01234567",
+                              "status": "IN_TRANSIT",
+                              "hoursSinceUpdate": 71
+                            }
+                          ]
+                        },
+                        "unassignedPaid": {
+                          "count": 4,
+                          "oldest": [
+                            {
+                              "id": "cm123456789012345678901234",
+                              "trackingNumber": "EH-0123456789ABCDEF01234567",
+                              "status": "CREATED",
+                              "hoursSinceUpdate": 30
+                            }
+                          ]
+                        },
+                        "payments": {
+                          "pending": 7,
+                          "paid": 25,
+                          "failed": 0
+                        },
+                        "couriers": {
+                          "active": 9
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
+                  "errors": [
+                    {
+                      "code": "AI_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post__api_v1_ai_ops_brief",
+        "tags": [
+          "ai"
+        ],
+        "summary": "Prepare today's operations brief",
+        "description": "ADMIN only. Returns today's saved brief (cached: true) without calling the AI provider, unless refresh is true. Otherwise summarises server-side figures (status counts, today's bookings and deliveries, failed shipments, shipments with no update for 48 hours, paid shipments with no courier, pending payments) with tracking numbers but no customer names, phones or addresses. facts holds the exact figures used. brief.unverified lists any number in the text that is not in facts. New briefs are rate limited per admin (3 per 15 minutes) and saved in an AI_OPS_BRIEF audit record, which is the per-day cache; failures write AI_OPS_BRIEF_FAILED. 502 AI_UPSTREAM_ERROR; 503 AI_UNAVAILABLE, AI_BUSY or AI_QUOTA_EXCEEDED.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "brief": {
+                          "type": "object",
+                          "properties": {
+                            "day": {
+                              "type": "string"
+                            },
+                            "model": {
+                              "type": "string"
+                            },
+                            "generatedAt": {
+                              "type": "string"
+                            },
+                            "cached": {
+                              "type": "boolean"
+                            },
+                            "brief": {
+                              "type": "object",
+                              "properties": {
+                                "headline": {
+                                  "type": "string"
+                                },
+                                "summary": {
+                                  "type": "string"
+                                },
+                                "actions": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "detail": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "title",
+                                      "detail"
+                                    ]
+                                  }
+                                },
+                                "unverified": {
+                                  "type": "array",
+                                  "items": {}
+                                }
+                              },
+                              "required": [
+                                "headline",
+                                "summary",
+                                "actions",
+                                "unverified"
+                              ]
+                            },
+                            "facts": {
+                              "type": "object",
+                              "properties": {
+                                "day": {
+                                  "type": "string"
+                                },
+                                "delayThresholdHours": {
+                                  "type": "integer"
+                                },
+                                "shipments": {
+                                  "type": "object",
+                                  "properties": {
+                                    "total": {
+                                      "type": "integer"
+                                    },
+                                    "active": {
+                                      "type": "integer"
+                                    },
+                                    "byStatus": {
+                                      "type": "object",
+                                      "properties": {
+                                        "CREATED": {
+                                          "type": "integer"
+                                        },
+                                        "PICKED_UP": {
+                                          "type": "integer"
+                                        },
+                                        "IN_TRANSIT": {
+                                          "type": "integer"
+                                        },
+                                        "OUT_FOR_DELIVERY": {
+                                          "type": "integer"
+                                        },
+                                        "DELIVERED": {
+                                          "type": "integer"
+                                        },
+                                        "FAILED": {
+                                          "type": "integer"
+                                        },
+                                        "RETURNED": {
+                                          "type": "integer"
+                                        },
+                                        "CANCELLED": {
+                                          "type": "integer"
+                                        }
+                                      },
+                                      "required": [
+                                        "CREATED",
+                                        "PICKED_UP",
+                                        "IN_TRANSIT",
+                                        "OUT_FOR_DELIVERY",
+                                        "DELIVERED",
+                                        "FAILED",
+                                        "RETURNED",
+                                        "CANCELLED"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "total",
+                                    "active",
+                                    "byStatus"
+                                  ]
+                                },
+                                "today": {
+                                  "type": "object",
+                                  "properties": {
+                                    "created": {
+                                      "type": "integer"
+                                    },
+                                    "delivered": {
+                                      "type": "integer"
+                                    },
+                                    "failed": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "created",
+                                    "delivered",
+                                    "failed"
+                                  ]
+                                },
+                                "failed": {
+                                  "type": "object",
+                                  "properties": {
+                                    "count": {
+                                      "type": "integer"
+                                    },
+                                    "recent": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "trackingNumber": {
+                                            "type": "string"
+                                          },
+                                          "status": {
+                                            "type": "string"
+                                          },
+                                          "hoursSinceUpdate": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "trackingNumber",
+                                          "status",
+                                          "hoursSinceUpdate"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "count",
+                                    "recent"
+                                  ]
+                                },
+                                "delayed": {
+                                  "type": "object",
+                                  "properties": {
+                                    "count": {
+                                      "type": "integer"
+                                    },
+                                    "oldest": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "trackingNumber": {
+                                            "type": "string"
+                                          },
+                                          "status": {
+                                            "type": "string"
+                                          },
+                                          "hoursSinceUpdate": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "trackingNumber",
+                                          "status",
+                                          "hoursSinceUpdate"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "count",
+                                    "oldest"
+                                  ]
+                                },
+                                "unassignedPaid": {
+                                  "type": "object",
+                                  "properties": {
+                                    "count": {
+                                      "type": "integer"
+                                    },
+                                    "oldest": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "id": {
+                                            "type": "string"
+                                          },
+                                          "trackingNumber": {
+                                            "type": "string"
+                                          },
+                                          "status": {
+                                            "type": "string"
+                                          },
+                                          "hoursSinceUpdate": {
+                                            "type": "integer"
+                                          }
+                                        },
+                                        "required": [
+                                          "id",
+                                          "trackingNumber",
+                                          "status",
+                                          "hoursSinceUpdate"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "count",
+                                    "oldest"
+                                  ]
+                                },
+                                "payments": {
+                                  "type": "object",
+                                  "properties": {
+                                    "pending": {
+                                      "type": "integer"
+                                    },
+                                    "paid": {
+                                      "type": "integer"
+                                    },
+                                    "failed": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "pending",
+                                    "paid",
+                                    "failed"
+                                  ]
+                                },
+                                "couriers": {
+                                  "type": "object",
+                                  "properties": {
+                                    "active": {
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "active"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "day",
+                                "delayThresholdHours",
+                                "shipments",
+                                "today",
+                                "failed",
+                                "delayed",
+                                "unassignedPaid",
+                                "payments",
+                                "couriers"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "day",
+                            "model",
+                            "generatedAt",
+                            "cached",
+                            "brief",
+                            "facts"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "brief"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Operations brief prepared",
+                  "data": {
+                    "brief": {
+                      "day": "2026-11-16",
+                      "model": "gemini-3.5-flash-lite",
+                      "generatedAt": "2026-10-10T06:00:00.000Z",
+                      "cached": false,
+                      "brief": {
+                        "headline": "4 paid shipments are waiting for a courier.",
+                        "summary": "6 shipments were booked today and 2 delivered. 1 delivery failed and 2 shipments have had no update for over 48 hours.",
+                        "actions": [
+                          {
+                            "title": "Assign couriers to paid shipments",
+                            "detail": "4 paid shipments have no courier and 9 couriers are active."
+                          }
+                        ],
+                        "unverified": []
+                      },
+                      "facts": {
+                        "day": "2026-11-16",
+                        "delayThresholdHours": 48,
+                        "shipments": {
+                          "total": 40,
+                          "active": 12,
+                          "byStatus": {
+                            "CREATED": 5,
+                            "PICKED_UP": 0,
+                            "IN_TRANSIT": 3,
+                            "OUT_FOR_DELIVERY": 0,
+                            "DELIVERED": 20,
+                            "FAILED": 0,
+                            "RETURNED": 0,
+                            "CANCELLED": 0
+                          }
+                        },
+                        "today": {
+                          "created": 6,
+                          "delivered": 2,
+                          "failed": 1
+                        },
+                        "failed": {
+                          "count": 1,
+                          "recent": [
+                            {
+                              "id": "cm123456789012345678901234",
+                              "trackingNumber": "EH-0123456789ABCDEF01234567",
+                              "status": "FAILED",
+                              "hoursSinceUpdate": 30
+                            }
+                          ]
+                        },
+                        "delayed": {
+                          "count": 2,
+                          "oldest": [
+                            {
+                              "id": "cm123456789012345678901234",
+                              "trackingNumber": "EH-0123456789ABCDEF01234567",
+                              "status": "IN_TRANSIT",
+                              "hoursSinceUpdate": 71
+                            }
+                          ]
+                        },
+                        "unassignedPaid": {
+                          "count": 4,
+                          "oldest": [
+                            {
+                              "id": "cm123456789012345678901234",
+                              "trackingNumber": "EH-0123456789ABCDEF01234567",
+                              "status": "CREATED",
+                              "hoursSinceUpdate": 30
+                            }
+                          ]
+                        },
+                        "payments": {
+                          "pending": 7,
+                          "paid": 25,
+                          "failed": 0
+                        },
+                        "couriers": {
+                          "active": 9
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON request exceeds 16 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Expected application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The AI provider returned an error or unreadable output; try again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "The AI provider returned an error or unreadable output; try again.",
+                  "errors": [
+                    {
+                      "code": "AI_UPSTREAM_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
+                  "errors": [
+                    {
+                      "code": "AI_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refresh": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              },
+              "example": {
+                "refresh": false
               }
             }
           }
