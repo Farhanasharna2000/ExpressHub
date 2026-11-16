@@ -7,18 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useSession } from "@/features/auth/provider";
 import { toLocalInput } from "@/features/shipments/contracts";
 import { useResource } from "@/features/shipments/use-resource";
-import { ApiError, errorMessage } from "@/lib/client/api";
+import { aiErrorMessage } from "./ai-error";
 import { BOOKING_EXAMPLE, BOOKING_FIELD_LABELS, draftToFormValues, type BookingDraftResponse } from "./contracts";
 
 const MAX_TEXT = 1500;
 
-function draftError(cause: unknown) {
-  if (cause instanceof ApiError && (cause.status >= 500 || cause.status === 422) && !cause.incidentId) {
-    const code = (cause.errors[0] as { code?: unknown } | undefined)?.code;
-    return typeof code === "string" ? `${cause.message} (${code})` : cause.message;
-  }
-  return errorMessage(cause);
-}
 
 export function BookingAssist({ onApply, onBusyChange, disabled }: {
   onApply: (values: Record<string, string>, missing: string[]) => void;
@@ -46,7 +39,7 @@ export function BookingAssist({ onApply, onBusyChange, disabled }: {
       setResult(response);
       onApply(draftToFormValues(response.draft, toLocalInput), response.missing);
     } catch (cause) {
-      setError(draftError(cause));
+      setError(aiErrorMessage(cause));
     } finally {
       setBusy(false);
       onBusyChange(false);
