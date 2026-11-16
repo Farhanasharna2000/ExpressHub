@@ -13,6 +13,7 @@
     "test:users:integration": "node tests/users.integration.mjs",
     "test:shipments:integration": "node tests/shipments.integration.mjs",
     "test:payments": "node --test tests/payments.test.mjs tests/payment-controller.test.mjs",
+    "test:ai": "node --test tests/ai-assistant.test.mjs",
     "test:checkout-return": "node --test tests/checkout-return.test.mjs",
     "stripe:check": "node scripts/check-stripe.mjs",
     "test:payments:integration": "node tests/payments.integration.mjs",
@@ -51,6 +52,8 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "@google/genai": "^3.3.0",
     "@hookform/resolvers": "^5.9.1",
     "@prisma/client": "^5.22.0",
     "@tailwindcss/postcss": "^4.3.3",

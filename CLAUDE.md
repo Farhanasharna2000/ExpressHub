@@ -18,6 +18,7 @@ npm run test:security          # proxy redirects and cookie validation
 npm run test:payments
 npm run test:checkout-return
 npm run test:errors
+npm run test:ai                # AI assistant (Claude and Gemini), clients mocked, no key needed
 npm run build                  # prisma generate + next build
 npm run test:frontend:browser  # Playwright, needs a build, uses port 3100
 ```
@@ -53,6 +54,7 @@ Requests flow in one direction. Keep each layer to its job.
 - Schema changes need a new Prisma migration in `prisma/migrations/`. Never edit an applied migration.
 - When you add, remove or rename an API route, update `scripts/generate-api-docs.mjs`, then run `node scripts/generate-api-docs.mjs && node scripts/prepare-postman.mjs`. `tests/postman.test.mjs` fails on undocumented routes.
 - Never read, print or commit `.env`. Add new variables to `.env.example` and the README table.
+- AI code lives in `services/ai/`. Assistant tools stay read-only, take no user id, and call existing services with the signed-in actor. Never store message text in audit records. Bump `ASSISTANT_PROMPT_VERSION` when the prompt changes. Claude (`assistant.service.ts`) and Gemini (`gemini-assistant.service.ts`) share the tools, limits and audit; change both loops together. Keep `npm run test:ai` passing with the clients mocked.
 - The dev URL must match `ALLOWED_ORIGIN`. A 403 `ORIGIN_NOT_ALLOWED` on login usually means the app runs on another port or host.
 
 ## Before finishing a change

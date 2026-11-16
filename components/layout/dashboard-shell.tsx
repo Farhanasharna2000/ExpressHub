@@ -6,6 +6,7 @@ import { Brand } from "./brand";
 import { Navigation } from "./navigation";
 import { useSession } from "@/features/auth/provider";
 import { AccountMenu } from "@/features/auth/forms";
+import { AssistantLauncher } from "@/features/ai/assistant-panel";
 export function DashboardShell({
   children,
   role,
@@ -51,6 +52,7 @@ export function DashboardShell({
         <main id="main-content" tabIndex={-1}>
           {children}
         </main>
+        <AssistantLauncher />
       </div>
     </div>
   );

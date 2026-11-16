@@ -21,6 +21,7 @@ and audit records.
 | Courier — `/courier` | Assigned shipments, delivery metrics, contact details, and shipment status transitions with required completion or failure notes |
 | Admin — `/admin` | Operations dashboard, shipment and user directories, courier assignment, role and activity management, archival, and audit logs |
 | Shared — `/profile` | Contact details and profile photo upload or removal |
+| AI assistant | Customers and couriers ask about their shipments and payments in plain English or Bangla (see [AI shipment assistant](#ai-shipment-assistant)) |
 
 The interface includes responsive navigation, URL-based filtering and pagination,
 accessible field errors, toast feedback, and loading skeletons for lists, details,
@@ -79,6 +80,58 @@ Page checks do not replace authorization. The client session guard and database-
 API checks enforce current roles, active accounts, ownership, and revocation. API
 CORS handling remains separate from page redirects.
 
+## AI shipment assistant
+
+Customers and couriers open **Ask assistant** in their workspace and ask questions such
+as "Where is my latest parcel?" or "Why did my delivery fail?". The model answers by calling
+read-only tools that run the existing shipment and payment services as the signed-in
+user, so it can only see what that user could already open in the app.
+
+Two providers share the same tools, limits and audit trail: Claude (`AI_PROVIDER=anthropic`,
+the default) and Google Gemini (`AI_PROVIDER=gemini`), which has a free tier for demos.
+
+```mermaid
+sequenceDiagram
+    participant UI as Assistant panel
+    participant API as POST /api/v1/ai/assistant
+    participant Loop as Assistant service
+    participant Claude as Claude or Gemini API
+    participant Svc as Shipment and payment services
+    participant DB as PostgreSQL
+    UI->>API: visible chat text + bearer token
+    API->>API: requireUser, validate, per-user rate limit
+    API->>Loop: runAssistant(actor, messages)
+    Loop->>Svc: preload the user's 5 newest shipments
+    loop up to 4 model turns, only when more data is needed
+        Loop->>Claude: cached prompt + tools + conversation
+        Claude-->>Loop: tool_use (find_shipments, get_shipment, get_shipment_payments)
+        Loop->>Svc: call as the signed-in actor
+        Svc->>DB: role- and owner-scoped query
+        Loop-->>Claude: compact tool results
+    end
+    Claude-->>Loop: final answer
+    Loop->>DB: audit record (tool names, ids, token counts)
+    API-->>UI: reply + links to the shipments it mentions
+```
+
+| Concern | How it is handled |
+| --- | --- |
+| Authorization | Tools take no user id. Each tool calls `getShipment`, `listShipments` or `listMyPayments` with the signed-in actor, which scope by role and ownership. Couriers cannot read payments. |
+| Data exposure | A record outside the user's scope returns the same "not found" result as a missing one. Tool results are compact summaries without internal notes, phone numbers or other users' ids. |
+| Prompt injection | The client sends only visible text; tool calls and results are rebuilt on the server. Tool inputs are strict JSON schemas validated again with Zod. The prompt treats tool and user text as data. |
+| Read-only | No tool writes data. The assistant links to the right page for booking, paying, cancelling or status updates. |
+| Speed | The user's 5 newest shipments are preloaded into the request, so common questions such as "Where is my latest parcel?" need one model call. Tools are called only for older shipments, timelines or payments. Gemini 3 models run with low thinking. |
+| Abuse and cost | 20 requests per user per 15 minutes, input length limits, and at most 4 model turns per request. On Claude: low effort for chat and prompt caching on the stable system prompt and tool definitions. |
+| Reliability | A 45-second provider timeout and provider errors mapped to `AI_BUSY`, `AI_UNAVAILABLE` or `AI_UPSTREAM_ERROR`. Claude refusals use the server-side fallback on supported models; Gemini safety blocks return a polite refusal. |
+| Audit | Every request writes an `AI_ASSISTANT_QUERY` audit record with the model, prompt version, tools used, record ids and token usage. Message text is never stored. |
+| Feature flag | Off by default. With `AI_ENABLED` unset or no API key, the panel is hidden and the endpoint returns `503 AI_UNAVAILABLE`; the rest of the app is unaffected. |
+
+Gemini's free tier has small daily request limits (check yours at https://ai.dev/rate-limit), and Google may use free-tier prompts to improve
+its products, so use demo data only with it.
+
+Code: `services/ai/` (assistant loops, tools, prompt, configuration), `validators/ai.ts`,
+`app/api/v1/ai/`, and `features/ai/`. Tests: `npm run test:ai`.
+
 ## Technology
 
 | Area | Implementation |
@@ -90,6 +143,7 @@ CORS handling remains separate from page redirects.
 | Database | PostgreSQL, Prisma 5 |
 | Authentication | JWT, rotating refresh tokens, bcryptjs |
 | Payments | Stripe Checkout and signed webhooks |
+| AI | Claude API (`@anthropic-ai/sdk`) with tool use and prompt caching, or Google Gemini (`@google/genai`) with function calling |
 | Rate limiting | Upstash Redis; process-local fallback in development |
 | Testing | Node.js test runner and Playwright |
 
@@ -149,6 +203,11 @@ in your local environment or deployment secret settings.
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for the webhook endpoint or local Stripe CLI listener |
 | `STRIPE_SUCCESS_URL` | Default: `http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}` |
 | `STRIPE_CANCEL_URL` | Default: `http://localhost:3000/checkout/cancel` |
+| `AI_ENABLED` | Set to `true` to turn on the AI shipment assistant; off by default |
+| `AI_PROVIDER` | `anthropic` (default) or `gemini` |
+| `ANTHROPIC_API_KEY` | Claude API key; required when the provider is `anthropic` |
+| `GEMINI_API_KEY` | Gemini API key from Google AI Studio (free tier available); required when the provider is `gemini` |
+| `AI_MODEL` | Optional model override; defaults to `claude-opus-5-5` or `gemini-3.5-flash-lite` |
 
 Production rate limiting fails closed if Upstash is unavailable or unconfigured.
 There is no process-local production fallback.
@@ -221,11 +280,14 @@ npm run test:security
 npm run test:payments
 npm run test:checkout-return
 npm run test:errors
+npm run test:ai
 ```
 
 `test:frontend` covers frontend contracts and workflows, form validation, and query
 cache behavior. `test:security` includes proxy redirects and cookie validation.
 `test:payments` is a unit suite; database integration tests use separate commands.
+`test:ai` covers both assistant providers with mocked clients: request validation, tool
+authorization, the tool loop limits, refusals and audit records. It needs no API key.
 
 If the auth unit test picks up external Upstash settings, run it with an isolated
 local limiter (Bash):
@@ -284,9 +346,11 @@ features/shipments/   Booking, lists, details, actions, and useResource
 features/payments/    Checkout initiation, return verification, and payment views
 features/admin/       Operations dashboard, users, shipments, and audit views
 features/courier/     Assigned delivery dashboard and workflows
+features/ai/          AI assistant panel
 lib/auth/             Token helpers and shared route-access policy
 lib/client/           API client, query client, and action form schemas
 services/             Database-backed business operations
+services/ai/          AI assistant loop, read-only tools, prompts, and configuration
 validators/           Server request validation
 prisma/               Schema, migrations, admin seed, and pricing seed
 proxy.ts              Page-access checks and API CORS handling

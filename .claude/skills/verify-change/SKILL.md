@@ -21,6 +21,7 @@ Then run the suites for the area you touched:
 | Proxy, cookies, route protection | `npm run test:security` |
 | Payments, Stripe | `npm run test:payments` and `npm run test:checkout-return` |
 | Error envelope | `npm run test:errors` |
+| AI assistant | `npm run test:ai` |
 | API routes or docs | `node --test tests/postman.test.mjs` |
 | Production build | `npm run build` |
 | Browser flows | `npm run build && npm run test:frontend:browser` |

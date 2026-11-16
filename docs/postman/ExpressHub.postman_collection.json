@@ -2760,6 +2760,151 @@
       ]
     },
     {
+      "name": "ai",
+      "item": [
+        {
+          "name": "Read AI feature availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "status"
+              ]
+            },
+            "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/ai/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "status"
+                  ]
+                },
+                "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"AI status fetched successfully\",\n  \"data\": {\n    \"assistant\": true\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Ask the shipment assistant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/assistant",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "assistant"
+              ]
+            },
+            "description": "CUSTOMER or COURIER only. Read-only: answers from the caller's own shipments and payments through role-scoped tools and never changes data. Messages alternate and start and end with the user; only visible text is accepted. The caller's 5 newest shipments are preloaded so common questions need one model call; shipments lists records named in the reply for linking. Rate limited per user (20 requests per 15 minutes). Returns 503 AI_UNAVAILABLE when AI is disabled, 503 AI_BUSY or 502 AI_UPSTREAM_ERROR on provider failures. Each request writes an AI_ASSISTANT_QUERY audit record with tool names, record ids and token counts, never message text.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Where is my latest parcel?\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/ai/assistant",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "assistant"
+                  ]
+                },
+                "description": "CUSTOMER or COURIER only. Read-only: answers from the caller's own shipments and payments through role-scoped tools and never changes data. Messages alternate and start and end with the user; only visible text is accepted. The caller's 5 newest shipments are preloaded so common questions need one model call; shipments lists records named in the reply for linking. Rate limited per user (20 requests per 15 minutes). Returns 503 AI_UNAVAILABLE when AI is disabled, 503 AI_BUSY or 502 AI_UPSTREAM_ERROR on provider failures. Each request writes an AI_ASSISTANT_QUERY audit record with tool names, record ids and token counts, never message text.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Where is my latest parcel?\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Assistant replied successfully\",\n  \"data\": {\n    \"reply\": \"Your parcel EXH-ABC123 left the Dhaka hub and is in transit to Chattogram.\",\n    \"toolCalls\": [\n      {\n        \"name\": \"get_shipment\",\n        \"shipmentId\": \"cm123456789012345678901234\",\n        \"ok\": true\n      }\n    ],\n    \"shipments\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"trackingNumber\": \"EXH-ABC123\"\n      }\n    ]\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
       "name": "health",
       "item": [
         {

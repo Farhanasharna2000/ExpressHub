@@ -9117,6 +9117,547 @@
         }
       }
     },
+    "/api/v1/ai/status": {
+      "get": {
+        "operationId": "get__api_v1_ai_status",
+        "tags": [
+          "ai"
+        ],
+        "summary": "Read AI feature availability",
+        "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "assistant": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "assistant"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "AI status fetched successfully",
+                  "data": {
+                    "assistant": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business state conflict or exhausted concurrency retries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Business state conflict or exhausted concurrency retries.",
+                  "errors": [
+                    {
+                      "code": "CONFLICT"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/assistant": {
+      "post": {
+        "operationId": "post__api_v1_ai_assistant",
+        "tags": [
+          "ai"
+        ],
+        "summary": "Ask the shipment assistant",
+        "description": "CUSTOMER or COURIER only. Read-only: answers from the caller's own shipments and payments through role-scoped tools and never changes data. Messages alternate and start and end with the user; only visible text is accepted. The caller's 5 newest shipments are preloaded so common questions need one model call; shipments lists records named in the reply for linking. Rate limited per user (20 requests per 15 minutes). Returns 503 AI_UNAVAILABLE when AI is disabled, 503 AI_BUSY or 502 AI_UPSTREAM_ERROR on provider failures. Each request writes an AI_ASSISTANT_QUERY audit record with tool names, record ids and token counts, never message text.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "reply": {
+                          "type": "string"
+                        },
+                        "toolCalls": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "shipmentId": {
+                                "type": "string"
+                              },
+                              "ok": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "shipmentId",
+                              "ok"
+                            ]
+                          }
+                        },
+                        "shipments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "trackingNumber": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "trackingNumber"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "reply",
+                        "toolCalls",
+                        "shipments"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Assistant replied successfully",
+                  "data": {
+                    "reply": "Your parcel EXH-ABC123 left the Dhaka hub and is in transit to Chattogram.",
+                    "toolCalls": [
+                      {
+                        "name": "get_shipment",
+                        "shipmentId": "cm123456789012345678901234",
+                        "ok": true
+                      }
+                    ],
+                    "shipments": [
+                      {
+                        "id": "cm123456789012345678901234",
+                        "trackingNumber": "EXH-ABC123"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON request exceeds 16 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Expected application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Stripe request failed; retry with the same Idempotency-Key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Stripe request failed; retry with the same Idempotency-Key.",
+                  "errors": [
+                    {
+                      "code": "PAYMENT_PROVIDER_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant"
+                          ]
+                        },
+                        "content": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 8000,
+                          "description": "User messages up to 2000 characters, assistant messages up to 8000."
+                        }
+                      },
+                      "required": [
+                        "role",
+                        "content"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "messages"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "messages": [
+                  {
+                    "role": "user",
+                    "content": "Where is my latest parcel?"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/audit-logs": {
       "get": {
         "operationId": "get__api_v1_admin_audit_logs",
