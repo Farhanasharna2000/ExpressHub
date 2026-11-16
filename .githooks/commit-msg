@@ -1,0 +1,19 @@
+#!/bin/sh
+# Remove AI tool attribution from the commit message. Portable across GNU and BSD sed.
+msg="$1"
+tmp="$msg.tmp.$$"
+sed \
+  -e '/^[[:space:]]*[Cc]o-[Aa]uthored-[Bb]y:/d' \
+  -e '/^[[:space:]]*[Mm]ade-with:[[:space:]]*[Cc]ursor/d' \
+  -e '/^[[:space:]]*[Gg]enerated by [Cc]ursor/d' \
+  -e '/^[[:space:]]*[Cc]reated with [Cc]ursor/d' \
+  -e '/[Cc]ursor AI/d' \
+  -e '/[Cc]ursor[- ][Aa]gent/d' \
+  -e '/^[[:space:]]*[Aa]uthor.*[Cc]ursor/d' \
+  -e '/^[[:space:]]*[Gg]enerated by.*AI/d' \
+  -e '/^[[:space:]]*[Cc]reated with.*AI/d' \
+  -e '/Generated with \[Claude Code\]/d' \
+  "$msg" > "$tmp" || exit 1
+# Drop trailing blank lines left behind.
+sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$tmp" > "$msg"
+rm -f "$tmp"

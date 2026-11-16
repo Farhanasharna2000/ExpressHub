@@ -8,7 +8,7 @@ and audit records.
 ## Project links
 
 - [Application](https://express-hub-sepia.vercel.app)
-- [Repository](https://github.com/sharnabetopia/ExpressHub)
+- [Repository](https://github.com/Farhanasharna2000/ExpressHub)
 - [API health endpoint](https://express-hub-sepia.vercel.app/api/v1/health)
 - [OpenAPI specification](docs/openapi.json)
 - [Postman collection](docs/postman/ExpressHub.postman_collection.json)
@@ -99,11 +99,14 @@ Use **Node.js 24** for the repository's native TypeScript test helpers, npm, and
 PostgreSQL database. Stripe test credentials are needed for payment workflows.
 
 ```bash
-git clone https://github.com/sharnabetopia/ExpressHub.git
+git clone https://github.com/Farhanasharna2000/ExpressHub.git
 cd ExpressHub
 npm ci
 cp .env.example .env
+git config core.hooksPath .githooks
 ```
+
+The last command enables the repository's commit hooks (see [Contributing](#contributing)).
 
 Edit `.env` before initializing the database. Generate a signing secret with:
 
@@ -287,11 +290,22 @@ services/             Database-backed business operations
 validators/           Server request validation
 prisma/               Schema, migrations, admin seed, and pricing seed
 proxy.ts              Page-access checks and API CORS handling
-docs/                 API specification, Postman collection, and implementation notes
+docs/                 OpenAPI specification and Postman collection
 tests/                Unit, database integration, and Playwright tests
+.claude/              Claude Code project skills and agents
+.githooks/            Commit hooks that keep history free of tool attribution
 ```
+
+## Contributing
+
+- Keep changes scoped: validators in `validators/`, business rules in `services/`,
+  thin route handlers in `app/api/v1/`, UI in `features/`.
+- Before opening a pull request, run `npm run lint`, `npm run typecheck`, and the
+  unit suites listed under [Testing](#testing).
+- Write short, human-style commit messages. The hooks in `.githooks/` remove
+  `Co-Authored-By` and tool-generated footers and reset a tool-set author to your
+  own git identity. Enable them once per clone with `git config core.hooksPath .githooks`.
 
 ## Author
 
-**Farhana Sharna** — [@sharnabetopia](https://github.com/sharnabetopia) /
-[@Farhanasharna2000](https://github.com/Farhanasharna2000)
+**Farhana Sharna** — [@Farhanasharna2000](https://github.com/Farhanasharna2000)
