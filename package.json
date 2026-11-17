@@ -24,6 +24,8 @@
     "test:errors": "node --test tests/errors.test.mjs",
     "test:security": "node --test tests/security.test.mjs tests/route-protection.test.mjs",
     "test:errors:integration": "node tests/errors.integration.mjs",
+    "test:misc": "node --test tests/postman.test.mjs tests/profile-photo.test.mjs tests/rate-limit-diagnostics.test.mjs",
+    "test": "npm run test:auth && npm run test:payments && npm run test:ai && npm run test:checkout-return && npm run test:pagination && npm run test:errors && npm run test:security && npm run test:frontend && npm run test:misc",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",

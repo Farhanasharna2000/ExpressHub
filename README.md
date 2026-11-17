@@ -311,14 +311,28 @@ actual addresses. Apply seeds deliberately against the intended database.
 
 ```bash
 npm run typecheck
+npm test
+```
+
+`npm test` runs every unit suite below in turn; each can also be run on its own:
+
+```bash
 npm run test:frontend
 npm run test:auth
 npm run test:security
 npm run test:payments
 npm run test:checkout-return
+npm run test:pagination
 npm run test:errors
 npm run test:ai
+npm run test:misc
 ```
+
+`test:misc` checks that every API route is documented in the OpenAPI/Postman files,
+profile photo validation and rate limit diagnostics.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs typecheck, lint, `npm test` and the
+production build on every push and pull request to `main`.
 
 `test:frontend` covers frontend contracts and workflows, form validation, and query
 cache behavior. `test:security` includes proxy redirects and cookie validation.
