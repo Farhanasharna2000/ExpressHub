@@ -56,6 +56,22 @@ enum AuditEntityType {
   PRICING_RULE
 }
 
+enum NotificationType {
+  SHIPMENT_BOOKED
+  SHIPMENT_PICKED_UP
+  SHIPMENT_OUT_FOR_DELIVERY
+  SHIPMENT_DELIVERED
+  SHIPMENT_FAILED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DEAD
+  SKIPPED
+}
+
 enum WebhookProcessingStatus {
   RECEIVED
   PROCESSED
@@ -64,25 +80,27 @@ enum WebhookProcessingStatus {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  role         UserRole  @default(CUSTOMER)
-  phone        String?
-  avatar       String?   @db.Text
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
+  id                 String    @id @default(cuid())
+  name               String
+  email              String    @unique
+  passwordHash       String
+  role               UserRole  @default(CUSTOMER)
+  phone              String?
+  avatar             String?   @db.Text
+  isActive           Boolean   @default(true)
+  emailNotifications Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
 
-  customerShipments Shipment[]      @relation("ShipmentCustomer")
-  courierShipments  Shipment[]      @relation("ShipmentCourier")
+  customerShipments Shipment[]           @relation("ShipmentCustomer")
+  courierShipments  Shipment[]           @relation("ShipmentCourier")
   payments          Payment[]
   refreshTokens     RefreshToken[]
   shipmentEvents    ShipmentEvent[]
-  auditLogs         AuditLog[]      @relation("AuditActor")
-  pricingRules      PricingRule[]   @relation("PricingRuleCreator")
+  auditLogs         AuditLog[]           @relation("AuditActor")
+  pricingRules      PricingRule[]        @relation("PricingRuleCreator")
+  notifications     NotificationOutbox[]
 
   @@index([role, isActive, deletedAt])
   @@index([createdAt])
@@ -127,9 +145,10 @@ model Shipment {
   destinationHub Hub? @relation("ShipmentDestinationHub", fields: [destinationHubId], references: [id], onDelete: SetNull)
   currentHub     Hub? @relation("ShipmentCurrentHub", fields: [currentHubId], references: [id], onDelete: SetNull)
 
-  events    ShipmentEvent[]
-  payments  Payment[]
-  auditLogs AuditLog[]
+  events        ShipmentEvent[]
+  payments      Payment[]
+  auditLogs     AuditLog[]
+  notifications NotificationOutbox[]
 
   @@index([customerId, createdAt])
   @@index([courierId, status, createdAt])
@@ -177,10 +196,11 @@ model ShipmentEvent {
   occurredAt       DateTime          @default(now())
   createdAt        DateTime          @default(now())
 
-  shipment       Shipment @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
-  actor          User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  originHub      Hub?     @relation("EventOriginHub", fields: [originHubId], references: [id], onDelete: SetNull)
-  destinationHub Hub?     @relation("EventDestinationHub", fields: [destinationHubId], references: [id], onDelete: SetNull)
+  shipment       Shipment             @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+  actor          User?                @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  notifications  NotificationOutbox[]
+  originHub      Hub?                 @relation("EventOriginHub", fields: [originHubId], references: [id], onDelete: SetNull)
+  destinationHub Hub?                 @relation("EventDestinationHub", fields: [destinationHubId], references: [id], onDelete: SetNull)
 
   @@index([shipmentId, occurredAt])
   @@index([actorId, occurredAt])
@@ -294,4 +314,31 @@ model AuditLog {
   @@index([shipmentId, createdAt])
   @@index([paymentId, createdAt])
   @@map("audit_logs")
+}
+
+// Transactional outbox: rows are written in the same transaction as the shipment
+// change and sent afterwards, so a rolled-back change never emails anyone.
+model NotificationOutbox {
+  id              String             @id @default(cuid())
+  type            NotificationType
+  shipmentId      String
+  eventId         String
+  recipientUserId String
+  payload         Json
+  status          NotificationStatus @default(PENDING)
+  attempts        Int                @default(0)
+  nextAttemptAt   DateTime           @default(now())
+  lastError       String?
+  sentAt          DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  shipment  Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  event     ShipmentEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  recipient User          @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@unique([shipmentId, type, eventId])
+  @@index([status, nextAttemptAt])
+  @@index([recipientUserId, createdAt])
+  @@map("notification_outbox")
 }
