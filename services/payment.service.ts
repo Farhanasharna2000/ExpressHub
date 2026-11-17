@@ -594,27 +594,19 @@ export async function executeRefund(
 
   let refund: Stripe.Refund;
   try {
-    refund = provider.createRefund
-      ? await provider.createRefund(
-          {
-            payment_intent: intentId,
-            reason: "requested_by_customer",
-            metadata: {
-              paymentId: payment.id,
-              shipmentId: payment.shipmentId,
-              payerId: payment.payerId,
-              ...(reason ? { reason: reason.slice(0, 500) } : {}),
-            },
-          },
-          `expresshub:refund:${payment.id}`,
-        )
-      : ({
-          id: `re_mock_${payment.id}`,
-          status: "succeeded",
-          amount: amountInMinorUnits(payment.amount, payment.currency),
-          currency: payment.currency.toLowerCase(),
-          payment_intent: intentId,
-        } as Stripe.Refund);
+    refund = await provider.createRefund(
+      {
+        payment_intent: intentId,
+        reason: "requested_by_customer",
+        metadata: {
+          paymentId: payment.id,
+          shipmentId: payment.shipmentId,
+          payerId: payment.payerId,
+          ...(reason ? { reason: reason.slice(0, 500) } : {}),
+        },
+      },
+      `expresshub:refund:${payment.id}`,
+    );
   } catch (error) {
     if (error instanceof AppError) throw error;
     throw new AppError(
