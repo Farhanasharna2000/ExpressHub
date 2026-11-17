@@ -9,6 +9,7 @@ import prisma from "@/lib/prisma";
 import { paginateTransaction } from "@/lib/db/pagination";
 import { requireRole, type AuthenticatedUser } from "@/lib/auth/require-user";
 import type { ListAuditLogsInput } from "@/validators/admin";
+import { delayedExamples, hoursSince } from "@/services/ai/ops-brief.service";
 
 function zeroCounts<T extends string>(values: T[]): Record<T, number> {
   return Object.fromEntries(values.map((value) => [value, 0])) as Record<
@@ -131,6 +132,9 @@ export async function listAuditLogs(
 const IN_TRANSIT_STATUSES: ShipmentStatus[] = ["PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"];
 const CLOSED_STATUSES: ShipmentStatus[] = ["DELIVERED", "RETURNED", "CANCELLED"];
 const BRIEF_EXAMPLES = 5;
+// Prisma can't order by a relation's latest date, so the oldest-created delayed shipments are
+// ranked by last event in code. Bounded so a large backlog stays a cheap query.
+const DELAYED_CANDIDATES = 100;
 
 // Figures for the AI operations brief. Shipment examples carry only the tracking number,
 // status and age, never customer names, phones or addresses.
@@ -163,7 +167,18 @@ export async function getOperationsFacts(
         prisma.shipment.count({ where: { ...live, status: "FAILED" } }),
         prisma.shipment.findMany({ where: { ...live, status: "FAILED" }, select, orderBy: [{ updatedAt: "desc" }, { id: "asc" }], take: BRIEF_EXAMPLES }),
         prisma.shipment.count({ where: delayedWhere }),
-        prisma.shipment.findMany({ where: delayedWhere, select, orderBy: [{ updatedAt: "asc" }, { id: "asc" }], take: BRIEF_EXAMPLES }),
+        prisma.shipment.findMany({
+          where: delayedWhere,
+          select: {
+            id: true,
+            trackingNumber: true,
+            status: true,
+            createdAt: true,
+            events: { select: { occurredAt: true }, orderBy: [{ occurredAt: "desc" }, { id: "desc" }], take: 1 },
+          },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          take: DELAYED_CANDIDATES,
+        }),
         prisma.shipment.count({ where: unassignedWhere }),
         prisma.shipment.findMany({ where: unassignedWhere, select, orderBy: [{ updatedAt: "asc" }, { id: "asc" }], take: BRIEF_EXAMPLES }),
         prisma.user.count({ where: { ...live, role: "COURIER", isActive: true } }),
@@ -175,7 +190,7 @@ export async function getOperationsFacts(
     id: shipment.id,
     trackingNumber: shipment.trackingNumber,
     status: shipment.status,
-    hoursSinceUpdate: Math.max(0, Math.floor((now.getTime() - shipment.updatedAt.getTime()) / 3_600_000)),
+    hoursSinceUpdate: hoursSince(now, shipment.updatedAt),
   });
 
   return {
@@ -184,7 +199,7 @@ export async function getOperationsFacts(
     shipments: { total: stats.shipments.total, active: stats.shipments.active, byStatus: stats.shipments.byStatus },
     today: { created: createdToday, delivered: deliveredToday, failed: failedToday },
     failed: { count: failedCount, recent: recentFailed.map(ref) },
-    delayed: { count: delayedCount, oldest: delayed.map(ref) },
+    delayed: { count: delayedCount, oldest: delayedExamples(delayed, now, BRIEF_EXAMPLES) },
     unassignedPaid: { count: unassignedCount, oldest: unassigned.map(ref) },
     payments: { pending: stats.payments.byStatus.PENDING, paid: stats.payments.byStatus.PAID, failed: stats.payments.byStatus.FAILED },
     couriers: { active: activeCouriers },

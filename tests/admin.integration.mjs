@@ -10,6 +10,8 @@ process.env.NODE_ENV = "test";
 process.env.JWT_ACCESS_SECRET = randomUUID().repeat(2);
 const { default: prisma } = await import("../lib/prisma.ts");
 const { signAccessToken } = await import("../lib/auth/tokens.ts");
+const { getOperationsFacts } = await import("../services/admin.service.ts");
+const { bangladeshDay } = await import("../services/ai/ops-brief.service.ts");
 const routes = {
   "dashboard-stats": await import("../app/api/v1/admin/dashboard-stats/route.ts"),
   users: await import("../app/api/v1/users/route.ts"),
@@ -126,6 +128,43 @@ try {
     assert.equal((await call(`audit-logs?${query}`, admin)).status, 400, query);
   }
   assert.equal((await call(`audit-logs?actorId=${deleted.id}`, admin)).data.pagination.total, 0);
+
+  // Operations brief figures: each case moves exactly the counts it should.
+  const factsAt = () => { const now = new Date(); return getOperationsFacts(admin, now, bangladeshDay(now), 48); };
+  const before = await factsAt();
+  const longAgo = new Date("2000-01-01T00:00:00Z");
+  async function briefShipment(key, data, events = []) {
+    const value = await prisma.shipment.create({ data: { customerId: customer.id, trackingNumber: `${marker}-brief-${key}`,
+      pickupContactName: "Sender", pickupContactPhone: "01700000000", pickupAddress: "Test pickup",
+      deliveryContactName: "Recipient", deliveryContactPhone: "01800000000", deliveryAddress: "Test delivery",
+      parcelWeightKg: 1, price: "10.00", currency: "BDT", ...data } });
+    shipmentIds.push(value.id);
+    for (const event of events) await prisma.shipmentEvent.create({ data: { shipmentId: value.id, type: "STATUS_CHANGED", ...event } });
+    return value;
+  }
+  const stalled = await briefShipment("stalled", { status: "IN_TRANSIT" }, [{ toStatus: "IN_TRANSIT", occurredAt: longAgo }]);
+  await briefShipment("moving", { status: "IN_TRANSIT" }, [{ toStatus: "IN_TRANSIT", occurredAt: new Date() }]);
+  await briefShipment("stalled-deleted", { status: "IN_TRANSIT", deletedAt: new Date() }, [{ toStatus: "IN_TRANSIT", occurredAt: longAgo }]);
+  await briefShipment("failed-today", { status: "FAILED" }, [{ toStatus: "FAILED", occurredAt: new Date() }]);
+  await briefShipment("failed-earlier", { status: "FAILED" }, [{ toStatus: "FAILED", occurredAt: longAgo }]);
+  await briefShipment("delivered-today", { status: "DELIVERED", deliveredAt: new Date() });
+  await briefShipment("paid-unassigned", { status: "CREATED", paymentStatus: "PAID" });
+  await briefShipment("paid-cancelled", { status: "CANCELLED", paymentStatus: "PAID" });
+  await briefShipment("paid-assigned", { status: "CREATED", paymentStatus: "PAID", courierId: courier.id });
+  const after = await factsAt();
+  assert.equal(after.today.created - before.today.created, 8); // The deleted shipment is not counted.
+  assert.equal(after.today.delivered - before.today.delivered, 1);
+  assert.equal(after.today.failed - before.today.failed, 1);
+  assert.equal(after.failed.count - before.failed.count, 2);
+  assert.equal(after.delayed.count - before.delayed.count, 1);
+  assert.equal(after.unassignedPaid.count - before.unassignedPaid.count, 1);
+  for (const list of [after.failed.recent, after.delayed.oldest, after.unassignedPaid.oldest]) assert.ok(list.length <= 5);
+  // Its updatedAt is recent, but the stalled shipment's last event is decades old.
+  const stalledRef = after.delayed.oldest.find((row) => row.id === stalled.id);
+  assert.ok(stalledRef, "the stalled shipment is among the oldest delayed examples");
+  assert.ok(stalledRef.hoursSinceUpdate >= 48);
+  assert.equal(after.delayed.oldest.some((row) => row.trackingNumber.endsWith("-brief-stalled-deleted")), false);
+
   await prisma.user.update({ where: { id: admin.id }, data: { role: "CUSTOMER" } });
   // JWT still claims ADMIN; the current database role wins for every endpoint.
   for (const path of Object.keys(routes)) assert.equal((await call(path, admin, path === "role" ? { role: "ADMIN" } : undefined, customer.id)).status, 403);
@@ -135,6 +174,7 @@ try {
     if (userIds.length) await prisma.$transaction([
       prisma.auditLog.deleteMany({ where: { OR: [{ actorId: { in: userIds } }, { id: { in: auditIds } }] } }),
       prisma.payment.deleteMany({ where: { shipmentId: { in: shipmentIds } } }),
+      prisma.shipmentEvent.deleteMany({ where: { shipmentId: { in: shipmentIds } } }),
       prisma.shipment.deleteMany({ where: { id: { in: shipmentIds } } }),
       prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } }),
       prisma.user.deleteMany({ where: { id: { in: userIds } } }),
