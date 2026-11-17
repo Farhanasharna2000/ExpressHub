@@ -114,10 +114,11 @@ export function setRefreshCookie(
   accessToken: string,
 ) {
   setPageSessionCookie(response, verifyAccessToken(accessToken));
-  response.cookies.set({
-    ...refreshTokenCookie,
-    value: token,
-  });
+  setRefreshTokenCookie(response, token);
+}
+
+export function setRefreshTokenCookie(response: NextResponse, token: string) {
+  response.cookies.set({ ...refreshTokenCookie, value: token });
 }
 
 export function clearRefreshCookie(response: NextResponse) {

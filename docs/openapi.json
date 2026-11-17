@@ -1421,7 +1421,7 @@
           "users"
         ],
         "summary": "Update own profile",
-        "description": "At least one field; unknown fields rejected; email conflicts return 409.",
+        "description": "At least one profile field; unknown fields rejected; email conflicts return 409. Changing email requires currentPassword (400 CURRENT_PASSWORD_REQUIRED or INVALID_CURRENT_PASSWORD otherwise), revokes every other session and sets a fresh refresh cookie for this one.",
         "parameters": [],
         "responses": {
           "200": {
@@ -1727,6 +1727,12 @@
                     "minLength": 5,
                     "maxLength": 30,
                     "nullable": true
+                  },
+                  "currentPassword": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Required only when email changes."
                   }
                 },
                 "required": [],

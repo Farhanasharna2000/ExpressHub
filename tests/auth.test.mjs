@@ -183,6 +183,38 @@ test("logged-out and expired tokens are not treated as reuse", () => {
   assert.equal(isRotatedTokenReuse({ revokedAt: null, lastUsedAt: null, expiresAt: future }, now), false);
 });
 
+const bcrypt = (await import("bcryptjs")).default;
+const { updateProfile } = await import("../services/user.service.ts");
+const { updateProfileSchema } = await import("../validators/user.ts");
+
+test("changing the account email needs the current password and signs out other sessions", async () => {
+  const actor = { id: "profile-user", role: "CUSTOMER", name: "Rina", email: "rina@example.com" };
+  currentUser = { ...actor, phone: null, isActive: true, passwordHash: await bcrypt.hash("correct-password", 4) };
+  globalThis.prisma.user.update = async ({ data }) => { Object.assign(currentUser, data); return { ...currentUser, avatar: null }; };
+  const future = new Date(Date.now() + 86_400_000);
+  refreshRows.push({ id: "rt-laptop", userId: actor.id, tokenHash: "laptop", revokedAt: null, lastUsedAt: null, expiresAt: future });
+
+  // Name and phone changes, or resending the same email, need no password.
+  const renamed = await updateProfile(actor, updateProfileSchema.parse({ name: "Rina B", email: "RINA@example.com" }));
+  assert.equal(renamed.user.name, "Rina B");
+  assert.equal(renamed.refreshToken, null);
+
+  await assert.rejects(updateProfile(actor, updateProfileSchema.parse({ email: "new@example.com" })), (error) => error.status === 400 && error.code === "CURRENT_PASSWORD_REQUIRED" && error.details[0].path === "currentPassword");
+  await assert.rejects(updateProfile(actor, updateProfileSchema.parse({ email: "new@example.com", currentPassword: "wrong" })), { status: 400, code: "INVALID_CURRENT_PASSWORD" });
+  assert.equal(currentUser.email, "rina@example.com");
+
+  const changed = await updateProfile(actor, updateProfileSchema.parse({ email: "new@example.com", currentPassword: "correct-password" }));
+  assert.equal(changed.user.email, "new@example.com");
+  assert.equal(typeof changed.refreshToken, "string");
+  assert.ok(refreshRows.find((row) => row.id === "rt-laptop").revokedAt instanceof Date);
+  const fresh = refreshRows.find((row) => row.tokenHash === tokens.hashRefreshToken(changed.refreshToken));
+  assert.equal(fresh.revokedAt, null);
+  assert.equal(auditRows.at(-1).details.sessionsRevoked, true);
+
+  assert.equal(updateProfileSchema.safeParse({ currentPassword: "x" }).success, false);
+  currentUser = null;
+});
+
 test("auth responses forbid caching", () => {
   assert.equal(successResponse("OK", { accessToken: "secret" }).headers.get("cache-control"), "no-store");
   assert.equal(errorResponse(new AppError(401, "Unauthorized", "UNAUTHENTICATED")).headers.get("cache-control"), "no-store");
