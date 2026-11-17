@@ -13,6 +13,7 @@ import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { statusLabel, money } from "@/features/shipments/contracts";
 import type { DashboardStats } from "./contracts";
 import { OpsBriefCard } from "@/features/ai/ops-brief";
+import { FailedNotificationsCard } from "./failed-notifications";
 import type { ShipmentStatus, PaymentStatus } from "@/types/api";
 
 export function AdminDashboard() {
@@ -105,6 +106,8 @@ export function AdminDashboard() {
           </motion.div>
 
           <OpsBriefCard />
+
+          <FailedNotificationsCard />
 
           {/* Top Headline Metric Strip with Motion Hover */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
