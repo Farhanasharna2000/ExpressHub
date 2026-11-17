@@ -9712,7 +9712,7 @@
                   "data": {
                     "brief": {
                       "day": "2026-11-16",
-                      "model": "gemini-3.5-flash-lite",
+                      "model": "gemini-3.1-flash-lite",
                       "generatedAt": "2026-10-10T06:00:00.000Z",
                       "cached": true,
                       "brief": {
@@ -10213,7 +10213,7 @@
                   "data": {
                     "brief": {
                       "day": "2026-11-16",
-                      "model": "gemini-3.5-flash-lite",
+                      "model": "gemini-3.1-flash-lite",
                       "generatedAt": "2026-10-10T06:00:00.000Z",
                       "cached": false,
                       "brief": {

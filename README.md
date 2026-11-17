@@ -244,7 +244,7 @@ in your local environment or deployment secret settings.
 | `AI_PROVIDER` | `anthropic` (default) or `gemini` |
 | `ANTHROPIC_API_KEY` | Claude API key; required when the provider is `anthropic` |
 | `GEMINI_API_KEY` | Gemini API key from Google AI Studio (free tier available); required when the provider is `gemini` |
-| `AI_MODEL` | Optional model override; defaults to `claude-opus-5-5` or `gemini-3.5-flash-lite` |
+| `AI_MODEL` | Optional model override; defaults to `claude-opus-5-5` or `gemini-3.1-flash-lite` |
 
 Production rate limiting fails closed if Upstash is unavailable or unconfigured.
 There is no process-local production fallback.

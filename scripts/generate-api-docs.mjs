@@ -104,7 +104,7 @@ const assistantMessage = { type: "object", properties: { role: enumeration("user
 add("get", `${prefix}/ai/status`, "Read AI feature availability", { assistant: true, bookingDraft: true, opsBrief: false }, { tag: "ai", message: "AI status fetched successfully", description: "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN." });
 const briefShipment = { id: id.example, trackingNumber: "EH-0123456789ABCDEF01234567", status: "CREATED", hoursSinceUpdate: 30 };
 const opsBrief = {
-  day: "2026-11-16", model: "gemini-3.5-flash-lite", generatedAt: timestamp, cached: false,
+  day: "2026-11-16", model: "gemini-3.1-flash-lite", generatedAt: timestamp, cached: false,
   brief: { headline: "4 paid shipments are waiting for a courier.", summary: "6 shipments were booked today and 2 delivered. 1 delivery failed and 2 shipments have had no update for over 48 hours.", actions: [{ title: "Assign couriers to paid shipments", detail: "4 paid shipments have no courier and 9 couriers are active." }], unverified: [] },
   facts: { day: "2026-11-16", delayThresholdHours: 48, shipments: { total: 40, active: 12, byStatus: { ...counts(statuses.enum), CREATED: 5, IN_TRANSIT: 3, DELIVERED: 20 } }, today: { created: 6, delivered: 2, failed: 1 }, failed: { count: 1, recent: [{ ...briefShipment, status: "FAILED" }] }, delayed: { count: 2, oldest: [{ ...briefShipment, status: "IN_TRANSIT", hoursSinceUpdate: 71 }] }, unassignedPaid: { count: 4, oldest: [briefShipment] }, payments: { pending: 7, paid: 25, failed: 0 }, couriers: { active: 9 } },
 };

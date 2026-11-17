@@ -83,6 +83,7 @@ test("aiConfig stays disabled unless the flag and a key are both set", () => {
 test("aiConfig requires the key that matches the chosen provider", () => {
   assert.equal(aiConfig({ AI_ENABLED: "true", AI_PROVIDER: "gemini", ANTHROPIC_API_KEY: "sk-test" }).enabled, false);
   assert.deepEqual(aiConfig({ AI_ENABLED: "true", AI_PROVIDER: " Gemini ", GEMINI_API_KEY: "g-test" }), { enabled: true, provider: "gemini", model: AI_DEFAULT_MODELS.gemini });
+  assert.equal(aiConfig({ AI_ENABLED: "true", AI_PROVIDER: "gemini", GEMINI_API_KEY: "g-test" }).model, "gemini-3.1-flash-lite");
   assert.equal(aiConfig({ AI_ENABLED: "true", AI_PROVIDER: "gemini", GEMINI_API_KEY: "g-test", AI_MODEL: "gemini-3.5-flash-lite" }).model, "gemini-3.5-flash-lite");
   assert.equal(aiConfig({ AI_ENABLED: "true", AI_PROVIDER: "other", ANTHROPIC_API_KEY: "sk-test" }).provider, "anthropic");
 });
