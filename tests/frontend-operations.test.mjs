@@ -94,7 +94,12 @@ test("validateTransitionReadiness enforces confirmed payment and active courier 
     paymentStatus: "PAID",
     courierId: "cuid_courier_123",
   };
-  const resDelivered = validateTransitionReadiness(inDelivery, "DELIVERED", "COURIER");
+  // Delivery needs proof captured by the courier first.
+  const noProof = validateTransitionReadiness(inDelivery, "DELIVERED", "COURIER");
+  assert.equal(noProof.eligible, false);
+  assert.match(noProof.reason, /proof of delivery/);
+  const proof = { recipientName: "Rina", capturedAt: "2026-11-17T10:00:00.000Z", hasPhoto: true, hasSignature: false };
+  const resDelivered = validateTransitionReadiness({ ...inDelivery, deliveryProof: proof }, "DELIVERED", "COURIER");
   assert.equal(resDelivered.eligible, true);
 
   // Cancellation does not require courier or payment

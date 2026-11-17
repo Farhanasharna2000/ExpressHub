@@ -28,6 +28,8 @@ const pageContentSecurityPolicy = [
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
   `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
+  "worker-src 'self'",
+  "manifest-src 'self'",
   "object-src 'none'",
   "base-uri 'none'",
   "frame-ancestors 'none'",
@@ -52,6 +54,11 @@ const nextConfig: NextConfig = {
       {
         source: "/((?!api/).*)",
         headers: [{ key: "Content-Security-Policy", value: pageContentSecurityPolicy }],
+      },
+      {
+        // Browsers must fetch a fresh worker script so courier app updates roll out.
+        source: "/sw.js",
+        headers: [{ key: "Cache-Control", value: "no-cache" }],
       },
     ];
   },

@@ -24,15 +24,18 @@ interface StatusTransitionControlProps {
   shipment: Shipment;
   role: UserRole;
   onSuccess: () => void;
+  // Targets handled by a dedicated control, such as delivery with proof.
+  hiddenTargets?: ShipmentStatus[];
 }
 
 export function StatusTransitionControl({
   shipment,
   role,
   onSuccess,
+  hiddenTargets = [],
 }: StatusTransitionControlProps) {
   const { store } = useSession();
-  const allowed = getAllowedTransitions(shipment.status, role);
+  const allowed = getAllowedTransitions(shipment.status, role).filter((target) => !hiddenTargets.includes(target));
 
   const [activeTarget, setActiveTarget] = useState<ShipmentStatus | null>(null);
   const form = useForm({ mode: "onChange", resolver: zodResolver(transitionFormSchema(activeTarget !== null && isNoteRequired(activeTarget))), defaultValues: { note: "" } });

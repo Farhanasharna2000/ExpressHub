@@ -22,6 +22,7 @@ import {
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { AssignCourierControl } from "@/features/shipments/assign-courier";
 import { StatusTransitionControl } from "@/features/shipments/status-transition";
+import { DeliveryProofView } from "@/features/shipments/proof-view";
 import { ArchiveShipmentControl } from "@/features/shipments/archive-shipment";
 
 export function AdminShipmentDetailView({ id }: { id: string }) {
@@ -138,6 +139,8 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
             role="ADMIN"
             onSuccess={reload}
           />
+
+          {shipment.deliveryProof && <DeliveryProofView shipmentId={shipment.id} proof={shipment.deliveryProof} />}
 
           {/* Admin Soft-Delete Archival Card */}
           <ArchiveShipmentControl shipment={shipment} onSuccess={reload} />

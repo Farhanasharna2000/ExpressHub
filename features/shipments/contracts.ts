@@ -1,3 +1,4 @@
+import type { DeliveryProofSummary } from "@/lib/delivery-proof";
 import { z } from "zod";
 import type { PaginationMeta, PaymentStatus, ShipmentStatus } from "@/types/api";
 
@@ -80,7 +81,8 @@ export interface ShipmentEvent {
   id: string; type: string; fromStatus: ShipmentStatus | null; toStatus: ShipmentStatus | null;
   publicNote: string | null; internalNote?: string | null; actorId?: string | null; occurredAt: string;
 }
-export type ShipmentDetail = Shipment & { events: ShipmentEvent[] };
+export type { DeliveryProofSummary } from "@/lib/delivery-proof";
+export type ShipmentDetail = Shipment & { events: ShipmentEvent[]; deliveryProof?: DeliveryProofSummary | null };
 
 export const shipmentTransitions: Record<ShipmentStatus, ShipmentStatus[]> = {
   CREATED: ["PICKED_UP", "CANCELLED"],
@@ -113,7 +115,7 @@ export function isCourierAssignable(status: ShipmentStatus): boolean {
 }
 
 export function validateTransitionReadiness(
-  shipment: Pick<Shipment, "status" | "paymentStatus" | "courierId">,
+  shipment: Pick<Shipment, "status" | "paymentStatus" | "courierId"> & { deliveryProof?: DeliveryProofSummary | null },
   targetStatus: ShipmentStatus,
   role: string,
 ): { eligible: boolean; reason?: string } {
@@ -128,6 +130,9 @@ export function validateTransitionReadiness(
     if (!shipment.courierId) {
       return { eligible: false, reason: "An active assigned Courier is required before pickup or delivery." };
     }
+  }
+  if (targetStatus === "DELIVERED" && !shipment.deliveryProof) {
+    return { eligible: false, reason: "The courier must capture proof of delivery first." };
   }
   return { eligible: true };
 }

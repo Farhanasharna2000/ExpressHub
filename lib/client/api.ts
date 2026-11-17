@@ -43,7 +43,7 @@ export function queryString(query: Record<string, string | number | boolean | un
   for (const [key, value] of Object.entries(query)) if (value !== undefined && value !== null && value !== "") params.set(key, String(value));
   return params.size ? `?${params}` : "";
 }
-export type RequestOptions = { method?: string; body?: unknown; signal?: AbortSignal; headers?: HeadersInit; query?: Parameters<typeof queryString>[0] };
+export type RequestOptions = { method?: string; body?: unknown; signal?: AbortSignal; headers?: HeadersInit; query?: Parameters<typeof queryString>[0]; responseType?: "json" | "blob" };
 
 /** One instance per browser session. No persistent tokens or private response cache. */
 export class ApiClient {
@@ -67,16 +67,20 @@ export class ApiClient {
     if (cooldown && cooldown.retryAt > Date.now()) throw cooldown;
     this.cooldowns.delete(path);
     const headers = new Headers(options.headers);
-    headers.set("Accept", "application/json");
-    if (options.body !== undefined) headers.set("Content-Type", "application/json");
+    // Multipart bodies set their own boundary header; images come back as blobs.
+    const isForm = typeof FormData !== "undefined" && options.body instanceof FormData;
+    headers.set("Accept", options.responseType === "blob" ? "image/*" : "application/json");
+    if (options.body !== undefined && !isForm) headers.set("Content-Type", "application/json");
     if (token) headers.set("Authorization", `Bearer ${token}`);
     let response: Response;
     try {
-      response = await this.fetcher(`/api/v1${path}${queryString(options.query)}`, { method: options.method ?? "GET", body: options.body === undefined ? undefined : JSON.stringify(options.body), headers, signal: options.signal, credentials: "same-origin", cache: "no-store" });
+      const body = options.body === undefined ? undefined : isForm ? (options.body as FormData) : JSON.stringify(options.body);
+      response = await this.fetcher(`/api/v1${path}${queryString(options.query)}`, { method: options.method ?? "GET", body, headers, signal: options.signal, credentials: "same-origin", cache: "no-store" });
     } catch (error) {
       if (options.signal?.aborted || (error instanceof Error && error.name === "AbortError")) throw error;
       throw new ApiError(0, "Network error");
     }
+    if (options.responseType === "blob" && response.ok) return (await response.blob()) as T;
     let envelope: ApiResponse<T>;
     try { envelope = await response.json(); } catch { throw new ApiError(response.ok ? 502 : response.status, "The server returned an unreadable response"); }
     if (!response.ok || !envelope || !("success" in envelope && envelope.success === true)) {

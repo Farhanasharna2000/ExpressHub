@@ -22,6 +22,8 @@ import {
 } from "@/features/shipments/contracts";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { StatusTransitionControl } from "@/features/shipments/status-transition";
+import { DeliveryProofView } from "@/features/shipments/proof-view";
+import { DeliveryProofCard } from "./proof-capture";
 
 export function CourierShipmentDetailView({ id }: { id: string }) {
   const valid = z.cuid().safeParse(id).success;
@@ -128,12 +130,19 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
             </CardContent>
           </Card>
 
+          {shipment.status === "OUT_FOR_DELIVERY" && (
+            <DeliveryProofCard shipment={shipment} onDelivered={reload} />
+          )}
+
           {/* Operational Action Stepper */}
           <StatusTransitionControl
             shipment={shipment}
             role="COURIER"
             onSuccess={reload}
+            hiddenTargets={["DELIVERED"]}
           />
+
+          {shipment.deliveryProof && <DeliveryProofView shipmentId={shipment.id} proof={shipment.deliveryProof} />}
 
           {/* Route & Contact Cards */}
           <div className="shipment-detail-grid">
