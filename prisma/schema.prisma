@@ -101,6 +101,7 @@ model User {
   auditLogs         AuditLog[]           @relation("AuditActor")
   pricingRules      PricingRule[]        @relation("PricingRuleCreator")
   notifications     NotificationOutbox[]
+  deliveryProofs    DeliveryProof[]      @relation("DeliveryProofCourier")
 
   @@index([role, isActive, deletedAt])
   @@index([createdAt])
@@ -149,6 +150,7 @@ model Shipment {
   payments      Payment[]
   auditLogs     AuditLog[]
   notifications NotificationOutbox[]
+  deliveryProof DeliveryProof?
 
   @@index([customerId, createdAt])
   @@index([courierId, status, createdAt])
@@ -341,4 +343,35 @@ model NotificationOutbox {
   @@index([status, nextAttemptAt])
   @@index([recipientUserId, createdAt])
   @@map("notification_outbox")
+}
+
+// Proof a courier captured at the door. Images live in proof storage under random
+// keys; this row only records who captured what, when, and for which shipment.
+model DeliveryProof {
+  id            String   @id @default(cuid())
+  shipmentId    String   @unique
+  courierId     String
+  recipientName String   @db.VarChar(100)
+  photoKey      String?  @db.VarChar(64)
+  signatureKey  String?  @db.VarChar(64)
+  capturedAt    DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  courier  User     @relation("DeliveryProofCourier", fields: [courierId], references: [id], onDelete: Cascade)
+
+  @@index([courierId, capturedAt])
+  @@map("delivery_proofs")
+}
+
+// Postgres-backed blob store used by the default ProofStorage driver.
+model StoredFile {
+  key         String   @id @db.VarChar(64)
+  contentType String   @db.VarChar(40)
+  size        Int
+  data        Bytes
+  createdAt   DateTime @default(now())
+
+  @@map("stored_files")
 }
