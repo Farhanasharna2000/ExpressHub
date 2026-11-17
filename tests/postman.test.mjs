@@ -17,9 +17,9 @@ function execute(item, listen, data={}, state={}, selectedEnvironment=true) {
  return Object.fromEntries(env);
 }
 test('every implemented route has a reference request',()=>{
- const documented=new Set(items.map(i=>i.request.method+' '+url(i).replace('{{baseUrl}}','').split('?')[0].replace(/\{\{\w+Id\}\}/g,':id')));
+ const documented=new Set(items.map(i=>i.request.method+' '+url(i).replace('{{baseUrl}}','').split('?')[0].replace(/\{\{\w+Id\}\}/g,':id').replace('{{trackingNumber}}',':trackingNumber')));
  for(const f of fs.readdirSync('app/api',{recursive:true}).filter(x=>x.endsWith('route.ts')&&!x.includes('[[...path]]'))){
-  const path='/api/'+f.replace('/route.ts','').replace('[id]',':id');
+  const path='/api/'+f.replace('/route.ts','').replace('[id]',':id').replace('[trackingNumber]',':trackingNumber');
   for(const m of fs.readFileSync('app/api/'+f,'utf8').matchAll(/export async function (GET|POST|PATCH|DELETE)\b|export \{ (?:\w+ as )?(GET|POST|PATCH|DELETE) \}/g))assert.ok(documented.has((m[1]||m[2])+' '+path),path);
  }
 });

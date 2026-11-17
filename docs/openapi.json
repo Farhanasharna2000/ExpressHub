@@ -9123,6 +9123,405 @@
         }
       }
     },
+    "/api/v1/track/{trackingNumber}": {
+      "get": {
+        "operationId": "get__api_v1_track_trackingNumber_",
+        "tags": [
+          "track"
+        ],
+        "summary": "Track a shipment publicly",
+        "description": "No authentication. Returns only tracking number, status, booking and delivery dates, and public timeline events (booked, status changes, hub transfers with hub name, delivery attempts, cancellation). Never returns names, phones, addresses, price, notes or internal IDs; courier assignment and admin corrections are omitted. Soft-deleted or unknown numbers return 404. Rate limit: 60 per 15 minutes per client.",
+        "parameters": [
+          {
+            "name": "trackingNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^EH-[0-9A-F]{24}$",
+              "example": "EH-0123456789ABCDEF01234567",
+              "description": "Case-insensitive; normalised to upper case."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tracking": {
+                          "type": "object",
+                          "properties": {
+                            "trackingNumber": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "deliveredAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "events": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string"
+                                  },
+                                  "status": {
+                                    "type": "string"
+                                  },
+                                  "occurredAt": {
+                                    "type": "string"
+                                  },
+                                  "hub": {
+                                    "type": "string",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "status",
+                                  "occurredAt",
+                                  "hub"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "trackingNumber",
+                            "status",
+                            "createdAt",
+                            "deliveredAt",
+                            "events"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "tracking"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Tracking fetched successfully",
+                  "data": {
+                    "tracking": {
+                      "trackingNumber": "EH-0123456789ABCDEF01234567",
+                      "status": "IN_TRANSIT",
+                      "createdAt": "2026-10-10T06:00:00.000Z",
+                      "deliveredAt": null,
+                      "events": [
+                        {
+                          "type": "CREATED",
+                          "status": "CREATED",
+                          "occurredAt": "2026-10-10T06:00:00.000Z",
+                          "hub": null
+                        },
+                        {
+                          "type": "HUB_TRANSFER",
+                          "status": null,
+                          "occurredAt": "2026-10-10T06:00:00.000Z",
+                          "hub": "Chattogram Hub"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/track/{trackingNumber}/stream": {
+      "get": {
+        "operationId": "get__api_v1_track_trackingNumber_stream",
+        "tags": [
+          "track"
+        ],
+        "summary": "Stream live tracking updates",
+        "description": "No authentication. Server-Sent Events (text/event-stream). Sends retry, then `event: tracking` with the same public shape as GET /track/{trackingNumber}, then a new tracking event only when the timeline changes (server checks every 5 seconds). `: heartbeat` comments every 25 seconds. Ends with `event: end` and data {reason}: final (DELIVERED, RETURNED or CANCELLED), gone (shipment removed), error (repeated lookup failures) or timeout (after 270 seconds; reconnect). Rate limit: 30 connections per 15 minutes per client.",
+        "parameters": [
+          {
+            "name": "trackingNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^EH-[0-9A-F]{24}$",
+              "example": "EH-0123456789ABCDEF01234567",
+              "description": "Case-insensitive; normalised to upper case."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events stream.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-cache, no-transform"
+                }
+              }
+            },
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "retry: 3000\n\nevent: tracking\ndata: {\"trackingNumber\":\"EH-0123456789ABCDEF01234567\",\"status\":\"IN_TRANSIT\",\"createdAt\":\"2026-10-10T06:00:00.000Z\",\"deliveredAt\":null,\"events\":[{\"type\":\"CREATED\",\"status\":\"CREATED\",\"occurredAt\":\"2026-10-10T06:00:00.000Z\",\"hub\":null},{\"type\":\"HUB_TRANSFER\",\"status\":null,\"occurredAt\":\"2026-10-10T06:00:00.000Z\",\"hub\":\"Chattogram Hub\"}]}\n\nevent: end\ndata: {\"reason\":\"final\"}\n\n"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
     "/api/v1/ai/status": {
       "get": {
         "operationId": "get__api_v1_ai_status",

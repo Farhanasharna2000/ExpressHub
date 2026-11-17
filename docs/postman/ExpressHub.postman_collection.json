@@ -2760,6 +2760,137 @@
       ]
     },
     {
+      "name": "track",
+      "item": [
+        {
+          "name": "Track a shipment publicly",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/track/{{trackingNumber}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "track",
+                "{{trackingNumber}}"
+              ]
+            },
+            "description": "No authentication. Returns only tracking number, status, booking and delivery dates, and public timeline events (booked, status changes, hub transfers with hub name, delivery attempts, cancellation). Never returns names, phones, addresses, price, notes or internal IDs; courier assignment and admin corrections are omitted. Soft-deleted or unknown numbers return 404. Rate limit: 60 per 15 minutes per client.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/track/{{trackingNumber}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "track",
+                    "{{trackingNumber}}"
+                  ]
+                },
+                "description": "No authentication. Returns only tracking number, status, booking and delivery dates, and public timeline events (booked, status changes, hub transfers with hub name, delivery attempts, cancellation). Never returns names, phones, addresses, price, notes or internal IDs; courier assignment and admin corrections are omitted. Soft-deleted or unknown numbers return 404. Rate limit: 60 per 15 minutes per client.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Tracking fetched successfully\",\n  \"data\": {\n    \"tracking\": {\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"status\": \"IN_TRANSIT\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deliveredAt\": null,\n      \"events\": [\n        {\n          \"type\": \"CREATED\",\n          \"status\": \"CREATED\",\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": null\n        },\n        {\n          \"type\": \"HUB_TRANSFER\",\n          \"status\": null,\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": \"Chattogram Hub\"\n        }\n      ]\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Stream live tracking updates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/track/{{trackingNumber}}/stream",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "track",
+                "{{trackingNumber}}",
+                "stream"
+              ]
+            },
+            "description": "No authentication. Server-Sent Events (text/event-stream). Sends retry, then `event: tracking` with the same public shape as GET /track/{trackingNumber}, then a new tracking event only when the timeline changes (server checks every 5 seconds). `: heartbeat` comments every 25 seconds. Ends with `event: end` and data {reason}: final (DELIVERED, RETURNED or CANCELLED), gone (shipment removed), error (repeated lookup failures) or timeout (after 270 seconds; reconnect). Rate limit: 30 connections per 15 minutes per client.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/track/{{trackingNumber}}/stream",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "track",
+                    "{{trackingNumber}}",
+                    "stream"
+                  ]
+                },
+                "description": "No authentication. Server-Sent Events (text/event-stream). Sends retry, then `event: tracking` with the same public shape as GET /track/{trackingNumber}, then a new tracking event only when the timeline changes (server checks every 5 seconds). `: heartbeat` comments every 25 seconds. Ends with `event: end` and data {reason}: final (DELIVERED, RETURNED or CANCELLED), gone (shipment removed), error (repeated lookup failures) or timeout (after 270 seconds; reconnect). Rate limit: 30 connections per 15 minutes per client.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Server-Sent Events stream\",\n  \"data\": {\n    \"tracking\": {\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"status\": \"IN_TRANSIT\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deliveredAt\": null,\n      \"events\": [\n        {\n          \"type\": \"CREATED\",\n          \"status\": \"CREATED\",\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": null\n        },\n        {\n          \"type\": \"HUB_TRANSFER\",\n          \"status\": null,\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": \"Chattogram Hub\"\n        }\n      ]\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
       "name": "ai",
       "item": [
         {

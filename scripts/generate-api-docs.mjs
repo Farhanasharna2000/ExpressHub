@@ -56,11 +56,12 @@ descriptions[422] = "Unsupported currency or invalid payment amount.";
 descriptions[502] = "Stripe request failed; retry with the same Idempotency-Key.";
 codes[422] = "INVALID_PAYMENT_AMOUNT";
 codes[502] = "PAYMENT_PROVIDER_UNAVAILABLE";
+const trackingNumber = { type: "string", pattern: "^EH-[0-9A-F]{24}$", example: "EH-0123456789ABCDEF01234567", description: "Case-insensitive; normalised to upper case." };
 const operations = [];
 function add(method, path, summary, data, options = {}) {
   const status = options.status ?? 200;
   const operationId = `${method}_${path.replace(/[^a-z0-9]+/gi, "_")}`;
-  const params = [...(path.includes("{id}") ? [{ name: "id", in: "path", required: true, schema: id }] : []), ...(options.query ?? []), ...(options.headers ?? [])];
+  const params = [...(path.includes("{id}") ? [{ name: "id", in: "path", required: true, schema: id }] : []), ...(path.includes("{trackingNumber}") ? [{ name: "trackingNumber", in: "path", required: true, schema: trackingNumber }] : []), ...(options.query ?? []), ...(options.headers ?? [])];
   const example = { success: true, message: options.message ?? summary, data };
   const schema = infer(example); schema.properties.success.enum = [true];
   if (data === null) schema.properties.data = { type: "object", nullable: true };
@@ -100,6 +101,15 @@ for (const [method, source, target] of [["get","users","users"],["patch","users/
 }
 add("get", `${prefix}/admin/dashboard-stats`, "Read dashboard statistics", stats, {description:"ADMIN only. No query parameters. One database snapshot. User/shipment counts exclude deletion; active shipments include FAILED. Payment history is retained; amounts are strings grouped by currency/status, not net revenue or refunded amounts."});
 add("get", `${prefix}/courier/stats`, "Read courier statistics", { total: 10, readyPickup: 2, inRoute: 3, delivered: 5, byStatus: { ...counts(statuses.enum), CREATED: 2, IN_TRANSIT: 3, DELIVERED: 5 } }, { tag: "courier", message: "Courier statistics fetched successfully", description: "COURIER or ADMIN only. Aggregates all assigned non-deleted shipments by status." });
+const publicTracking = { trackingNumber: trackingNumber.example, status: "IN_TRANSIT", createdAt: timestamp, deliveredAt: null, events: [{ type: "CREATED", status: "CREATED", occurredAt: timestamp, hub: null }, { type: "HUB_TRANSFER", status: null, occurredAt: timestamp, hub: "Chattogram Hub" }] };
+add("get", `${prefix}/track/{trackingNumber}`, "Track a shipment publicly", { tracking: publicTracking }, { public: true, tag: "track", message: "Tracking fetched successfully", errors: [400, 404, 429, 500, 503], description: "No authentication. Returns only tracking number, status, booking and delivery dates, and public timeline events (booked, status changes, hub transfers with hub name, delivery attempts, cancellation). Never returns names, phones, addresses, price, notes or internal IDs; courier assignment and admin corrections are omitted. Soft-deleted or unknown numbers return 404. Rate limit: 60 per 15 minutes per client." });
+add("get", `${prefix}/track/{trackingNumber}/stream`, "Stream live tracking updates", { tracking: publicTracking }, { public: true, tag: "track", message: "Server-Sent Events stream", errors: [400, 404, 429, 500, 503], description: "No authentication. Server-Sent Events (text/event-stream). Sends retry, then `event: tracking` with the same public shape as GET /track/{trackingNumber}, then a new tracking event only when the timeline changes (server checks every 5 seconds). `: heartbeat` comments every 25 seconds. Ends with `event: end` and data {reason}: final (DELIVERED, RETURNED or CANCELLED), gone (shipment removed), error (repeated lookup failures) or timeout (after 270 seconds; reconnect). Rate limit: 30 connections per 15 minutes per client." });
+{
+  const stream = spec.paths[`${prefix}/track/{trackingNumber}/stream`].get.responses[200];
+  stream.description = "Server-Sent Events stream.";
+  stream.headers["Cache-Control"].schema.example = "no-cache, no-transform";
+  stream.content = { "text/event-stream": { schema: { type: "string" }, example: `retry: 3000\n\nevent: tracking\ndata: ${JSON.stringify(publicTracking)}\n\nevent: end\ndata: {"reason":"final"}\n\n` } };
+}
 const assistantMessage = { type: "object", properties: { role: enumeration("user", "assistant"), content: { ...str(1, 8000), description: "User messages up to 2000 characters, assistant messages up to 8000." } }, required: ["role", "content"], additionalProperties: false };
 add("get", `${prefix}/ai/status`, "Read AI feature availability", { assistant: true, bookingDraft: true, opsBrief: false }, { tag: "ai", message: "AI status fetched successfully", description: "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN." });
 const briefShipment = { id: id.example, trackingNumber: "EH-0123456789ABCDEF01234567", status: "CREATED", hoursSinceUpdate: 30 };
@@ -185,8 +195,8 @@ for (const operation of operations.filter(o=>o.path.includes("/ai/"))) {
 }
 // Broaden action-dependent/nullable response fields instead of implying a single audit event shape.
 for (const op of operations) {
-  const data = op.op.responses[op.status].content["application/json"].schema.properties.data;
-  if (data.properties?.auditLogs) {
+  const data = op.op.responses[op.status].content["application/json"]?.schema.properties.data;
+  if (data?.properties?.auditLogs) {
     const props = data.properties.auditLogs.items.properties;
     props.details = { type:"object", nullable:true, additionalProperties:true, description:"Stored action-specific JSON details." };
     props.actorId.nullable = true;
@@ -201,12 +211,12 @@ eventSchema.properties.publicNote = {...str(0,1000), nullable:true};
 eventSchema.properties.occurredAt = date;
 eventSchema.properties.internalNote = {...str(0,1000), nullable:true, description:"Omitted for customers."};
 eventSchema.properties.actorId = {...id, nullable:true, description:"Omitted for customers."};
-const collection = { info:{name:"ExpressHub API",schema:"https://schema.getpostman.com/json/collection/v2.1.0/collection.json",description:"Run individual requests in the documented workflow; do not run the whole collection against production. Set credentials locally, use the cookie jar, and switch accessToken for the required role. No secrets are included."},auth:{type:"bearer",bearer:[{key:"token",value:"{{accessToken}}",type:"string"}]},variable:[{key:"baseUrl",value:"http://localhost:3000"},...['accessToken','email','password','userId','shipmentId','courierId'].map(key=>({key,value:""}))],item:[] };
+const collection = { info:{name:"ExpressHub API",schema:"https://schema.getpostman.com/json/collection/v2.1.0/collection.json",description:"Run individual requests in the documented workflow; do not run the whole collection against production. Set credentials locally, use the cookie jar, and switch accessToken for the required role. No secrets are included."},auth:{type:"bearer",bearer:[{key:"token",value:"{{accessToken}}",type:"string"}]},variable:[{key:"baseUrl",value:"http://localhost:3000"},...['accessToken','email','password','userId','shipmentId','courierId','trackingNumber'].map(key=>({key,value:""}))],item:[] };
 for (const {method,path,op,options,example,status} of operations) {
   const groupName=op.tags[0];let group=collection.item.find(g=>g.name===groupName);
   if(!group){group={name:groupName,item:[]};collection.item.push(group);}
   const resource=path.includes("/users/")?"userId":path.includes("/payments/")?"paymentId":"shipmentId";
-  const urlPath=path.replace("{id}",`{{${resource}}}`);
+  const urlPath=path.replace("{id}",`{{${resource}}}`).replace("{trackingNumber}","{{trackingNumber}}");
   const queryParams=(options.query??[]).map(p=>({key:p.name,value:String(p.schema.default??(p.name==='q'?'Dhaka':'')),disabled:!p.required,description:p.description}));
   const request={method:method.toUpperCase(),header:[...(op.requestBody?[{key:"Content-Type",value:"application/json"}]:[]),...(options.headers??[]).map(p=>({key:p.name,value:p.name==="Idempotency-Key"?"{{idempotencyKey}}":"{{stripeSignature}}"}))],url:{raw:`{{baseUrl}}${urlPath}${queryParams.some(p=>!p.disabled)?'?'+queryParams.filter(p=>!p.disabled).map(p=>`${p.key}=${p.value}`).join('&'):''}`,host:["{{baseUrl}}"],path:urlPath.slice(1).split("/"),...(queryParams.length?{query:queryParams}:{})},description:op.description,
     ...(options.public||options.cookieAuth?{auth:{type:"noauth"}}:{}),...(op.requestBody?{body:{mode:"raw",raw:JSON.stringify(options.example??op.requestBody.content["application/json"].example,null,2),options:{raw:{language:"json"}}}}:{})};
