@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth/require-user";
 import { handleRouteError, parseRequestBody } from "@/lib/auth/route-helpers";
 import { successResponse } from "@/lib/http/responses";
+import { scheduleNotificationDispatch } from "@/services/notifications/outbox";
 import { updateShipmentStatus } from "@/services/shipment.service";
 import { shipmentIdSchema, shipmentStatusSchema } from "@/validators/shipment";
 
@@ -16,6 +17,7 @@ export async function PATCH(
     const id = shipmentIdSchema.parse((await context.params).id);
     const input = await parseRequestBody(request, shipmentStatusSchema);
     const shipment = await updateShipmentStatus(actor, id, input);
+    scheduleNotificationDispatch();
     return successResponse("Shipment updated successfully", { shipment });
   } catch (error) {
     return handleRouteError(error);

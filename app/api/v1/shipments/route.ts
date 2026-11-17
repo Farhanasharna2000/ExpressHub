@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth/require-user";
 import { handleRouteError, parseRequestBody } from "@/lib/auth/route-helpers";
 import { successResponse } from "@/lib/http/responses";
+import { scheduleNotificationDispatch } from "@/services/notifications/outbox";
 import { createShipment } from "@/services/shipment.service";
 import { createShipmentSchema } from "@/validators/shipment";
 import { shipmentListResponse } from "@/lib/http/shipment-list";
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
     const actor = await requireUser(request);
     const input = await parseRequestBody(request, createShipmentSchema);
     const shipment = await createShipment(actor, input);
+    scheduleNotificationDispatch();
     return successResponse("Shipment created successfully", { shipment }, 201);
   } catch (error) {
     return handleRouteError(error);

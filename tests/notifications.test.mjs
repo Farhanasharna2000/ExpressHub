@@ -1,0 +1,191 @@
+import "./helpers/typescript.mjs";
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+const {
+  dispatchNotifications, MAX_NOTIFICATION_ATTEMPTS, notificationTypeFor, retryDelayMs, trackingUrl, CLAIM_LEASE_MS,
+} = await import("../services/notifications/dispatch.ts");
+const { escapeHtml, renderNotification } = await import("../services/notifications/templates.ts");
+const { PermanentSendError, consoleSender, configuredSender, resendSender } = await import("../services/notifications/sender.ts");
+const { appUrl, enqueueShipmentNotification } = await import("../services/notifications/outbox.ts");
+const { hasCronSecret } = await import("../lib/http/cron-auth.ts");
+const { listDeadNotificationsSchema, notificationIdSchema } = await import("../validators/notification.ts");
+const { updateProfileSchema } = await import("../validators/user.ts");
+
+const NOW = new Date("2026-11-17T06:00:00Z");
+const TRACK = "EH-0123456789ABCDEF01234567";
+const payload = { trackingNumber: TRACK, status: "PICKED_UP", occurredAt: "2026-11-17T05:59:00.000Z" };
+const recipient = { name: "Rina", email: "rina@example.com", emailNotifications: true, active: true };
+
+function harness({ claimed, recipientFor = () => recipient, send = async () => {} } = {}) {
+  const calls = { sent: [], skipped: [], failed: [], emails: [], claim: null };
+  const deps = {
+    appUrl: "https://expresshub.example/",
+    now: () => NOW,
+    random: () => 0.5,
+    sender: { name: "fake", async send(email) { calls.emails.push(email); await send(email); } },
+    async claim(limit, now, leaseUntil) { calls.claim = { limit, now, leaseUntil }; return claimed; },
+    async loadRecipient(id) { return recipientFor(id); },
+    async markSent(id) { calls.sent.push(id); },
+    async markSkipped(id, reason) { calls.skipped.push({ id, reason }); },
+    async markFailed(id, update) { calls.failed.push({ id, ...update }); },
+  };
+  return { deps, calls };
+}
+
+test("only booking and the main status changes email the customer", () => {
+  assert.equal(notificationTypeFor("CREATED", "CREATED"), "SHIPMENT_BOOKED");
+  assert.equal(notificationTypeFor("STATUS_CHANGED", "PICKED_UP"), "SHIPMENT_PICKED_UP");
+  assert.equal(notificationTypeFor("STATUS_CHANGED", "OUT_FOR_DELIVERY"), "SHIPMENT_OUT_FOR_DELIVERY");
+  assert.equal(notificationTypeFor("STATUS_CHANGED", "DELIVERED"), "SHIPMENT_DELIVERED");
+  assert.equal(notificationTypeFor("STATUS_CHANGED", "FAILED"), "SHIPMENT_FAILED");
+  for (const [type, status] of [["STATUS_CHANGED", "IN_TRANSIT"], ["STATUS_CHANGED", "RETURNED"], ["COURIER_ASSIGNED", "CREATED"], ["CUSTOMER_CANCELLED", "CANCELLED"]]) {
+    assert.equal(notificationTypeFor(type, status), null, `${type} ${status}`);
+  }
+});
+
+test("retries back off exponentially with jitter and a cap", () => {
+  assert.equal(retryDelayMs(1, () => 0), 30_000);
+  assert.equal(retryDelayMs(1, () => 1), 60_000);
+  assert.equal(retryDelayMs(2, () => 1), 120_000);
+  assert.equal(retryDelayMs(4, () => 1), 480_000);
+  assert.equal(retryDelayMs(30, () => 1), 6 * 60 * 60 * 1000);
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    const delay = retryDelayMs(attempt);
+    const full = Math.min(60_000 * 2 ** (attempt - 1), 6 * 60 * 60 * 1000);
+    assert.ok(delay >= full / 2 && delay <= full, `attempt ${attempt}: ${delay}`);
+  }
+});
+
+test("templates escape user-supplied text in HTML and keep the text version plain", () => {
+  assert.equal(escapeHtml(`<a href="x">'&'</a>`), "&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#39;&lt;/a&gt;");
+  const email = renderNotification("SHIPMENT_DELIVERED", {
+    recipientName: "<script>alert(1)</script>\r\nBcc: evil@example.com",
+    trackingNumber: TRACK,
+    trackingUrl: trackingUrl("https://expresshub.example/", TRACK),
+    occurredAt: new Date("2026-11-17T05:59:00Z"),
+  });
+  assert.equal(email.html.includes("<script>"), false);
+  assert.match(email.html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.equal(email.subject, `Your shipment has been delivered (${TRACK})`);
+  assert.equal(/[\r\n]/.test(email.subject), false);
+  assert.match(email.text, /Hi <script>alert\(1\)<\/script> Bcc: evil@example.com,/);
+  assert.match(email.text, new RegExp(`https://expresshub.example/track/${TRACK}`));
+  assert.match(email.text, /17 Nov 2026, 11:59/);
+  assert.match(email.html, /lang="en"/);
+});
+
+test("a claimed notification is rendered, sent once with an idempotency key and marked sent", async () => {
+  const { deps, calls } = harness({ claimed: [{ id: "n1", type: "SHIPMENT_PICKED_UP", attempts: 1, payload }] });
+  const summary = await dispatchNotifications(deps, 7);
+  assert.deepEqual(summary, { claimed: 1, sent: 1, skipped: 0, retrying: 0, dead: 0 });
+  assert.equal(calls.claim.limit, 7);
+  assert.equal(calls.claim.leaseUntil.getTime(), NOW.getTime() + CLAIM_LEASE_MS);
+  assert.equal(calls.emails[0].to, recipient.email);
+  assert.equal(calls.emails[0].idempotencyKey, "expresshub:notification:n1");
+  assert.match(calls.emails[0].text, /https:\/\/expresshub\.example\/track\/EH-/);
+  assert.deepEqual(calls.sent, ["n1"]);
+});
+
+test("opted-out, inactive or invalid notifications are skipped without sending", async () => {
+  const claimed = [
+    { id: "opted-out", type: "SHIPMENT_DELIVERED", attempts: 1, payload },
+    { id: "inactive", type: "SHIPMENT_DELIVERED", attempts: 1, payload },
+    { id: "missing", type: "SHIPMENT_DELIVERED", attempts: 1, payload },
+    { id: "bad-payload", type: "SHIPMENT_DELIVERED", attempts: 1, payload: { trackingNumber: TRACK } },
+  ];
+  const recipients = {
+    "opted-out": { ...recipient, emailNotifications: false },
+    inactive: { ...recipient, active: false },
+    missing: null,
+    "bad-payload": recipient,
+  };
+  const { deps, calls } = harness({ claimed, recipientFor: (id) => recipients[id] });
+  const summary = await dispatchNotifications(deps);
+  assert.equal(summary.skipped, 4);
+  assert.equal(calls.emails.length, 0);
+  assert.deepEqual(calls.skipped.map((item) => item.reason), ["Recipient opted out", "Recipient unavailable", "Recipient unavailable", "Invalid payload"]);
+});
+
+test("a failed send is retried with backoff and becomes DEAD after the last attempt", async () => {
+  const failing = async () => { throw new Error("socket hang up"); };
+  const retrying = harness({ claimed: [{ id: "n2", type: "SHIPMENT_FAILED", attempts: 2, payload }], send: failing });
+  assert.deepEqual(await dispatchNotifications(retrying.deps), { claimed: 1, sent: 0, skipped: 0, retrying: 1, dead: 0 });
+  assert.equal(retrying.calls.failed[0].dead, false);
+  assert.equal(retrying.calls.failed[0].nextAttemptAt.getTime(), NOW.getTime() + retryDelayMs(2, () => 0.5));
+  assert.equal(retrying.calls.failed[0].error, "socket hang up");
+
+  const last = harness({ claimed: [{ id: "n3", type: "SHIPMENT_FAILED", attempts: MAX_NOTIFICATION_ATTEMPTS, payload }], send: failing });
+  assert.equal((await dispatchNotifications(last.deps)).dead, 1);
+  assert.equal(last.calls.failed[0].dead, true);
+  assert.equal(last.calls.sent.length, 0);
+
+  const permanent = harness({
+    claimed: [{ id: "n4", type: "SHIPMENT_FAILED", attempts: 1, payload }],
+    send: async () => { throw new PermanentSendError("Resend 422: invalid to"); },
+  });
+  assert.equal((await dispatchNotifications(permanent.deps)).dead, 1);
+});
+
+test("enqueue writes one idempotent outbox row only for notifiable events of opted-in customers", async () => {
+  const writes = [];
+  const tx = (optedIn) => ({
+    user: { async findUnique() { return { emailNotifications: optedIn }; } },
+    notificationOutbox: { async createMany(args) { writes.push(args); return { count: 1 }; } },
+  });
+  const shipment = { id: "s1", customerId: "u1", trackingNumber: TRACK };
+  const occurredAt = new Date("2026-11-17T05:59:00Z");
+  await enqueueShipmentNotification(tx(true), shipment, { id: "e1", type: "STATUS_CHANGED", toStatus: "DELIVERED", occurredAt });
+  await enqueueShipmentNotification(tx(true), shipment, { id: "e2", type: "STATUS_CHANGED", toStatus: "IN_TRANSIT", occurredAt });
+  await enqueueShipmentNotification(tx(false), shipment, { id: "e3", type: "STATUS_CHANGED", toStatus: "DELIVERED", occurredAt });
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].skipDuplicates, true);
+  assert.deepEqual(writes[0].data, [{
+    type: "SHIPMENT_DELIVERED", shipmentId: "s1", eventId: "e1", recipientUserId: "u1",
+    payload: { trackingNumber: TRACK, status: "DELIVERED", occurredAt: occurredAt.toISOString() },
+  }]);
+});
+
+test("the cron secret check is exact, constant-length and rejects weak secrets", () => {
+  const secret = "s".repeat(32);
+  assert.equal(hasCronSecret(`Bearer ${secret}`, secret), true);
+  assert.equal(hasCronSecret(`Bearer ${secret}x`, secret), false);
+  assert.equal(hasCronSecret(secret, secret), false);
+  assert.equal(hasCronSecret(null, secret), false);
+  assert.equal(hasCronSecret("Bearer short", "short"), false);
+  assert.equal(hasCronSecret("Bearer ", undefined), false);
+});
+
+test("the Resend sender posts JSON with an idempotency key and classifies errors", async () => {
+  const requests = [];
+  const fakeFetch = (status) => async (url, init) => { requests.push({ url, init }); return new Response(status === 200 ? "{}" : "nope", { status }); };
+  const email = { to: "rina@example.com", subject: "S", html: "<p>h</p>", text: "t", idempotencyKey: "k1" };
+  await resendSender("key", "ExpressHub <no-reply@example.com>", fakeFetch(200)).send(email);
+  assert.equal(requests[0].url, "https://api.resend.com/emails");
+  assert.equal(requests[0].init.headers["idempotency-key"], "k1");
+  assert.equal(requests[0].init.headers.authorization, "Bearer key");
+  assert.deepEqual(JSON.parse(requests[0].init.body).to, ["rina@example.com"]);
+  await assert.rejects(resendSender("key", "from", fakeFetch(422)).send(email), PermanentSendError);
+  await assert.rejects(resendSender("key", "from", fakeFetch(429)).send(email), (error) => !(error instanceof PermanentSendError));
+  await assert.rejects(resendSender("key", "from", fakeFetch(503)).send(email), (error) => !(error instanceof PermanentSendError));
+});
+
+test("without a provider, emails are only logged with a masked address", async () => {
+  assert.equal(configuredSender({}).name, "console");
+  assert.equal(configuredSender({ RESEND_API_KEY: "k", NOTIFICATIONS_FROM: "a@b.c" }).name, "resend");
+  const lines = [];
+  await consoleSender((line) => lines.push(line)).send({ to: "rina@example.com", subject: "Hello", html: "", text: "", idempotencyKey: "k" });
+  assert.equal(lines[0].includes("rina@example.com"), false);
+  assert.match(lines[0], /ri\*\*\*@example\.com/);
+});
+
+test("app URL, request validation and the profile preference", () => {
+  assert.equal(appUrl({ APP_URL: "https://app.example" }), "https://app.example");
+  assert.equal(appUrl({ ALLOWED_ORIGIN: "https://origin.example" }), "https://origin.example");
+  assert.equal(appUrl({}), "http://localhost:3000");
+  assert.equal(notificationIdSchema.safeParse("not-an-id").success, false);
+  assert.deepEqual(listDeadNotificationsSchema.parse({}), { page: 1, limit: 10 });
+  assert.equal(listDeadNotificationsSchema.safeParse({ status: "SENT" }).success, false);
+  assert.deepEqual(updateProfileSchema.parse({ emailNotifications: false }), { emailNotifications: false });
+  assert.equal(updateProfileSchema.safeParse({ emailNotifications: "no" }).success, false);
+});

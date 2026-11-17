@@ -6,6 +6,7 @@ import { AppError } from "@/lib/http/errors";
 import prisma from "@/lib/prisma";
 import { paginateTransaction } from "@/lib/db/pagination";
 import type { PaymentGateway } from "@/lib/payments/stripe";
+import { enqueueShipmentNotification } from "@/services/notifications/outbox";
 import { applyRefund, reserveRefund, sendRefund } from "@/services/payment.service";
 import type {
   AssignCourierInput,
@@ -94,7 +95,7 @@ async function record(
   fromStatus?: ShipmentStatus,
   note?: string,
 ) {
-  await tx.shipmentEvent.create({
+  const event = await tx.shipmentEvent.create({
     data: {
       shipmentId: shipment.id,
       actorId,
@@ -105,6 +106,7 @@ async function record(
       internalNote: note,
     },
   });
+  await enqueueShipmentNotification(tx, shipment, event);
   await tx.auditLog.create({
     data: {
       actorId,
