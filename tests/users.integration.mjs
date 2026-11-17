@@ -88,10 +88,13 @@ try {
   for (const body of [{}, { role: "ADMIN" }, { isActive: false }, { password: "new-password" }, { name: " " }]) {
     assert.equal((await request("users/me", customer, body)).status, 400);
   }
-  assert.equal((await request("users/me", customer, { email: admin.email })).status, 409);
+  // Changing the email needs the current password; a missing or wrong one is rejected before uniqueness.
+  assert.equal((await request("users/me", customer, { email: admin.email })).status, 400);
+  assert.equal((await request("users/me", customer, { email: admin.email, currentPassword: "wrong-password" })).status, 400);
+  assert.equal((await request("users/me", customer, { email: admin.email, currentPassword: password })).status, 409);
   assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: customer.id } })).email, customer.email);
   const renamedEmail = `changed-${email}`;
-  assert.equal((await request("users/me", customer, { email: ` ${renamedEmail.toUpperCase()} ` })).body.data.user.email, renamedEmail);
+  assert.equal((await request("users/me", customer, { email: ` ${renamedEmail.toUpperCase()} `, currentPassword: password })).body.data.user.email, renamedEmail);
 
   const query = `users?q=${encodeURIComponent(email)}&limit=1&page=1&sortBy=email&order=asc`;
   const page1 = await request(query, admin);
