@@ -26,6 +26,7 @@ and audit records.
 | AI booking | Customers describe a parcel in their own words and the booking form fills itself for review (see [AI booking from a description](#ai-booking-from-a-description)) |
 | AI operations brief | Admins get a daily AI summary of failed, delayed and unassigned shipments with next steps, shown beside the figures it used (see [Daily operations brief](#daily-operations-brief)) |
 | Email notifications | Customers get an email when a shipment is booked, picked up, out for delivery, delivered or fails, sent reliably through a transactional outbox (see [Shipment email notifications](#shipment-email-notifications)) |
+| Admin analytics | Bookings, deliveries, net revenue, on-time rate, delivery times and courier performance by day or week, compared with the previous period, with CSV export (see [Admin analytics](#admin-analytics)) |
 
 The interface includes responsive navigation, URL-based filtering and pagination,
 accessible field errors, toast feedback, and loading skeletons for lists, details,
@@ -233,6 +234,42 @@ status change ──▶ [ shipment + event + outbox row ]  (one transaction)
                                   └──▶ FAILED (backoff) ──▶ … ──▶ DEAD ──▶ admin Retry
 ```
 
+## Admin analytics
+
+Admins open **Analytics** (`/admin/analytics`) to see how the business is doing over
+the last 7, 30 or 90 days, or any range up to 366 days, grouped by day or by week.
+
+| Figure | How it is calculated |
+| --- | --- |
+| Shipments booked | Non-archived shipments created in the range |
+| Delivered | Shipments delivered in the range |
+| Net revenue | BDT received (by payment date) minus full refunds (by refund date), kept as exact decimal strings |
+| On time | Share of deliveries made within 72 hours of the first pickup; deliveries without a recorded pickup are not timed |
+| Median / p90 delivery time | `percentile_cont` over the same pickup-to-delivery hours |
+| Failure rate | Failed deliveries ÷ (delivered + failed) |
+
+Each figure is compared with the same number of days immediately before (percentage
+change for counts and revenue, a difference in points or hours for rates and times).
+The page also shows a booked-vs-delivered chart, a net revenue chart, a courier
+leaderboard and the busiest origin hubs, and **Export CSV** downloads the series.
+
+How it works:
+
+- `services/analytics.service.ts` aggregates in PostgreSQL with `$queryRaw`
+  (`date_trunc` on timestamps converted with `AT TIME ZONE 'Asia/Dhaka'`), so day and
+  week boundaries follow Bangladesh time. All queries share one repeatable-read snapshot.
+- Results are cached for five minutes per range in Upstash, or in memory when Upstash is
+  not configured.
+- Charts use Recharts, loaded with `next/dynamic` so the library is only downloaded on
+  this page. A visually hidden table carries the same numbers for screen readers.
+- CSV cells that a spreadsheet could run as a formula (`=`, `+`, `-`, `@`, tab, carriage
+  return) are prefixed with an apostrophe; plain numbers, including negative amounts, are kept.
+
+Scaling note: at the current data size PostgreSQL scans these small tables directly. As
+volume grows, add indexes on `shipments("deliveredAt")`, `payments("paidAt")`,
+`payments("refundedAt")` and `shipment_events("toStatus", "occurredAt")`, which back the
+range filters used here.
+
 ## Technology
 
 | Area | Implementation |
@@ -394,6 +431,7 @@ npm run test:errors
 npm run test:ai
 npm run test:tracking
 npm run test:notifications
+npm run test:analytics
 npm run test:misc
 ```
 
@@ -410,6 +448,8 @@ cache behavior. `test:security` includes proxy redirects and cookie validation.
 authorization, the tool loop limits, refusals and audit records. It needs no API key.
 `test:tracking` checks that the public tracking shape cannot carry private fields and covers
 the live stream: change detection, final status, heartbeats, timeouts and disconnects.
+`test:analytics` covers range validation, Bangladesh day and week buckets, rate and change
+calculations, CSV formula escaping, the cache and admin-only access.
 
 If the auth unit test picks up external Upstash settings, run it with an isolated
 local limiter (Bash):
@@ -453,7 +493,12 @@ npm run test:soft-delete:integration
 npm run test:errors:integration
 npm run test:tracking:integration
 npm run test:notifications:integration
+npm run test:analytics:integration
 ```
+
+The analytics integration suite seeds shipments, events and payments in March 2031 (a
+window no other data uses) and asserts every figure exactly, including shipments booked
+either side of Bangladesh midnight and a refund in a later period.
 
 The payment integration suite uses PostgreSQL with an injected payment provider;
 it does not charge a card or contact Stripe. The error integration suite uses a
