@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { archiveFormSchema } from "@/lib/client/form-schemas";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,12 +31,15 @@ export function ArchiveShipmentControl({
   const form = useForm({ mode: "onChange", resolver: zodResolver(archiveFormSchema("An archival reason")), defaultValues: { reason: "" } });
   const reasonError = form.formState.errors.reason?.message;
   const [busy, setBusy] = useState(false);
+  const pendingRef = useRef(false);
   const [mutationError, setMutationError] = useState<unknown>(null);
 
   const archivable = isShipmentArchivable(shipment.status);
 
   async function handleArchive() {
-    if (busy || !await form.trigger(undefined, { shouldFocus: true })) return;
+    if (pendingRef.current) return;
+    if (!await form.trigger(undefined, { shouldFocus: true }) || pendingRef.current) return;
+    pendingRef.current = true;
     const cleanReason = form.getValues("reason").trim();
     setBusy(true);
     setMutationError(null);
@@ -63,6 +66,7 @@ export function ArchiveShipmentControl({
         errorMessage(err)
       );
     } finally {
+      pendingRef.current = false;
       setBusy(false);
     }
   }
@@ -106,7 +110,7 @@ export function ArchiveShipmentControl({
           </div>
         )}
 
-        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <Dialog open={modalOpen} onOpenChange={(open) => { if (!pendingRef.current) setModalOpen(open); }}>
           <DialogContent showCloseButton={!busy}>
             <DialogHeader>
               <DialogTitle>Confirm Shipment Archival</DialogTitle>

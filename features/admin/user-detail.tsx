@@ -55,10 +55,17 @@ export function AdminUserDetailView({ id }: { id: string }) {
   const [deletedConfirmed, setDeletedConfirmed] = useState(false);
 
   const [feedback, setFeedback] = useState<string | null>(null);
+  // Set synchronously before any await so a double click can't send a second request.
+  const pendingRef = useRef(false);
+  const unlessPending = (setOpen: (open: boolean) => void) => (open: boolean) => {
+    if (!pendingRef.current) setOpen(open);
+  };
 
   // Handle Role Change
   async function handleChangeRole() {
-    if (!targetUser || isSelf || roleBusy || !await roleForm.trigger()) return;
+    if (!targetUser || isSelf || pendingRef.current) return;
+    if (!await roleForm.trigger() || pendingRef.current) return;
+    pendingRef.current = true;
     setRoleBusy(true);
     setRoleError(null);
     setFeedback(null);
@@ -76,13 +83,15 @@ export function AdminUserDetailView({ id }: { id: string }) {
       setRoleError(err);
       toast.error("Role update failed", errorMessage(err));
     } finally {
+      pendingRef.current = false;
       setRoleBusy(false);
     }
   }
 
   // Handle Status Toggle
   async function handleToggleStatus() {
-    if (!targetUser || isSelf || statusBusy) return;
+    if (!targetUser || isSelf || pendingRef.current) return;
+    pendingRef.current = true;
     setStatusBusy(true);
     setStatusError(null);
     setFeedback(null);
@@ -101,14 +110,16 @@ export function AdminUserDetailView({ id }: { id: string }) {
       setStatusError(err);
       toast.error("Status update failed", errorMessage(err));
     } finally {
+      pendingRef.current = false;
       setStatusBusy(false);
     }
   }
 
   // Handle Soft Deletion
   async function handleSoftDelete() {
-    if (!targetUser || isSelf || deleteBusy) return;
-    if (!await deleteForm.trigger(undefined, { shouldFocus: true })) return;
+    if (!targetUser || isSelf || pendingRef.current) return;
+    if (!await deleteForm.trigger(undefined, { shouldFocus: true }) || pendingRef.current) return;
+    pendingRef.current = true;
     const cleanReason = deleteForm.getValues("reason").trim();
 
     setDeleteBusy(true);
@@ -131,6 +142,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
         errorMessage(err)
       );
     } finally {
+      pendingRef.current = false;
       setDeleteBusy(false);
     }
   }
@@ -333,7 +345,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
           </div>
 
           {/* Change Role Dialog */}
-          <Dialog open={roleModalOpen} onOpenChange={setRoleModalOpen}>
+          <Dialog open={roleModalOpen} onOpenChange={unlessPending(setRoleModalOpen)}>
             <DialogContent showCloseButton={!roleBusy}>
               <DialogHeader>
                 <DialogTitle>Update User Role</DialogTitle>
@@ -377,7 +389,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
           </Dialog>
 
           {/* Toggle Status Dialog */}
-          <Dialog open={statusModalOpen} onOpenChange={setStatusModalOpen}>
+          <Dialog open={statusModalOpen} onOpenChange={unlessPending(setStatusModalOpen)}>
             <DialogContent showCloseButton={!statusBusy}>
               <DialogHeader>
                 <DialogTitle>
@@ -407,7 +419,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
           </Dialog>
 
           {/* Soft Delete Account Dialog */}
-          <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+          <Dialog open={deleteModalOpen} onOpenChange={unlessPending(setDeleteModalOpen)}>
             <DialogContent showCloseButton={!deleteBusy}>
               <DialogHeader>
                 <DialogTitle>Archive and Soft-Delete User</DialogTitle>
