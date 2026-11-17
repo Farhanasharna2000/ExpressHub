@@ -29,7 +29,8 @@ import {
  * - 409 for Conflict (idempotency key conflicts, state conflicts, concurrent updates)
  * - 403 for Forbidden (unauthorized access)
  * - 400 for Bad Request (validation errors, malformed data)
- * - 503 for Service Unavailable (rate limiter outage, provider timeout)
+ * - 503 for Service Unavailable (rate limiter outage, provider or transaction timeout)
+ * Unknown errors are returned unchanged so they become an opaque, logged 500.
  */
 export function mapPaymentError(error: unknown): unknown {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -48,6 +49,13 @@ export function mapPaymentError(error: unknown): unknown {
         409,
         "Concurrent modification conflict; please retry",
         "CONFLICT",
+      );
+    }
+    if (error.code === "P2028") {
+      return new AppError(
+        503,
+        "The payment request timed out; please retry",
+        "PAYMENT_RETRY",
       );
     }
   }
@@ -82,41 +90,8 @@ export function mapPaymentError(error: unknown): unknown {
     return error;
   }
 
-  if (error && typeof error === "object") {
-    const err = error as { code?: unknown; name?: unknown; message?: unknown };
-    const code = typeof err.code === "string" ? err.code : "";
-    const name = typeof err.name === "string" ? err.name : "";
-    const message = typeof err.message === "string" ? err.message : "";
-
-    if (
-      code === "NOT_FOUND" ||
-      code === "PAYMENT_NOT_FOUND" ||
-      code === "SHIPMENT_NOT_FOUND" ||
-      name === "NotFoundError" ||
-      name === "RecordNotFound" ||
-      /not found/i.test(message)
-    ) {
-      return new AppError(
-        404,
-        message || "Resource not found",
-        code || "NOT_FOUND",
-      );
-    }
-
-    if (
-      code === "CONFLICT" ||
-      code === "PAYMENT_CONFLICT" ||
-      name === "ConflictError" ||
-      /conflict/i.test(message)
-    ) {
-      return new AppError(
-        409,
-        message || "Resource conflict",
-        code || "CONFLICT",
-      );
-    }
-  }
-
+  // Anything else is unexpected and must reach handleRouteError's logged,
+  // opaque 500 path; its message can contain internal details.
   return error;
 }
 
