@@ -37,7 +37,7 @@ async function call(path, { body, cookie, token, method = "POST" } = {}) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  return { status: response.status, body: await response.json(), cookie: response.headers.get("set-cookie")?.split(";")[0] };
+  return { status: response.status, body: await response.json(), cookie: response.headers.getSetCookie().map((value) => value.split(";")[0]).find((value) => value.startsWith("expresshub_refresh")) };
 }
 
 try {
