@@ -195,6 +195,7 @@ export class SessionStore {
     email: string;
     phone: string | null;
     currentPassword?: string;
+    emailNotifications?: boolean;
   }) {
     const { user } = await this.api.request<{ user: CurrentUser }>(
       "/users/me",

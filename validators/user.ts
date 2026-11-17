@@ -10,6 +10,7 @@ export const updateProfileSchema = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email().max(254)).optional(),
   phone: z.string().trim().min(5).max(30).nullable().optional(),
   avatar: profilePhotoSchema,
+  emailNotifications: z.boolean().optional(),
   // Required by the service only when the email actually changes.
   currentPassword: z.string().min(1).max(200).optional(),
 }).strict().refine((input) => Object.keys(input).some((key) => key !== "currentPassword"), {

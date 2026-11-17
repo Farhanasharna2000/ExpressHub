@@ -30,6 +30,7 @@ export const profileFields = z
     phone: phone.nullable(),
     avatar: profilePhotoSchema,
     currentPassword: z.string().max(200).optional(),
+    emailNotifications: z.boolean().optional(),
   })
   .strict();
 

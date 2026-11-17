@@ -21,6 +21,7 @@ import {
   Truck,
   Upload,
   UserRound,
+  BellRing,
 } from "lucide-react";
 import { prepareProfilePhoto } from "./profile-photo";
 import { Button } from "@/components/ui/button";
@@ -588,6 +589,7 @@ export function ProfileForm() {
       email: user?.email ?? "",
       phone: user?.phone ?? "",
       avatar: undefined,
+      emailNotifications: user?.emailNotifications ?? true,
     },
   });
   const feedback = useFeedback(form, formRef);
@@ -602,6 +604,7 @@ export function ProfileForm() {
         email: user.email,
         phone: user.phone ?? "",
         avatar: undefined,
+        emailNotifications: user.emailNotifications ?? true,
       });
     }
   }, [user, form]);
@@ -653,6 +656,7 @@ export function ProfileForm() {
         phone: updated.phone ?? "",
         avatar: undefined,
         currentPassword: "",
+        emailNotifications: updated.emailNotifications ?? true,
       });
       setPhotoError("");
       setSaved(true);
@@ -833,6 +837,25 @@ export function ProfileForm() {
                 </p>
               </div>
             )}
+            <div className="flex items-start gap-3 rounded-xl border p-4">
+              <BellRing className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+              <div className="flex-1">
+                <label htmlFor="profile-email-notifications" className="flex cursor-pointer items-center justify-between gap-3 text-sm font-medium">
+                  Shipment status emails
+                  <input
+                    id="profile-email-notifications"
+                    type="checkbox"
+                    className="size-5 shrink-0 accent-primary"
+                    aria-describedby="profile-email-notifications-hint"
+                    disabled={feedback.busy}
+                    {...form.register("emailNotifications")}
+                  />
+                </label>
+                <p id="profile-email-notifications-hint" className="mt-1 text-xs text-muted-foreground">
+                  Email me when a shipment is booked, picked up, out for delivery, delivered or fails.
+                </p>
+              </div>
+            </div>
             <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-4">
               <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
               <div>

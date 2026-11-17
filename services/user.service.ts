@@ -16,6 +16,7 @@ const profileSelect = {
   phone: true,
   role: true,
   isActive: true,
+  emailNotifications: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;
@@ -137,8 +138,9 @@ export async function updateProfile(
             name: before.name,
             email: before.email,
             phone: before.phone,
+            emailNotifications: before.emailNotifications,
           },
-          after: { name: user.name, email: user.email, phone: user.phone },
+          after: { name: user.name, email: user.email, phone: user.phone, emailNotifications: user.emailNotifications },
           sessionsRevoked: emailChanging,
         },
       },
