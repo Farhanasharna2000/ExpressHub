@@ -12,6 +12,10 @@ export class ApiError extends Error {
     super(message); this.name = "ApiError";
   }
 }
+// A request dropped because the session changed or the caller aborted it. Not a failure.
+export function isCancelled(error: unknown) {
+  return error instanceof Error && error.name === "AbortError";
+}
 export function errorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return "Something went wrong. Please try again.";
   if (error.status === 0) return "Unable to connect. Check your connection and try again.";

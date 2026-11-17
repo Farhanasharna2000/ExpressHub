@@ -17,7 +17,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { StatusBadge, ErrorNotice } from "@/components/ui/primitives";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
-import { errorMessage } from "@/lib/client/api";
+import { errorMessage, isCancelled } from "@/lib/client/api";
 import {
   getPendingPayment,
   clearPendingPayment,
@@ -45,6 +45,7 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
   const [pollAttempt, setPollAttempt] = useState(0);
   const maxPolls = 6;
   const pollTimerRef = useRef<number | null>(null);
+  const cancelRetriesRef = useRef(0);
 
   // Initialize payment identification
   useEffect(() => {
@@ -73,7 +74,12 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
               setLoading(false);
             }
           })
-          .catch(err => { setLoading(false); setError(err); });
+          .catch(err => {
+            // A session restore cancels this lookup; the effect reruns once auth settles.
+            if (isCancelled(err)) return;
+            setLoading(false);
+            setError(err);
+          });
       } else if (authStatus === "anonymous" || authStatus === "error") {
         setLoading(false);
       }
@@ -90,6 +96,8 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
         `/payments/${encodeURIComponent(id)}`
       );
       setPayment(res.payment);
+      setLoading(false);
+      cancelRetriesRef.current = 0;
 
       if (res.payment.status === "PAID") {
         clearPendingPayment();
@@ -98,11 +106,17 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
 
       return res.payment;
     } catch (err) {
+      // Restoring the session after the Stripe redirect cancels in-flight requests.
+      // That is not a failed check, so retry quietly instead of stopping the poll.
+      if (isCancelled(err) && cancelRetriesRef.current < 3) {
+        cancelRetriesRef.current += 1;
+        window.setTimeout(() => void fetchStatus(id), 400);
+        return null;
+      }
       setError(err);
+      setLoading(false);
       toast.error("Could not verify status", errorMessage(err));
       return null;
-    } finally {
-      setLoading(false);
     }
   }
 

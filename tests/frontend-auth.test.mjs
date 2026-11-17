@@ -92,3 +92,16 @@ test('browser validation matches UTF-8 password limits and optional phone rules'
   assert.equal(registrationFields.safeParse({ ...input, role: 'ADMIN' }).success, false);
   assert.equal(profileFields.safeParse({ name: 'Test', email: 'test@example.com', phone: null }).success, true);
 });
+
+test("cancelled requests are not reported as failed checks", async () => {
+  const { ApiError, errorMessage, isCancelled } = await import("../lib/client/api.ts");
+  assert.equal(isCancelled(new DOMException("Request cancelled", "AbortError")), true);
+  assert.equal(isCancelled(new DOMException("Session changed", "AbortError")), true);
+  assert.equal(isCancelled(new ApiError(0, "Network error")), false);
+  assert.equal(isCancelled(new ApiError(500, "Server error")), false);
+  assert.equal(isCancelled(undefined), false);
+  // Without this check the return page showed the generic message for a cancellation.
+  assert.equal(errorMessage(new DOMException("Request cancelled", "AbortError")), "Something went wrong. Please try again.");
+  const returnView = readFileSync(new URL("../features/payments/return-view.tsx", import.meta.url), "utf8");
+  assert.match(returnView, /isCancelled\(err\)/);
+});
