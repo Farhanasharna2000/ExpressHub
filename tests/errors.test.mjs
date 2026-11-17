@@ -2,7 +2,7 @@ import "./helpers/typescript.mjs";
 import assert from "node:assert/strict";
 import { test, mock } from "node:test";
 import { z } from "zod";
-const { AppError, registerTelemetryReporter } = await import("../lib/http/errors.ts");
+const { AppError, registerTelemetryReporter, safeCorrelationId } = await import("../lib/http/errors.ts");
 const { errorResponse, successResponse, tooManyRequestsResponse } = await import("../lib/http/responses.ts");
 const { handleRouteError, parseRequestBody } = await import("../lib/auth/route-helpers.ts");
 
@@ -80,6 +80,25 @@ test("unexpected errors dispatch APM telemetry and respect correlation IDs", asy
     assert.equal(apmCalls[0].ctx.errorId, "custom-trace-uuid-12345");
   } finally {
     registerTelemetryReporter(null);
+    logger.mock.restore();
+  }
+});
+
+test("invalid or oversized correlation IDs are replaced before they are echoed or logged", async () => {
+  const logger = mock.method(console, "error", () => {});
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  try {
+    for (const header of ["a b<script>", "x".repeat(65), "ticket/42"]) {
+      const response = handleRouteError(new Error("boom"), new Request("http://localhost/api/v1/test", { headers: { "x-correlation-id": header } }));
+      const body = await response.json();
+      assert.match(body.incidentId, uuid, header);
+      assert.equal(response.headers.get("x-incident-id"), body.incidentId);
+      assert.equal(logger.mock.calls.at(-1).arguments[0].includes(header), false);
+    }
+    const kept = handleRouteError(new Error("boom"), new Request("http://localhost/api/v1/test", { headers: { "x-request-id": "req_01.ABC-9" } }));
+    assert.equal((await kept.json()).incidentId, "req_01.ABC-9");
+    assert.match(safeCorrelationId(undefined), uuid);
+  } finally {
     logger.mock.restore();
   }
 });

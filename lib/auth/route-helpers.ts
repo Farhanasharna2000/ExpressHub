@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { type ZodType } from "zod";
 
 import { hashRefreshToken, isAllowedCookieRequest, refreshTokenCookie, pageSessionCookie, signPageSession, verifyAccessToken, type AccessTokenClaims } from "@/lib/auth/tokens";
-import { AppError, type ErrorResponseOptions } from "@/lib/http/errors";
+import { AppError, requestCorrelationId, type ErrorResponseOptions } from "@/lib/http/errors";
 import { errorResponse, tooManyRequestsResponse } from "@/lib/http/responses";
 import { getRateLimitIdentifier, limitApiRequests } from "@/lib/rate-limit";
 import { rateLimitDiagnostics } from "@/lib/rate-limit-diagnostics";
@@ -97,11 +97,7 @@ export function handleRouteError(
 ) {
   let options: ErrorResponseOptions | undefined;
   if (optionsOrRequest && "headers" in optionsOrRequest && typeof optionsOrRequest.headers?.get === "function") {
-    const correlationId =
-      optionsOrRequest.headers.get("x-correlation-id") ||
-      optionsOrRequest.headers.get("x-request-id") ||
-      undefined;
-    options = correlationId ? { correlationId } : undefined;
+    options = { correlationId: requestCorrelationId(optionsOrRequest.headers) };
   } else if (optionsOrRequest && typeof optionsOrRequest === "object" && "correlationId" in optionsOrRequest) {
     options = optionsOrRequest as ErrorResponseOptions;
   }
