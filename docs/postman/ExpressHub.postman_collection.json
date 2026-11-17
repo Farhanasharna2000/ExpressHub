@@ -2839,6 +2839,200 @@
             }
           ],
           "event": []
+        },
+        {
+          "name": "Read business analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/analytics",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "analytics"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive Bangladesh calendar date. Send with to, or omit both for the last 30 days."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive Bangladesh calendar date. At most 366 days after from."
+                },
+                {
+                  "key": "granularity",
+                  "value": "day",
+                  "disabled": true,
+                  "description": "Bucket size; weeks start on Monday."
+                }
+              ]
+            },
+            "description": "ADMIN only. Aggregated in SQL with Asia/Dhaka day boundaries. booked counts non-deleted shipments created in the range; delivered counts deliveries in the range; revenue is BDT received (paidAt) minus full refunds (refundedAt) as a decimal string, including payments for archived shipments. onTimeRate is the share of deliveries within 72 hours of first pickup (deliveries without a recorded pickup are not timed); median and p90 delivery hours use the same times. failureRate is failed / (delivered + failed). previous is the same number of days immediately before; change is a percentage for booked, delivered and revenue, and a difference in points or hours for the rest. Top 5 origin hubs and up to 10 couriers. Cached for 5 minutes per range (cached: true when served from cache)."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/analytics",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "analytics"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive Bangladesh calendar date. Send with to, or omit both for the last 30 days."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive Bangladesh calendar date. At most 366 days after from."
+                    },
+                    {
+                      "key": "granularity",
+                      "value": "day",
+                      "disabled": true,
+                      "description": "Bucket size; weeks start on Monday."
+                    }
+                  ]
+                },
+                "description": "ADMIN only. Aggregated in SQL with Asia/Dhaka day boundaries. booked counts non-deleted shipments created in the range; delivered counts deliveries in the range; revenue is BDT received (paidAt) minus full refunds (refundedAt) as a decimal string, including payments for archived shipments. onTimeRate is the share of deliveries within 72 hours of first pickup (deliveries without a recorded pickup are not timed); median and p90 delivery hours use the same times. failureRate is failed / (delivered + failed). previous is the same number of days immediately before; change is a percentage for booked, delivered and revenue, and a difference in points or hours for the rest. Top 5 origin hubs and up to 10 couriers. Cached for 5 minutes per range (cached: true when served from cache)."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Analytics fetched successfully\",\n  \"data\": {\n    \"analytics\": {\n      \"range\": {\n        \"from\": \"2026-11-01\",\n        \"to\": \"2026-11-30\",\n        \"days\": 30,\n        \"granularity\": \"day\",\n        \"timeZone\": \"Asia/Dhaka\",\n        \"previousFrom\": \"2026-10-02\",\n        \"previousTo\": \"2026-10-31\"\n      },\n      \"currency\": \"BDT\",\n      \"onTimeHours\": 72,\n      \"summary\": {\n        \"booked\": 42,\n        \"delivered\": 35,\n        \"failed\": 3,\n        \"revenue\": \"12450.50\",\n        \"onTimeRate\": 88.6,\n        \"failureRate\": 7.9,\n        \"medianDeliveryHours\": 26.5,\n        \"p90DeliveryHours\": 61.2\n      },\n      \"previous\": {\n        \"booked\": 36,\n        \"delivered\": 30,\n        \"failed\": 3,\n        \"revenue\": \"10100.00\",\n        \"onTimeRate\": 84.2,\n        \"failureRate\": 7.9,\n        \"medianDeliveryHours\": 26.5,\n        \"p90DeliveryHours\": 61.2\n      },\n      \"change\": {\n        \"booked\": 16.7,\n        \"delivered\": 16.7,\n        \"revenue\": 23.3,\n        \"onTimeRate\": 4.4,\n        \"failureRate\": -1.2,\n        \"medianDeliveryHours\": -2.1\n      },\n      \"series\": [\n        {\n          \"period\": \"2026-11-01\",\n          \"booked\": 2,\n          \"delivered\": 1,\n          \"revenue\": \"450.00\"\n        }\n      ],\n      \"hubs\": [\n        {\n          \"name\": \"Dhaka Central Hub\",\n          \"shipments\": 18\n        }\n      ],\n      \"couriers\": [\n        {\n          \"id\": \"cm123456789012345678901234\",\n          \"name\": \"Karim\",\n          \"deliveries\": 20,\n          \"failed\": 1,\n          \"onTimeRate\": 90\n        }\n      ],\n      \"generatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"cached\": false\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Export analytics as CSV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/analytics/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "analytics",
+                "export"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive Bangladesh calendar date. Send with to, or omit both for the last 30 days."
+                },
+                {
+                  "key": "to",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Inclusive Bangladesh calendar date. At most 366 days after from."
+                },
+                {
+                  "key": "granularity",
+                  "value": "day",
+                  "disabled": true,
+                  "description": "Bucket size; weeks start on Monday."
+                }
+              ]
+            },
+            "description": "ADMIN only. Same range rules as GET /admin/analytics. Returns the per-bucket series as CSV text inside the JSON envelope, so it works with bearer-token auth; save content as filename. Text cells that could run as spreadsheet formulas are prefixed with an apostrophe."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/analytics/export",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "analytics",
+                    "export"
+                  ],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive Bangladesh calendar date. Send with to, or omit both for the last 30 days."
+                    },
+                    {
+                      "key": "to",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Inclusive Bangladesh calendar date. At most 366 days after from."
+                    },
+                    {
+                      "key": "granularity",
+                      "value": "day",
+                      "disabled": true,
+                      "description": "Bucket size; weeks start on Monday."
+                    }
+                  ]
+                },
+                "description": "ADMIN only. Same range rules as GET /admin/analytics. Returns the per-bucket series as CSV text inside the JSON envelope, so it works with bearer-token auth; save content as filename. Text cells that could run as spreadsheet formulas are prefixed with an apostrophe."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Analytics export prepared\",\n  \"data\": {\n    \"export\": {\n      \"filename\": \"expresshub-analytics-2026-11-01-to-2026-11-30.csv\",\n      \"contentType\": \"text/csv; charset=utf-8\",\n      \"content\": \"Period starting,Shipments booked,Shipments delivered,Net revenue (BDT)\\r\\n2026-11-01,2,1,450.00\\r\\n\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
         }
       ]
     },

@@ -12685,6 +12685,786 @@
         }
       }
     },
+    "/api/v1/admin/analytics": {
+      "get": {
+        "operationId": "get__api_v1_admin_analytics",
+        "tags": [
+          "admin"
+        ],
+        "summary": "Read business analytics",
+        "description": "ADMIN only. Aggregated in SQL with Asia/Dhaka day boundaries. booked counts non-deleted shipments created in the range; delivered counts deliveries in the range; revenue is BDT received (paidAt) minus full refunds (refundedAt) as a decimal string, including payments for archived shipments. onTimeRate is the share of deliveries within 72 hours of first pickup (deliveries without a recorded pickup are not timed); median and p90 delivery hours use the same times. failureRate is failed / (delivered + failed). previous is the same number of days immediately before; change is a percentage for booked, delivered and revenue, and a difference in points or hours for the rest. Top 5 origin hubs and up to 10 couriers. Cached for 5 minutes per range (cached: true when served from cache).",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-11-01"
+            },
+            "description": "Inclusive Bangladesh calendar date. Send with to, or omit both for the last 30 days."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-11-30"
+            },
+            "description": "Inclusive Bangladesh calendar date. At most 366 days after from."
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week"
+              ],
+              "default": "day"
+            },
+            "description": "Bucket size; weeks start on Monday."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "analytics": {
+                          "type": "object",
+                          "properties": {
+                            "range": {
+                              "type": "object",
+                              "properties": {
+                                "from": {
+                                  "type": "string"
+                                },
+                                "to": {
+                                  "type": "string"
+                                },
+                                "days": {
+                                  "type": "integer"
+                                },
+                                "granularity": {
+                                  "type": "string"
+                                },
+                                "timeZone": {
+                                  "type": "string"
+                                },
+                                "previousFrom": {
+                                  "type": "string"
+                                },
+                                "previousTo": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "from",
+                                "to",
+                                "days",
+                                "granularity",
+                                "timeZone",
+                                "previousFrom",
+                                "previousTo"
+                              ]
+                            },
+                            "currency": {
+                              "type": "string"
+                            },
+                            "onTimeHours": {
+                              "type": "integer"
+                            },
+                            "summary": {
+                              "type": "object",
+                              "properties": {
+                                "booked": {
+                                  "type": "integer"
+                                },
+                                "delivered": {
+                                  "type": "integer"
+                                },
+                                "failed": {
+                                  "type": "integer"
+                                },
+                                "revenue": {
+                                  "type": "string"
+                                },
+                                "onTimeRate": {
+                                  "type": "integer"
+                                },
+                                "failureRate": {
+                                  "type": "integer"
+                                },
+                                "medianDeliveryHours": {
+                                  "type": "integer"
+                                },
+                                "p90DeliveryHours": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "booked",
+                                "delivered",
+                                "failed",
+                                "revenue",
+                                "onTimeRate",
+                                "failureRate",
+                                "medianDeliveryHours",
+                                "p90DeliveryHours"
+                              ]
+                            },
+                            "previous": {
+                              "type": "object",
+                              "properties": {
+                                "booked": {
+                                  "type": "integer"
+                                },
+                                "delivered": {
+                                  "type": "integer"
+                                },
+                                "failed": {
+                                  "type": "integer"
+                                },
+                                "revenue": {
+                                  "type": "string"
+                                },
+                                "onTimeRate": {
+                                  "type": "integer"
+                                },
+                                "failureRate": {
+                                  "type": "integer"
+                                },
+                                "medianDeliveryHours": {
+                                  "type": "integer"
+                                },
+                                "p90DeliveryHours": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "booked",
+                                "delivered",
+                                "failed",
+                                "revenue",
+                                "onTimeRate",
+                                "failureRate",
+                                "medianDeliveryHours",
+                                "p90DeliveryHours"
+                              ]
+                            },
+                            "change": {
+                              "type": "object",
+                              "properties": {
+                                "booked": {
+                                  "type": "integer"
+                                },
+                                "delivered": {
+                                  "type": "integer"
+                                },
+                                "revenue": {
+                                  "type": "integer"
+                                },
+                                "onTimeRate": {
+                                  "type": "integer"
+                                },
+                                "failureRate": {
+                                  "type": "integer"
+                                },
+                                "medianDeliveryHours": {
+                                  "type": "integer"
+                                }
+                              },
+                              "required": [
+                                "booked",
+                                "delivered",
+                                "revenue",
+                                "onTimeRate",
+                                "failureRate",
+                                "medianDeliveryHours"
+                              ]
+                            },
+                            "series": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "period": {
+                                    "type": "string"
+                                  },
+                                  "booked": {
+                                    "type": "integer"
+                                  },
+                                  "delivered": {
+                                    "type": "integer"
+                                  },
+                                  "revenue": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "period",
+                                  "booked",
+                                  "delivered",
+                                  "revenue"
+                                ]
+                              }
+                            },
+                            "hubs": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "shipments": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "shipments"
+                                ]
+                              }
+                            },
+                            "couriers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "deliveries": {
+                                    "type": "integer"
+                                  },
+                                  "failed": {
+                                    "type": "integer"
+                                  },
+                                  "onTimeRate": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "deliveries",
+                                  "failed",
+                                  "onTimeRate"
+                                ]
+                              }
+                            },
+                            "generatedAt": {
+                              "type": "string"
+                            },
+                            "cached": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "range",
+                            "currency",
+                            "onTimeHours",
+                            "summary",
+                            "previous",
+                            "change",
+                            "series",
+                            "hubs",
+                            "couriers",
+                            "generatedAt",
+                            "cached"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "analytics"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Analytics fetched successfully",
+                  "data": {
+                    "analytics": {
+                      "range": {
+                        "from": "2026-11-01",
+                        "to": "2026-11-30",
+                        "days": 30,
+                        "granularity": "day",
+                        "timeZone": "Asia/Dhaka",
+                        "previousFrom": "2026-10-02",
+                        "previousTo": "2026-10-31"
+                      },
+                      "currency": "BDT",
+                      "onTimeHours": 72,
+                      "summary": {
+                        "booked": 42,
+                        "delivered": 35,
+                        "failed": 3,
+                        "revenue": "12450.50",
+                        "onTimeRate": 88.6,
+                        "failureRate": 7.9,
+                        "medianDeliveryHours": 26.5,
+                        "p90DeliveryHours": 61.2
+                      },
+                      "previous": {
+                        "booked": 36,
+                        "delivered": 30,
+                        "failed": 3,
+                        "revenue": "10100.00",
+                        "onTimeRate": 84.2,
+                        "failureRate": 7.9,
+                        "medianDeliveryHours": 26.5,
+                        "p90DeliveryHours": 61.2
+                      },
+                      "change": {
+                        "booked": 16.7,
+                        "delivered": 16.7,
+                        "revenue": 23.3,
+                        "onTimeRate": 4.4,
+                        "failureRate": -1.2,
+                        "medianDeliveryHours": -2.1
+                      },
+                      "series": [
+                        {
+                          "period": "2026-11-01",
+                          "booked": 2,
+                          "delivered": 1,
+                          "revenue": "450.00"
+                        }
+                      ],
+                      "hubs": [
+                        {
+                          "name": "Dhaka Central Hub",
+                          "shipments": 18
+                        }
+                      ],
+                      "couriers": [
+                        {
+                          "id": "cm123456789012345678901234",
+                          "name": "Karim",
+                          "deliveries": 20,
+                          "failed": 1,
+                          "onTimeRate": 90
+                        }
+                      ],
+                      "generatedAt": "2026-10-10T06:00:00.000Z",
+                      "cached": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/analytics/export": {
+      "get": {
+        "operationId": "get__api_v1_admin_analytics_export",
+        "tags": [
+          "admin"
+        ],
+        "summary": "Export analytics as CSV",
+        "description": "ADMIN only. Same range rules as GET /admin/analytics. Returns the per-bucket series as CSV text inside the JSON envelope, so it works with bearer-token auth; save content as filename. Text cells that could run as spreadsheet formulas are prefixed with an apostrophe.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-11-01"
+            },
+            "description": "Inclusive Bangladesh calendar date. Send with to, or omit both for the last 30 days."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-11-30"
+            },
+            "description": "Inclusive Bangladesh calendar date. At most 366 days after from."
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week"
+              ],
+              "default": "day"
+            },
+            "description": "Bucket size; weeks start on Monday."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "export": {
+                          "type": "object",
+                          "properties": {
+                            "filename": {
+                              "type": "string"
+                            },
+                            "contentType": {
+                              "type": "string"
+                            },
+                            "content": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "filename",
+                            "contentType",
+                            "content"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "export"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Analytics export prepared",
+                  "data": {
+                    "export": {
+                      "filename": "expresshub-analytics-2026-11-01-to-2026-11-30.csv",
+                      "contentType": "text/csv; charset=utf-8",
+                      "content": "Period starting,Shipments booked,Shipments delivered,Net revenue (BDT)\r\n2026-11-01,2,1,450.00\r\n"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/internal/notifications/dispatch": {
       "get": {
         "operationId": "get__api_v1_internal_notifications_dispatch",
