@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { CreditCard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
@@ -35,6 +35,18 @@ export function PayWithStripeButton({
   const [error, setError] = useState<unknown>(null);
   const pending = useRef(false);
   const delay = useRetryDelay(error);
+
+  // The button stays locked while the browser leaves for Stripe. If the user comes
+  // back with the Back button, the page is restored from cache and must unlock.
+  useEffect(() => {
+    function unlockOnReturn(event: PageTransitionEvent) {
+      if (!event.persisted) return;
+      pending.current = false;
+      setBusy(false);
+    }
+    window.addEventListener("pageshow", unlockOnReturn);
+    return () => window.removeEventListener("pageshow", unlockOnReturn);
+  }, []);
 
   async function handlePay() {
     if (pending.current || busy || delay > 0) return;
@@ -76,14 +88,13 @@ export function PayWithStripeButton({
         "This payment has already been completed or the session has expired. Check your payment history."
       );
     } catch (err) {
+      pending.current = false;
+      setBusy(false);
       setError(err);
       toast.error(
         "Could not start payment",
         errorMessage(err).replace(/\.{2,}/g, ".")
       );
-    } finally {
-      pending.current = false;
-      setBusy(false);
     }
   }
 
