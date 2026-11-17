@@ -27,6 +27,7 @@ and audit records.
 | AI operations brief | Admins get a daily AI summary of failed, delayed and unassigned shipments with next steps, shown beside the figures it used (see [Daily operations brief](#daily-operations-brief)) |
 | Email notifications | Customers get an email when a shipment is booked, picked up, out for delivery, delivered or fails, sent reliably through a transactional outbox (see [Shipment email notifications](#shipment-email-notifications)) |
 | Admin analytics | Bookings, deliveries, net revenue, on-time rate, delivery times and courier performance by day or week, compared with the previous period, with CSV export (see [Admin analytics](#admin-analytics)) |
+| Proof of delivery | Couriers confirm delivery with a photo and/or the recipient's signature from an installable, offline-tolerant courier app (see [Proof of delivery](#proof-of-delivery-and-the-courier-app)) |
 
 The interface includes responsive navigation, URL-based filtering and pagination,
 accessible field errors, toast feedback, and loading skeletons for lists, details,
@@ -270,6 +271,42 @@ volume grows, add indexes on `shipments("deliveredAt")`, `payments("paidAt")`,
 `payments("refundedAt")` and `shipment_events("toStatus", "occurredAt")`, which back the
 range filters used here.
 
+## Proof of delivery and the courier app
+
+A shipment can be marked **Delivered** only after the assigned courier captures proof at the door:
+a photo of the parcel and/or the recipient's signature, plus the name of the person who received it.
+Customers and admins see the proof on the shipment page.
+
+- **Server rule.** `updateShipmentStatus` refuses `DELIVERED` with `409 PROOF_REQUIRED` unless a
+  proof exists from the courier currently assigned, so a proof from an earlier courier never counts.
+  This applies to admins too.
+- **Upload.** `POST /api/v1/shipments/{id}/proof` (multipart, assigned courier only, only while the
+  shipment is out for delivery). The server reads the real image type from the file bytes
+  (JPEG, PNG or WebP), allows up to 2 MB per image, and strips EXIF, XMP, IPTC and text metadata,
+  including GPS location, with a small parser in `lib/delivery-proof.ts`. No image library is needed.
+- **Browser.** Photos are downscaled to at most 1600 px and re-encoded on a canvas before upload,
+  which also drops the camera's metadata. The signature pad uses pointer events (finger, stylus or
+  mouse); keyboard users can type the recipient's name instead, which is drawn as the signature.
+- **Viewing.** Images are served by `GET /api/v1/shipments/{id}/proof/photo` and `/signature` to the
+  owning customer, the assigned courier and admins only (others get 404), with
+  `Cache-Control: private`. Shipment responses include a summary, never storage keys.
+- **Storage.** Images go through a `ProofStorage` interface (`services/storage/proof-storage.ts`).
+  The default driver stores them in Postgres (`stored_files`), so the app works on Vercel with no
+  extra service; an S3-compatible driver can implement the same three methods.
+
+**Installable courier app.** `/courier` has a web app manifest and a service worker (`public/sw.js`,
+scope `/courier`, registered in production builds only). The worker caches static assets and the
+courier page shell for offline start; API responses, which contain names, phones and addresses,
+are never cached.
+
+**Offline deliveries.** If the phone has no connection when the courier confirms delivery, the
+proof (including the images) is saved in IndexedDB and a **Waiting to upload** banner appears. It
+uploads automatically when the connection returns, every minute while items are waiting, or on
+**Upload now**. Each upload is safe to repeat: a delivery already completed counts as done. The
+device's capture time is kept (within 7 days, and never in the future). Background Sync is not used
+because the access token lives only in page memory, so uploads run from the open courier app.
+Queued items belong to the courier who captured them; another account on the same phone never sends them.
+
 ## Technology
 
 | Area | Implementation |
@@ -432,6 +469,7 @@ npm run test:ai
 npm run test:tracking
 npm run test:notifications
 npm run test:analytics
+npm run test:proof
 npm run test:misc
 ```
 
@@ -450,6 +488,8 @@ authorization, the tool loop limits, refusals and audit records. It needs no API
 the live stream: change detection, final status, heartbeats, timeouts and disconnects.
 `test:analytics` covers range validation, Bangladesh day and week buckets, rate and change
 calculations, CSV formula escaping, the cache and admin-only access.
+`test:proof` covers image type detection, metadata stripping, size limits, the viewing rules,
+multipart limits and the courier upload queue (retry, permanent failure and already-delivered).
 
 If the auth unit test picks up external Upstash settings, run it with an isolated
 local limiter (Bash):
@@ -494,6 +534,7 @@ npm run test:errors:integration
 npm run test:tracking:integration
 npm run test:notifications:integration
 npm run test:analytics:integration
+npm run test:proof:integration
 ```
 
 The analytics integration suite seeds shipments, events and payments in March 2031 (a

@@ -1770,7 +1770,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Shipment fetched successfully\",\n  \"data\": {\n    \"shipment\": {\n      \"pickupContactName\": \"Example Sender\",\n      \"pickupContactPhone\": \"01700000000\",\n      \"pickupAddress\": \"Dhaka pickup address\",\n      \"deliveryContactName\": \"Example Recipient\",\n      \"deliveryContactPhone\": \"01800000000\",\n      \"deliveryAddress\": \"Chattogram delivery address\",\n      \"parcelWeightKg\": \"1\",\n      \"id\": \"cm123456789012345678901234\",\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"customerId\": \"cm123456789012345678901234\",\n      \"courierId\": null,\n      \"originHubId\": null,\n      \"destinationHubId\": null,\n      \"currentHubId\": null,\n      \"packageDescription\": null,\n      \"parcelLengthCm\": null,\n      \"parcelWidthCm\": null,\n      \"parcelHeightCm\": null,\n      \"price\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"CREATED\",\n      \"paymentStatus\": \"PENDING\",\n      \"pickupScheduledAt\": null,\n      \"deliveredAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deletedAt\": null,\n      \"events\": [\n        {\n          \"id\": \"cm123456789012345678901234\",\n          \"type\": \"CREATED\",\n          \"fromStatus\": null,\n          \"toStatus\": \"CREATED\",\n          \"publicNote\": null,\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\"\n        }\n      ]\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipment fetched successfully\",\n  \"data\": {\n    \"shipment\": {\n      \"pickupContactName\": \"Example Sender\",\n      \"pickupContactPhone\": \"01700000000\",\n      \"pickupAddress\": \"Dhaka pickup address\",\n      \"deliveryContactName\": \"Example Recipient\",\n      \"deliveryContactPhone\": \"01800000000\",\n      \"deliveryAddress\": \"Chattogram delivery address\",\n      \"parcelWeightKg\": \"1\",\n      \"id\": \"cm123456789012345678901234\",\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"customerId\": \"cm123456789012345678901234\",\n      \"courierId\": null,\n      \"originHubId\": null,\n      \"destinationHubId\": null,\n      \"currentHubId\": null,\n      \"packageDescription\": null,\n      \"parcelLengthCm\": null,\n      \"parcelWidthCm\": null,\n      \"parcelHeightCm\": null,\n      \"price\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"CREATED\",\n      \"paymentStatus\": \"PENDING\",\n      \"pickupScheduledAt\": null,\n      \"deliveredAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deletedAt\": null,\n      \"events\": [\n        {\n          \"id\": \"cm123456789012345678901234\",\n          \"type\": \"CREATED\",\n          \"fromStatus\": null,\n          \"toStatus\": \"CREATED\",\n          \"publicNote\": null,\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\"\n        }\n      ],\n      \"deliveryProof\": null\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -1884,7 +1884,7 @@
                 "status"
               ]
             },
-            "description": "CREATED→PICKED_UP→IN_TRANSIT→OUT_FOR_DELIVERY→DELIVERED or FAILED. ADMIN retries FAILED→IN_TRANSIT or returns FAILED→RETURNED. Owner/ADMIN can cancel CREATED only. Operational transitions require PAID and an active assigned courier. DELIVERED/FAILED/RETURNED require a note. Terminal states cannot transition; pending checkout blocks cancellation.",
+            "description": "CREATED→PICKED_UP→IN_TRANSIT→OUT_FOR_DELIVERY→DELIVERED or FAILED. ADMIN retries FAILED→IN_TRANSIT or returns FAILED→RETURNED. Owner/ADMIN can cancel CREATED only. Operational transitions require PAID and an active assigned courier. DELIVERED also requires proof of delivery captured by the currently assigned courier (409 PROOF_REQUIRED). DELIVERED/FAILED/RETURNED require a note. Terminal states cannot transition; pending checkout blocks cancellation.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"CANCELLED\",\n  \"expectedStatus\": \"CREATED\",\n  \"note\": \"Booking no longer needed\"\n}",
@@ -1919,7 +1919,7 @@
                     "status"
                   ]
                 },
-                "description": "CREATED→PICKED_UP→IN_TRANSIT→OUT_FOR_DELIVERY→DELIVERED or FAILED. ADMIN retries FAILED→IN_TRANSIT or returns FAILED→RETURNED. Owner/ADMIN can cancel CREATED only. Operational transitions require PAID and an active assigned courier. DELIVERED/FAILED/RETURNED require a note. Terminal states cannot transition; pending checkout blocks cancellation.",
+                "description": "CREATED→PICKED_UP→IN_TRANSIT→OUT_FOR_DELIVERY→DELIVERED or FAILED. ADMIN retries FAILED→IN_TRANSIT or returns FAILED→RETURNED. Owner/ADMIN can cancel CREATED only. Operational transitions require PAID and an active assigned courier. DELIVERED also requires proof of delivery captured by the currently assigned courier (409 PROOF_REQUIRED). DELIVERED/FAILED/RETURNED require a note. Terminal states cannot transition; pending checkout blocks cancellation.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"CANCELLED\",\n  \"expectedStatus\": \"CREATED\",\n  \"note\": \"Booking no longer needed\"\n}",
@@ -1943,6 +1943,240 @@
                 }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Shipment updated successfully\",\n  \"data\": {\n    \"shipment\": {\n      \"pickupContactName\": \"Example Sender\",\n      \"pickupContactPhone\": \"01700000000\",\n      \"pickupAddress\": \"Dhaka pickup address\",\n      \"deliveryContactName\": \"Example Recipient\",\n      \"deliveryContactPhone\": \"01800000000\",\n      \"deliveryAddress\": \"Chattogram delivery address\",\n      \"parcelWeightKg\": \"1\",\n      \"id\": \"cm123456789012345678901234\",\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"customerId\": \"cm123456789012345678901234\",\n      \"courierId\": null,\n      \"originHubId\": null,\n      \"destinationHubId\": null,\n      \"currentHubId\": null,\n      \"packageDescription\": null,\n      \"parcelLengthCm\": null,\n      \"parcelWidthCm\": null,\n      \"parcelHeightCm\": null,\n      \"price\": \"100\",\n      \"currency\": \"BDT\",\n      \"status\": \"CANCELLED\",\n      \"paymentStatus\": \"PENDING\",\n      \"pickupScheduledAt\": null,\n      \"deliveredAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deletedAt\": null\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Capture proof of delivery",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/proof",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "{{shipmentId}}",
+                "proof"
+              ]
+            },
+            "description": "COURIER only, for a shipment assigned to them that is OUT_FOR_DELIVERY (409 PROOF_NOT_ALLOWED otherwise; other shipments return 404). multipart/form-data with a photo and/or signature (400 PROOF_IMAGE_REQUIRED if neither). Image type is checked from the file bytes; EXIF, XMP, IPTC and text metadata (including GPS location) are removed before storage. Uploading again replaces the earlier proof. Request limit 4.4 MB. Response is a summary; storage keys are never returned.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "recipientName",
+                  "type": "text",
+                  "value": "Example Recipient"
+                },
+                {
+                  "key": "capturedAt",
+                  "type": "text",
+                  "value": "2026-10-10T06:00:00.000Z",
+                  "description": "Device capture time for offline uploads. Ignored if more than 5 minutes in the future or older than 7 days."
+                },
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "",
+                  "description": "JPEG, PNG or WebP, up to 2 MB."
+                },
+                {
+                  "key": "signature",
+                  "type": "file",
+                  "src": "",
+                  "description": "JPEG, PNG or WebP, up to 2 MB."
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/proof",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "{{shipmentId}}",
+                    "proof"
+                  ]
+                },
+                "description": "COURIER only, for a shipment assigned to them that is OUT_FOR_DELIVERY (409 PROOF_NOT_ALLOWED otherwise; other shipments return 404). multipart/form-data with a photo and/or signature (400 PROOF_IMAGE_REQUIRED if neither). Image type is checked from the file bytes; EXIF, XMP, IPTC and text metadata (including GPS location) are removed before storage. Uploading again replaces the earlier proof. Request limit 4.4 MB. Response is a summary; storage keys are never returned.",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "recipientName",
+                      "type": "text",
+                      "value": "Example Recipient"
+                    },
+                    {
+                      "key": "capturedAt",
+                      "type": "text",
+                      "value": "2026-10-10T06:00:00.000Z",
+                      "description": "Device capture time for offline uploads. Ignored if more than 5 minutes in the future or older than 7 days."
+                    },
+                    {
+                      "key": "photo",
+                      "type": "file",
+                      "src": "",
+                      "description": "JPEG, PNG or WebP, up to 2 MB."
+                    },
+                    {
+                      "key": "signature",
+                      "type": "file",
+                      "src": "",
+                      "description": "JPEG, PNG or WebP, up to 2 MB."
+                    }
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Proof of delivery saved\",\n  \"data\": {\n    \"proof\": {\n      \"recipientName\": \"Example Recipient\",\n      \"capturedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"hasPhoto\": true,\n      \"hasSignature\": true\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Read proof photo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/proof/photo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "{{shipmentId}}",
+                "proof",
+                "photo"
+              ]
+            },
+            "description": "Returns the photo image bytes (image/jpeg, image/png or image/webp) with Cache-Control: private, max-age=300. Owner CUSTOMER, assigned COURIER or ADMIN; everyone else, and shipments without a photo, receive 404."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/proof/photo",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "{{shipmentId}}",
+                    "proof",
+                    "photo"
+                  ]
+                },
+                "description": "Returns the photo image bytes (image/jpeg, image/png or image/webp) with Cache-Control: private, max-age=300. Owner CUSTOMER, assigned COURIER or ADMIN; everyone else, and shipments without a photo, receive 404."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Proof photo image\",\n  \"data\": null\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Read proof signature",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/proof/signature",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "{{shipmentId}}",
+                "proof",
+                "signature"
+              ]
+            },
+            "description": "Returns the signature image bytes (image/jpeg, image/png or image/webp) with Cache-Control: private, max-age=300. Owner CUSTOMER, assigned COURIER or ADMIN; everyone else, and shipments without a signature, receive 404."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/proof/signature",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "{{shipmentId}}",
+                    "proof",
+                    "signature"
+                  ]
+                },
+                "description": "Returns the signature image bytes (image/jpeg, image/png or image/webp) with Cache-Control: private, max-age=300. Owner CUSTOMER, assigned COURIER or ADMIN; everyone else, and shipments without a signature, receive 404."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Proof signature image\",\n  \"data\": null\n}"
             }
           ],
           "event": []
