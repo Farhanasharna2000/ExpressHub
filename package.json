@@ -25,7 +25,7 @@
     "test:security": "node --test tests/security.test.mjs tests/route-protection.test.mjs",
     "test:errors:integration": "node tests/errors.integration.mjs",
     "test:misc": "node --test tests/postman.test.mjs tests/profile-photo.test.mjs tests/rate-limit-diagnostics.test.mjs",
-    "test": "npm run test:auth && npm run test:payments && npm run test:ai && npm run test:checkout-return && npm run test:pagination && npm run test:errors && npm run test:security && npm run test:frontend && npm run test:misc",
+    "test": "npm run test:auth && npm run test:payments && npm run test:ai && npm run test:checkout-return && npm run test:pagination && npm run test:errors && npm run test:security && npm run test:frontend && npm run test:tracking && npm run test:misc",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
@@ -33,7 +33,9 @@
     "prisma:seed": "node prisma/seed.mjs",
     "prisma:seed:pricing": "node prisma/seed-pricing.mjs",
     "test:frontend": "node --test tests/query-cache.test.mjs tests/form-validation.test.mjs tests/frontend-auth.test.mjs tests/frontend-shipments.test.mjs tests/frontend-payments.test.mjs tests/frontend-operations.test.mjs tests/frontend-admin.test.mjs tests/frontend-workflows.test.mjs",
-    "test:frontend:browser": "playwright test"
+    "test:frontend:browser": "playwright test",
+    "test:tracking": "node --test tests/tracking.test.mjs",
+    "test:tracking:integration": "node tests/tracking.integration.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

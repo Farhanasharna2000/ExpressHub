@@ -15,6 +15,7 @@ import {
 import { motion } from "framer-motion";
 import { useSession } from "@/features/auth/provider";
 import { roleHome } from "@/features/auth/session";
+import { TrackForm } from "@/features/tracking/track-form";
 
 export default function Home() {
   const { user, status } = useSession();
@@ -98,6 +99,10 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <Check className="size-4 text-[#196547]" aria-hidden="true" /> Full Audit Trails
             </div>
+          </div>
+          <div className="mt-8 max-w-xl rounded-2xl border border-ring/15 bg-white/70 p-4">
+            <h2 className="mb-2 text-sm font-bold text-ring">Track a parcel</h2>
+            <TrackForm compact />
           </div>
         </MotionContainer>
 

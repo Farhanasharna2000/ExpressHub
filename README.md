@@ -21,6 +21,7 @@ and audit records.
 | Courier — `/courier` | Assigned shipments, delivery metrics, contact details, and shipment status transitions with required completion or failure notes |
 | Admin — `/admin` | Operations dashboard, shipment and user directories, courier assignment, role and activity management, archival, and audit logs |
 | Shared — `/profile` | Contact details and profile photo upload or removal |
+| Public tracking — `/track` | Anyone with a tracking number follows the delivery live, without an account (see [Public tracking](#public-tracking)) |
 | AI assistant | Customers and couriers ask about their shipments and payments in plain English or Bangla (see [AI shipment assistant](#ai-shipment-assistant)) |
 | AI booking | Customers describe a parcel in their own words and the booking form fills itself for review (see [AI booking from a description](#ai-booking-from-a-description)) |
 | AI operations brief | Admins get a daily AI summary of failed, delayed and unassigned shipments with next steps, shown beside the figures it used (see [Daily operations brief](#daily-operations-brief)) |
@@ -151,6 +152,33 @@ pickup tomorrow at 10am" and click **Fill the form**. English, Bangla and Bangli
   when everything is filled, and the customer submits it as usual.
 - Customers only, 10 drafts per user per 15 minutes, and an `AI_BOOKING_DRAFT` audit record
   with field names and token counts, never the text.
+
+## Public tracking
+
+Anyone with a tracking number can open `/track/EH-…` (or use **Track a parcel** on the home
+page) and watch the delivery timeline update live, without signing in. Customers share the link
+with **Copy tracking link** on their shipment page.
+
+- `GET /api/v1/track/{trackingNumber}` returns only the tracking number, status, booking and
+  delivery dates, and public timeline events (booked, status changes, hub arrivals with the hub
+  name, delivery attempts, cancellation). Names, phones, addresses, price, notes, internal IDs,
+  courier assignment and admin corrections never leave the server: the response is built from a
+  narrow Prisma `select` and parsed with a strict Zod schema (`validators/track.ts`), so an extra
+  field fails instead of leaking.
+- `GET /api/v1/track/{trackingNumber}/stream` is a Server-Sent Events stream. It sends the current
+  state, then checks the database every 5 seconds and pushes a frame only when the timeline
+  changes, with a heartbeat every 25 seconds. It ends on a final status (delivered, returned,
+  cancelled) or after 270 seconds, inside Vercel's 300-second function limit; the page then
+  reconnects with backoff and shows **Reconnecting…** meanwhile.
+- The page is rendered on the server for a fast first view, marked `noindex`, and times are
+  shown in Bangladesh time so server and browser render the same text. Status changes are
+  announced to screen readers through a polite live region.
+- Lookups are rate limited per client (60 per 15 minutes, 30 stream connections). Tracking
+  numbers carry 96 random bits, so they cannot be guessed.
+
+Code: `services/tracking.service.ts`, `services/tracking-stream.ts`, `app/api/v1/track/`,
+`app/(public)/track/` and `features/tracking/`. Tests: `npm run test:tracking` and
+`npm run test:tracking:integration`.
 
 ## Daily operations brief
 
@@ -325,6 +353,7 @@ npm run test:checkout-return
 npm run test:pagination
 npm run test:errors
 npm run test:ai
+npm run test:tracking
 npm run test:misc
 ```
 
@@ -339,6 +368,8 @@ cache behavior. `test:security` includes proxy redirects and cookie validation.
 `test:payments` is a unit suite; database integration tests use separate commands.
 `test:ai` covers the assistant (both providers), booking drafts and the operations brief with mocked clients: request validation, tool
 authorization, the tool loop limits, refusals and audit records. It needs no API key.
+`test:tracking` checks that the public tracking shape cannot carry private fields and covers
+the live stream: change detection, final status, heartbeats, timeouts and disconnects.
 
 If the auth unit test picks up external Upstash settings, run it with an isolated
 local limiter (Bash):
@@ -380,6 +411,7 @@ npm run test:admin:integration
 npm run test:lists:integration
 npm run test:soft-delete:integration
 npm run test:errors:integration
+npm run test:tracking:integration
 ```
 
 The payment integration suite uses PostgreSQL with an injected payment provider;

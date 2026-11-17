@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { z } from "zod";
 import { Clock3, Package, MapPin, Loader2, RefreshCw, CheckCircle2, ArrowLeft } from "lucide-react";
 import { PayWithStripeButton } from "@/features/payments/initiate-button";
+import { CopyTrackingLink } from "@/features/tracking/copy-tracking-link";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
@@ -61,6 +62,7 @@ export function ShipmentDetails({ id }: { id: string }) {
               <p className="text-xs font-medium text-muted-foreground">Tracking number</p>
               <p className="mt-1 break-all font-mono text-sm font-semibold tracking-wide text-foreground select-all">{shipment.trackingNumber}</p>
             </div>
+            <div className="ml-auto shrink-0"><CopyTrackingLink trackingNumber={shipment.trackingNumber} /></div>
           </div>
         </CardHeader>
         <CardContent className="shipment-summary"><div><span className="text-xs text-muted-foreground">Shipment status</span><div className="mt-2"><StatusBadge status={shipment.status} /></div></div><div><span className="text-xs text-muted-foreground">Payment status</span><div className="mt-2"><StatusBadge status={shipment.paymentStatus} /></div></div><div><span className="text-xs text-muted-foreground">Shipment price</span><p className="font-semibold text-xl">{money(shipment.price, shipment.currency)}</p></div><div><span className="text-xs text-muted-foreground">Created</span><p><time dateTime={shipment.createdAt}>{dateTime(shipment.createdAt)}</time></p></div></CardContent></Card>
