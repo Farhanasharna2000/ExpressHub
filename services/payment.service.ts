@@ -1,6 +1,11 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { Prisma, type Payment, type PaymentStatus } from "@prisma/client";
+import {
+  Prisma,
+  type Payment,
+  type PaymentStatus,
+  type ShipmentStatus,
+} from "@prisma/client";
 import type Stripe from "stripe";
 import prisma from "@/lib/prisma";
 import { paginateTransaction } from "@/lib/db/pagination";
@@ -519,11 +524,20 @@ export async function processStripeEvent(
             status: { not: "FAILED" },
           },
         });
-        if (!other)
+        if (!other) {
           await tx.shipment.update({
             where: { id: current.shipmentId },
             data: { paymentStatus: status },
           });
+          // Only a settled refund closes the booking; a pending one can still fail.
+          if (status === "REFUNDED")
+            await cancelRefundedShipment(
+              tx,
+              current.shipmentId,
+              null,
+              "Payment refunded in Stripe",
+            );
+        }
         await audit(tx, updated, "PAYMENT_STATUS_UPDATED", {
           before: current.status,
           after: status,
@@ -556,6 +570,55 @@ export async function processStripeEvent(
       "PAYMENT_RETRY",
     );
   }
+}
+
+const inProgressStatuses: ShipmentStatus[] = [
+  "PICKED_UP",
+  "IN_TRANSIT",
+  "OUT_FOR_DELIVERY",
+  "DELIVERED",
+];
+
+// A refunded booking can't be paid again or picked up, so it is closed instead
+// of being left in CREATED. A null actor means the refund came from Stripe.
+async function cancelRefundedShipment(
+  tx: Prisma.TransactionClient,
+  shipmentId: string,
+  actor: { id: string; role: string } | null,
+  note: string,
+) {
+  const before = await tx.shipment.findUniqueOrThrow({
+    where: { id: shipmentId },
+  });
+  if (before.status !== "CREATED") return;
+  await tx.shipment.update({
+    where: { id: shipmentId },
+    data: { status: "CANCELLED" },
+  });
+  await tx.shipmentEvent.create({
+    data: {
+      shipmentId,
+      actorId: actor?.id,
+      type: actor?.role === "CUSTOMER" ? "CUSTOMER_CANCELLED" : "STATUS_CHANGED",
+      fromStatus: "CREATED",
+      toStatus: "CANCELLED",
+      internalNote: note.slice(0, 500),
+    },
+  });
+  await tx.auditLog.create({
+    data: {
+      actorId: actor?.id,
+      entityType: "SHIPMENT",
+      entityId: shipmentId,
+      shipmentId,
+      action: "SHIPMENT_STATUS_UPDATED",
+      details: {
+        before: { status: "CREATED" },
+        after: { status: "CANCELLED" },
+        reason: "Payment refunded",
+      },
+    },
+  });
 }
 
 export interface RefundReservation {
@@ -765,11 +828,26 @@ export async function initiateRefund(
         "Refunds can only be requested before pickup or after cancellation",
       );
     }
+    // Every forward transition needs a PAID payment, so refunding mid-delivery
+    // would leave the shipment stuck in an active status.
+    if (inProgressStatuses.includes(payment.shipment.status)) {
+      throw conflict(
+        "Refunds are not available while a shipment is in progress or after delivery",
+      );
+    }
 
     return reserveRefund(tx, payment);
   });
   const result = await sendRefund(reservation, reason, gateway);
-  await atomic((tx) => applyRefund(tx, paymentId, result, actor.id, reason));
+  await atomic(async (tx) => {
+    await applyRefund(tx, paymentId, result, actor.id, reason);
+    await cancelRefundedShipment(
+      tx,
+      reservation.payment.shipmentId,
+      actor,
+      reason ?? "Payment refunded",
+    );
+  });
 
   return { payment: await getPayment(actor, paymentId) };
 }

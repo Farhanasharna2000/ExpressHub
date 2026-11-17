@@ -181,6 +181,9 @@ try {
   await processEvent(event("refund.updated", { payment_intent: session.payment_intent }));
   const refunded = await state(id, "REFUNDED");
   assert.ok(refunded.paidAt && refunded.refundedAt);
+  // A refund settled in Stripe closes the unpicked booking instead of leaving it CREATED.
+  assert.equal(refunded.shipment.status, "CANCELLED");
+  assert.equal(await prisma.shipmentEvent.count({ where: { shipmentId: booking.id, toStatus: "CANCELLED", actorId: null } }), 1);
   await processEvent(event("checkout.session.expired", { id: session.id }));
   await state(id, "REFUNDED");
 
@@ -280,8 +283,26 @@ try {
   const refundResponse = await refundPayment(request(`${directPaymentId}/refund`, customer, { reason: "Customer requested refund" }), refundContext, gateway);
   assert.equal(refundResponse.status, 200);
   assert.equal((await refundResponse.json()).data.payment.status, "REFUNDED");
+  // Refunding a booking before pickup cancels it with a timeline event.
+  const refundedBooking = await prisma.shipment.findUniqueOrThrow({ where: { id: directRefundBooking.id } });
+  assert.equal(refundedBooking.status, "CANCELLED");
+  assert.equal(await prisma.shipmentEvent.count({ where: { shipmentId: directRefundBooking.id, type: "CUSTOMER_CANCELLED", actorId: customer.id } }), 1);
   // Cannot refund an already refunded payment
   assert.equal((await refundPayment(request(`${directPaymentId}/refund`, customer, {}), refundContext, gateway)).status, 409);
+
+  // Admins cannot refund a shipment that is on its way: it could never be delivered afterwards.
+  const transitBooking = await shipment(customer);
+  const initTransit = await initiatePayment(customer, transitBooking.id, randomUUID(), gateway);
+  const transitSession = await pay(initTransit.payment.id);
+  await processEvent(event("checkout.session.completed", { id: transitSession.id }));
+  await prisma.shipment.update({ where: { id: transitBooking.id }, data: { status: "IN_TRANSIT", courierId: courier.id } });
+  await assert.rejects(initiateRefund(admin, initTransit.payment.id, "Goodwill", gateway), { status: 409 });
+  await state(initTransit.payment.id, "PAID");
+  // Once the delivery fails, the admin can refund it; it stays FAILED and can still be returned.
+  await prisma.shipment.update({ where: { id: transitBooking.id }, data: { status: "FAILED" } });
+  await initiateRefund(admin, initTransit.payment.id, "Delivery failed", gateway);
+  const failedRefund = await state(initTransit.payment.id, "REFUNDED");
+  assert.equal(failedRefund.shipment.status, "FAILED");
 
 
   // Route-level signature checking, ignored events and durable deduplication.
