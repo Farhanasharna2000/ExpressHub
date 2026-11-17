@@ -235,7 +235,7 @@ in your local environment or deployment secret settings.
 | `JWT_ACCESS_SECRET` | Signing secret of at least 32 bytes for access tokens and page-session cookies |
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Initial admin seed inputs; password must be at least 12 characters and at most 72 UTF-8 bytes |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Required for production rate limiting; leave both empty for the local development limiter |
-| `RATE_LIMIT_IP_HEADER` | Optional trusted ingress header: `x-real-ip` or `x-forwarded-for`; ingress must overwrite it with a single IP |
+| `RATE_LIMIT_IP_HEADER` | Optional trusted ingress header: `x-real-ip` or `x-forwarded-for`; ingress must overwrite it with a single IP. When empty, Vercel deployments use `x-real-ip`; other hosts share one anonymous bucket for login and register. Refresh and logout are limited per session, and login is also limited per account |
 | `STRIPE_SECRET_KEY` | Stripe test-mode secret API key |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for the webhook endpoint or local Stripe CLI listener |
 | `STRIPE_SUCCESS_URL` | Default: `http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}` |

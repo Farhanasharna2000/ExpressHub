@@ -5,6 +5,7 @@ import {
   clearRefreshCookie,
   ensureAllowedCookieOrigin,
   handleRouteError,
+  refreshTokenRateLimitKey,
 } from "@/lib/auth/route-helpers";
 import { refreshTokenCookie } from "@/lib/auth/tokens";
 import { successResponse } from "@/lib/http/responses";
@@ -14,7 +15,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const limited = await checkAuthRateLimit(request, "auth:logout", 30);
+    const limited = await checkAuthRateLimit(request, "auth:logout", 30, refreshTokenRateLimitKey(request));
     if (limited) return limited;
 
     ensureAllowedCookieOrigin(request);

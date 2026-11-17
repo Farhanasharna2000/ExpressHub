@@ -1,9 +1,10 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { type ZodType } from "zod";
 
-import { isAllowedCookieRequest, refreshTokenCookie, pageSessionCookie, signPageSession, verifyAccessToken, type AccessTokenClaims } from "@/lib/auth/tokens";
+import { hashRefreshToken, isAllowedCookieRequest, refreshTokenCookie, pageSessionCookie, signPageSession, verifyAccessToken, type AccessTokenClaims } from "@/lib/auth/tokens";
 import { AppError, type ErrorResponseOptions } from "@/lib/http/errors";
 import { errorResponse, tooManyRequestsResponse } from "@/lib/http/responses";
 import { getRateLimitIdentifier, limitApiRequests } from "@/lib/rate-limit";
@@ -51,15 +52,27 @@ export async function parseRequestBody<T>(request: Request, schema: ZodType<T>, 
   return schema.parse(body);
 }
 
+// Refresh and logout calls carry their own token, so they are limited per session
+// rather than per IP, which may be unknown and shared by every caller.
+export function refreshTokenRateLimitKey(request: NextRequest) {
+  const token = request.cookies.get(refreshTokenCookie.name)?.value;
+  return token ? `session:${hashRefreshToken(token)}` : getRateLimitIdentifier(request);
+}
+
+export function accountRateLimitKey(email: string) {
+  return `account:${createHash("sha256").update(email.trim().toLowerCase()).digest("hex")}`;
+}
+
 export async function checkAuthRateLimit(
   request: NextRequest,
   scope: string,
   limit: number,
+  identifier = getRateLimitIdentifier(request),
 ) {
   let result;
   try {
     result = await limitApiRequests(
-      getRateLimitIdentifier(request),
+      identifier,
       scope,
       limit,
       15 * 60 * 1000,
