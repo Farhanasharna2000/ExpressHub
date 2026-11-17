@@ -79,6 +79,9 @@
                             "role": {
                               "type": "string"
                             },
+                            "emailNotifications": {
+                              "type": "boolean"
+                            },
                             "createdAt": {
                               "type": "string"
                             }
@@ -89,6 +92,7 @@
                             "email",
                             "phone",
                             "role",
+                            "emailNotifications",
                             "createdAt"
                           ]
                         },
@@ -118,6 +122,7 @@
                       "email": "customer@example.com",
                       "phone": null,
                       "role": "CUSTOMER",
+                      "emailNotifications": true,
                       "createdAt": "2026-10-10T06:00:00.000Z"
                     },
                     "accessToken": "<access-jwt>"
@@ -418,6 +423,9 @@
                             "role": {
                               "type": "string"
                             },
+                            "emailNotifications": {
+                              "type": "boolean"
+                            },
                             "createdAt": {
                               "type": "string"
                             }
@@ -428,6 +436,7 @@
                             "email",
                             "phone",
                             "role",
+                            "emailNotifications",
                             "createdAt"
                           ]
                         },
@@ -457,6 +466,7 @@
                       "email": "customer@example.com",
                       "phone": null,
                       "role": "CUSTOMER",
+                      "emailNotifications": true,
                       "createdAt": "2026-10-10T06:00:00.000Z"
                     },
                     "accessToken": "<access-jwt>"
@@ -1203,6 +1213,9 @@
                             "isActive": {
                               "type": "boolean"
                             },
+                            "emailNotifications": {
+                              "type": "boolean"
+                            },
                             "createdAt": {
                               "type": "string"
                             },
@@ -1217,6 +1230,7 @@
                             "phone",
                             "role",
                             "isActive",
+                            "emailNotifications",
                             "createdAt",
                             "updatedAt"
                           ]
@@ -1244,6 +1258,7 @@
                       "phone": null,
                       "role": "CUSTOMER",
                       "isActive": true,
+                      "emailNotifications": true,
                       "createdAt": "2026-10-10T06:00:00.000Z",
                       "updatedAt": "2026-10-10T06:00:00.000Z"
                     }
@@ -1421,7 +1436,7 @@
           "users"
         ],
         "summary": "Update own profile",
-        "description": "At least one profile field; unknown fields rejected; email conflicts return 409. Changing email requires currentPassword (400 CURRENT_PASSWORD_REQUIRED or INVALID_CURRENT_PASSWORD otherwise), revokes every other session and sets a fresh refresh cookie for this one.",
+        "description": "At least one profile field; unknown fields rejected; email conflicts return 409. emailNotifications turns shipment status emails on or off. Changing email requires currentPassword (400 CURRENT_PASSWORD_REQUIRED or INVALID_CURRENT_PASSWORD otherwise), revokes every other session and sets a fresh refresh cookie for this one.",
         "parameters": [],
         "responses": {
           "200": {
@@ -1473,6 +1488,9 @@
                             "isActive": {
                               "type": "boolean"
                             },
+                            "emailNotifications": {
+                              "type": "boolean"
+                            },
                             "createdAt": {
                               "type": "string"
                             },
@@ -1487,6 +1505,7 @@
                             "phone",
                             "role",
                             "isActive",
+                            "emailNotifications",
                             "createdAt",
                             "updatedAt"
                           ]
@@ -1514,6 +1533,7 @@
                       "phone": null,
                       "role": "CUSTOMER",
                       "isActive": true,
+                      "emailNotifications": true,
                       "createdAt": "2026-10-10T06:00:00.000Z",
                       "updatedAt": "2026-10-10T06:00:00.000Z"
                     }
@@ -1733,6 +1753,10 @@
                     "minLength": 1,
                     "maxLength": 200,
                     "description": "Required only when email changes."
+                  },
+                  "emailNotifications": {
+                    "type": "boolean",
+                    "description": "Shipment status emails on or off."
                   }
                 },
                 "required": [],
@@ -1901,6 +1925,9 @@
                               "isActive": {
                                 "type": "boolean"
                               },
+                              "emailNotifications": {
+                                "type": "boolean"
+                              },
                               "createdAt": {
                                 "type": "string"
                               },
@@ -1915,6 +1942,7 @@
                               "phone",
                               "role",
                               "isActive",
+                              "emailNotifications",
                               "createdAt",
                               "updatedAt"
                             ]
@@ -1968,6 +1996,7 @@
                         "phone": null,
                         "role": "CUSTOMER",
                         "isActive": true,
+                        "emailNotifications": true,
                         "createdAt": "2026-10-10T06:00:00.000Z",
                         "updatedAt": "2026-10-10T06:00:00.000Z"
                       }
@@ -2217,6 +2246,9 @@
                             "isActive": {
                               "type": "boolean"
                             },
+                            "emailNotifications": {
+                              "type": "boolean"
+                            },
                             "createdAt": {
                               "type": "string"
                             },
@@ -2231,6 +2263,7 @@
                             "phone",
                             "role",
                             "isActive",
+                            "emailNotifications",
                             "createdAt",
                             "updatedAt"
                           ]
@@ -2258,6 +2291,7 @@
                       "phone": null,
                       "role": "CUSTOMER",
                       "isActive": true,
+                      "emailNotifications": true,
                       "createdAt": "2026-10-10T06:00:00.000Z",
                       "updatedAt": "2026-10-10T06:00:00.000Z"
                     }
@@ -2794,6 +2828,9 @@
                             "isActive": {
                               "type": "boolean"
                             },
+                            "emailNotifications": {
+                              "type": "boolean"
+                            },
                             "createdAt": {
                               "type": "string"
                             },
@@ -2808,6 +2845,7 @@
                             "phone",
                             "role",
                             "isActive",
+                            "emailNotifications",
                             "createdAt",
                             "updatedAt"
                           ]
@@ -2835,6 +2873,7 @@
                       "phone": null,
                       "role": "COURIER",
                       "isActive": true,
+                      "emailNotifications": true,
                       "createdAt": "2026-10-10T06:00:00.000Z",
                       "updatedAt": "2026-10-10T06:00:00.000Z"
                     }
@@ -3124,6 +3163,9 @@
                             "isActive": {
                               "type": "boolean"
                             },
+                            "emailNotifications": {
+                              "type": "boolean"
+                            },
                             "createdAt": {
                               "type": "string"
                             },
@@ -3138,6 +3180,7 @@
                             "phone",
                             "role",
                             "isActive",
+                            "emailNotifications",
                             "createdAt",
                             "updatedAt"
                           ]
@@ -3165,6 +3208,7 @@
                       "phone": null,
                       "role": "CUSTOMER",
                       "isActive": false,
+                      "emailNotifications": true,
                       "createdAt": "2026-10-10T06:00:00.000Z",
                       "updatedAt": "2026-10-10T06:00:00.000Z"
                     }
@@ -7298,6 +7342,9 @@
                               "isActive": {
                                 "type": "boolean"
                               },
+                              "emailNotifications": {
+                                "type": "boolean"
+                              },
                               "createdAt": {
                                 "type": "string"
                               },
@@ -7312,6 +7359,7 @@
                               "phone",
                               "role",
                               "isActive",
+                              "emailNotifications",
                               "createdAt",
                               "updatedAt"
                             ]
@@ -7365,6 +7413,7 @@
                         "phone": null,
                         "role": "CUSTOMER",
                         "isActive": true,
+                        "emailNotifications": true,
                         "createdAt": "2026-10-10T06:00:00.000Z",
                         "updatedAt": "2026-10-10T06:00:00.000Z"
                       }
@@ -7614,6 +7663,9 @@
                             "isActive": {
                               "type": "boolean"
                             },
+                            "emailNotifications": {
+                              "type": "boolean"
+                            },
                             "createdAt": {
                               "type": "string"
                             },
@@ -7628,6 +7680,7 @@
                             "phone",
                             "role",
                             "isActive",
+                            "emailNotifications",
                             "createdAt",
                             "updatedAt"
                           ]
@@ -7655,6 +7708,7 @@
                       "phone": null,
                       "role": "COURIER",
                       "isActive": true,
+                      "emailNotifications": true,
                       "createdAt": "2026-10-10T06:00:00.000Z",
                       "updatedAt": "2026-10-10T06:00:00.000Z"
                     }
@@ -11983,6 +12037,976 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/admin/notifications": {
+      "get": {
+        "operationId": "get__api_v1_admin_notifications",
+        "tags": [
+          "admin"
+        ],
+        "summary": "List failed notification emails",
+        "description": "ADMIN only. Shipment emails marked DEAD after 5 failed attempts (or a permanent provider rejection), newest first.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000,
+              "default": 1
+            },
+            "description": "Positive decimal digits only; no leading zeros."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "notifications": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "attempts": {
+                                "type": "integer"
+                              },
+                              "lastError": {
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "type": "string"
+                              },
+                              "updatedAt": {
+                                "type": "string"
+                              },
+                              "shipment": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "trackingNumber": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "trackingNumber"
+                                ]
+                              },
+                              "recipient": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "email": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "email"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "type",
+                              "attempts",
+                              "lastError",
+                              "createdAt",
+                              "updatedAt",
+                              "shipment",
+                              "recipient"
+                            ]
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer"
+                            },
+                            "limit": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "totalPages": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "page",
+                            "limit",
+                            "total",
+                            "totalPages"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "notifications",
+                        "pagination"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Failed notifications fetched successfully",
+                  "data": {
+                    "notifications": [
+                      {
+                        "id": "cm123456789012345678901234",
+                        "type": "SHIPMENT_DELIVERED",
+                        "attempts": 5,
+                        "lastError": "Resend 503: unavailable",
+                        "createdAt": "2026-10-10T06:00:00.000Z",
+                        "updatedAt": "2026-10-10T06:00:00.000Z",
+                        "shipment": {
+                          "id": "cm123456789012345678901234",
+                          "trackingNumber": "EH-0123456789ABCDEF01234567"
+                        },
+                        "recipient": {
+                          "id": "cm123456789012345678901234",
+                          "name": "Example Customer",
+                          "email": "customer@example.com"
+                        }
+                      }
+                    ],
+                    "pagination": {
+                      "page": 1,
+                      "limit": 20,
+                      "total": 1,
+                      "totalPages": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/notifications/{id}/retry": {
+      "post": {
+        "operationId": "post__api_v1_admin_notifications_id_retry",
+        "tags": [
+          "admin"
+        ],
+        "summary": "Retry a failed notification email",
+        "description": "ADMIN only. Moves a DEAD notification back to PENDING with attempts reset and sends it right after the response. 409 NOTIFICATION_CONFLICT if it is not DEAD. Writes a NOTIFICATION_RETRIED audit record.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^c[a-z0-9]{24}$",
+              "example": "cm123456789012345678901234"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "notification": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            },
+                            "attempts": {
+                              "type": "integer"
+                            },
+                            "lastError": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            },
+                            "shipment": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "trackingNumber": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "trackingNumber"
+                              ]
+                            },
+                            "recipient": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "email": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "email"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "type",
+                            "attempts",
+                            "lastError",
+                            "createdAt",
+                            "updatedAt",
+                            "shipment",
+                            "recipient"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "notification"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Notification queued for retry",
+                  "data": {
+                    "notification": {
+                      "id": "cm123456789012345678901234",
+                      "type": "SHIPMENT_DELIVERED",
+                      "attempts": 0,
+                      "lastError": null,
+                      "createdAt": "2026-10-10T06:00:00.000Z",
+                      "updatedAt": "2026-10-10T06:00:00.000Z",
+                      "shipment": {
+                        "id": "cm123456789012345678901234",
+                        "trackingNumber": "EH-0123456789ABCDEF01234567"
+                      },
+                      "recipient": {
+                        "id": "cm123456789012345678901234",
+                        "name": "Example Customer",
+                        "email": "customer@example.com"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business state conflict or exhausted concurrency retries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Business state conflict or exhausted concurrency retries.",
+                  "errors": [
+                    {
+                      "code": "CONFLICT"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/notifications/dispatch": {
+      "get": {
+        "operationId": "get__api_v1_internal_notifications_dispatch",
+        "tags": [
+          "internal"
+        ],
+        "summary": "Send due notification emails",
+        "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Bearer CRON_SECRET (at least 16 characters). Vercel Cron sends it automatically."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "claimed": {
+                              "type": "integer"
+                            },
+                            "sent": {
+                              "type": "integer"
+                            },
+                            "skipped": {
+                              "type": "integer"
+                            },
+                            "retrying": {
+                              "type": "integer"
+                            },
+                            "dead": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "claimed",
+                            "sent",
+                            "skipped",
+                            "retrying",
+                            "dead"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "summary"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Notifications dispatched",
+                  "data": {
+                    "summary": {
+                      "claimed": 3,
+                      "sent": 2,
+                      "skipped": 0,
+                      "retrying": 1,
+                      "dead": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "operationId": "post__api_v1_internal_notifications_dispatch",
+        "tags": [
+          "internal"
+        ],
+        "summary": "Send due notification emails",
+        "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Bearer CRON_SECRET (at least 16 characters). Vercel Cron sends it automatically."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "claimed": {
+                              "type": "integer"
+                            },
+                            "sent": {
+                              "type": "integer"
+                            },
+                            "skipped": {
+                              "type": "integer"
+                            },
+                            "retrying": {
+                              "type": "integer"
+                            },
+                            "dead": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "claimed",
+                            "sent",
+                            "skipped",
+                            "retrying",
+                            "dead"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "summary"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Notifications dispatched",
+                  "data": {
+                    "summary": {
+                      "claimed": 3,
+                      "sent": 2,
+                      "skipped": 0,
+                      "retrying": 1,
+                      "dead": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": []
       }
     },
     "/api/v1/health": {

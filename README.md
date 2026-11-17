@@ -20,11 +20,12 @@ and audit records.
 | Customer — `/customer` | Shipment booking, searchable shipment history, tracking events, cancellation of eligible shipments, Stripe Checkout, and payment history |
 | Courier — `/courier` | Assigned shipments, delivery metrics, contact details, and shipment status transitions with required completion or failure notes |
 | Admin — `/admin` | Operations dashboard, shipment and user directories, courier assignment, role and activity management, archival, and audit logs |
-| Shared — `/profile` | Contact details and profile photo upload or removal |
+| Shared — `/profile` | Contact details, profile photo upload or removal, and shipment email preference |
 | Public tracking — `/track` | Anyone with a tracking number follows the delivery live, without an account (see [Public tracking](#public-tracking)) |
 | AI assistant | Customers and couriers ask about their shipments and payments in plain English or Bangla (see [AI shipment assistant](#ai-shipment-assistant)) |
 | AI booking | Customers describe a parcel in their own words and the booking form fills itself for review (see [AI booking from a description](#ai-booking-from-a-description)) |
 | AI operations brief | Admins get a daily AI summary of failed, delayed and unassigned shipments with next steps, shown beside the figures it used (see [Daily operations brief](#daily-operations-brief)) |
+| Email notifications | Customers get an email when a shipment is booked, picked up, out for delivery, delivered or fails, sent reliably through a transactional outbox (see [Shipment email notifications](#shipment-email-notifications)) |
 
 The interface includes responsive navigation, URL-based filtering and pagination,
 accessible field errors, toast feedback, and loading skeletons for lists, details,
@@ -197,6 +198,41 @@ and up to four suggested next steps, for example "4 paid shipments are waiting f
   cache. Opening the dashboard again costs nothing; **Refresh brief** prepares a new one (3 per 15
   minutes). `GET /api/v1/ai/ops-brief` reads the saved brief and never calls the provider.
 
+## Shipment email notifications
+
+Customers get an email when a shipment is booked, picked up, out for delivery, delivered or
+fails. Each email links to the public tracking page. Customers can turn them off in **Profile**.
+
+Emails are sent through a **transactional outbox**, so a status change and its email can never
+disagree:
+
+1. The shipment change and a `notification_outbox` row are written in the **same database
+   transaction** (`record()` in `services/shipment.service.ts`). If the change rolls back, so does
+   the email. A unique key per (shipment, type, event) makes enqueueing idempotent.
+2. Right after the API response, Next.js `after()` runs the dispatcher, so the request is never
+   slowed down by the email provider.
+3. The dispatcher claims due rows in one statement with `FOR UPDATE SKIP LOCKED` and a 5-minute
+   lease, so several dispatchers can run at once without sending a row twice. Emails are sent
+   outside any transaction, with the row id as the provider's `Idempotency-Key`.
+4. Failures are retried with exponential backoff and jitter (about 1, 2, 4 and 8 minutes). After
+   5 attempts, or a permanent provider rejection, the row is marked `DEAD` and appears on the admin
+   dashboard with a **Retry** button.
+5. `GET /api/v1/internal/notifications/dispatch` is the retry sweeper, protected by `CRON_SECRET`.
+   `vercel.json` schedules it once a day, the most the Vercel Hobby plan allows. On Vercel Pro,
+   change the schedule to every few minutes (for example `*/5 * * * *`) for faster retries.
+
+Without `RESEND_API_KEY`, emails are only logged with a masked address, so local development
+needs no email account.
+
+```
+status change ──▶ [ shipment + event + outbox row ]  (one transaction)
+                          │
+              after() ────┤──── daily cron sweeper
+                          ▼
+        claim (SKIP LOCKED) ──▶ send ──▶ SENT
+                                  └──▶ FAILED (backoff) ──▶ … ──▶ DEAD ──▶ admin Retry
+```
+
 ## Technology
 
 | Area | Implementation |
@@ -273,6 +309,9 @@ in your local environment or deployment secret settings.
 | `ANTHROPIC_API_KEY` | Claude API key; required when the provider is `anthropic` |
 | `GEMINI_API_KEY` | Gemini API key from Google AI Studio (free tier available); required when the provider is `gemini` |
 | `AI_MODEL` | Optional model override; defaults to `claude-opus-5-5` or `gemini-3.1-flash-lite` |
+| `APP_URL` | Public site URL used for tracking links in emails; falls back to `ALLOWED_ORIGIN` |
+| `RESEND_API_KEY`, `NOTIFICATIONS_FROM` | Resend API key and verified sender (for example `ExpressHub <no-reply@yourdomain.com>`); without both, emails are only logged |
+| `CRON_SECRET` | At least 16 random characters; Vercel Cron sends it as a bearer token to the notification sweeper |
 
 Production rate limiting fails closed if Upstash is unavailable or unconfigured.
 There is no process-local production fallback.
@@ -354,6 +393,7 @@ npm run test:pagination
 npm run test:errors
 npm run test:ai
 npm run test:tracking
+npm run test:notifications
 npm run test:misc
 ```
 
@@ -412,6 +452,7 @@ npm run test:lists:integration
 npm run test:soft-delete:integration
 npm run test:errors:integration
 npm run test:tracking:integration
+npm run test:notifications:integration
 ```
 
 The payment integration suite uses PostgreSQL with an injected payment provider;

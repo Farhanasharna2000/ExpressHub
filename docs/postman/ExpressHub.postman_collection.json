@@ -205,7 +205,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Account created successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"accessToken\": \"<access-jwt>\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Account created successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"emailNotifications\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"accessToken\": \"<access-jwt>\"\n  }\n}"
             }
           ],
           "event": [
@@ -322,7 +322,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"accessToken\": \"<access-jwt>\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"emailNotifications\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"accessToken\": \"<access-jwt>\"\n  }\n}"
             }
           ],
           "event": [
@@ -576,7 +576,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Profile fetched successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Profile fetched successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": true,\n      \"emailNotifications\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -603,7 +603,7 @@
                 "me"
               ]
             },
-            "description": "At least one profile field; unknown fields rejected; email conflicts return 409. Changing email requires currentPassword (400 CURRENT_PASSWORD_REQUIRED or INVALID_CURRENT_PASSWORD otherwise), revokes every other session and sets a fresh refresh cookie for this one.",
+            "description": "At least one profile field; unknown fields rejected; email conflicts return 409. emailNotifications turns shipment status emails on or off. Changing email requires currentPassword (400 CURRENT_PASSWORD_REQUIRED or INVALID_CURRENT_PASSWORD otherwise), revokes every other session and sets a fresh refresh cookie for this one.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Updated Customer\",\n  \"phone\": \"01700000000\"\n}",
@@ -637,7 +637,7 @@
                     "me"
                   ]
                 },
-                "description": "At least one profile field; unknown fields rejected; email conflicts return 409. Changing email requires currentPassword (400 CURRENT_PASSWORD_REQUIRED or INVALID_CURRENT_PASSWORD otherwise), revokes every other session and sets a fresh refresh cookie for this one.",
+                "description": "At least one profile field; unknown fields rejected; email conflicts return 409. emailNotifications turns shipment status emails on or off. Changing email requires currentPassword (400 CURRENT_PASSWORD_REQUIRED or INVALID_CURRENT_PASSWORD otherwise), revokes every other session and sets a fresh refresh cookie for this one.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"Updated Customer\",\n  \"phone\": \"01700000000\"\n}",
@@ -660,7 +660,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Profile updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Profile updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": true,\n      \"emailNotifications\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -802,7 +802,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Users fetched successfully\",\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"name\": \"Example Customer\",\n        \"email\": \"customer@example.com\",\n        \"phone\": null,\n        \"role\": \"CUSTOMER\",\n        \"isActive\": true,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Users fetched successfully\",\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"name\": \"Example Customer\",\n        \"email\": \"customer@example.com\",\n        \"phone\": null,\n        \"role\": \"CUSTOMER\",\n        \"isActive\": true,\n        \"emailNotifications\": true,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -858,7 +858,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"User fetched successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"User fetched successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": true,\n      \"emailNotifications\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -944,7 +944,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"User role updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"COURIER\",\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"User role updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"COURIER\",\n      \"isActive\": true,\n      \"emailNotifications\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -1030,7 +1030,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"User status updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": false,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"User status updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"CUSTOMER\",\n      \"isActive\": false,\n      \"emailNotifications\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -2175,7 +2175,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Users fetched successfully\",\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"name\": \"Example Customer\",\n        \"email\": \"customer@example.com\",\n        \"phone\": null,\n        \"role\": \"CUSTOMER\",\n        \"isActive\": true,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Users fetched successfully\",\n  \"data\": {\n    \"users\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"name\": \"Example Customer\",\n        \"email\": \"customer@example.com\",\n        \"phone\": null,\n        \"role\": \"CUSTOMER\",\n        \"isActive\": true,\n        \"emailNotifications\": true,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -2263,7 +2263,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"User role updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"COURIER\",\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"User role updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Example Customer\",\n      \"email\": \"customer@example.com\",\n      \"phone\": null,\n      \"role\": \"COURIER\",\n      \"isActive\": true,\n      \"emailNotifications\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -2692,6 +2692,150 @@
                 }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Audit logs fetched successfully\",\n  \"data\": {\n    \"auditLogs\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"actorId\": \"cm123456789012345678901234\",\n        \"entityType\": \"USER\",\n        \"entityId\": \"cm123456789012345678901234\",\n        \"shipmentId\": null,\n        \"paymentId\": null,\n        \"action\": \"USER_ROLE_UPDATED\",\n        \"details\": {\n          \"before\": {\n            \"role\": \"CUSTOMER\",\n            \"isActive\": true\n          },\n          \"after\": {\n            \"role\": \"COURIER\",\n            \"isActive\": true\n          }\n        },\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "List failed notification emails",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN only. Shipment emails marked DEAD after 5 failed attempts (or a permanent provider rejection), newest first."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/notifications",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "notifications"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN only. Shipment emails marked DEAD after 5 failed attempts (or a permanent provider rejection), newest first."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Failed notifications fetched successfully\",\n  \"data\": {\n    \"notifications\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"type\": \"SHIPMENT_DELIVERED\",\n        \"attempts\": 5,\n        \"lastError\": \"Resend 503: unavailable\",\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n        \"shipment\": {\n          \"id\": \"cm123456789012345678901234\",\n          \"trackingNumber\": \"EH-0123456789ABCDEF01234567\"\n        },\n        \"recipient\": {\n          \"id\": \"cm123456789012345678901234\",\n          \"name\": \"Example Customer\",\n          \"email\": \"customer@example.com\"\n        }\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Retry a failed notification email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/notifications/{{shipmentId}}/retry",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "notifications",
+                "{{shipmentId}}",
+                "retry"
+              ]
+            },
+            "description": "ADMIN only. Moves a DEAD notification back to PENDING with attempts reset and sends it right after the response. 409 NOTIFICATION_CONFLICT if it is not DEAD. Writes a NOTIFICATION_RETRIED audit record."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/notifications/{{shipmentId}}/retry",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "notifications",
+                    "{{shipmentId}}",
+                    "retry"
+                  ]
+                },
+                "description": "ADMIN only. Moves a DEAD notification back to PENDING with attempts reset and sends it right after the response. 409 NOTIFICATION_CONFLICT if it is not DEAD. Writes a NOTIFICATION_RETRIED audit record."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Notification queued for retry\",\n  \"data\": {\n    \"notification\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"type\": \"SHIPMENT_DELIVERED\",\n      \"attempts\": 0,\n      \"lastError\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"shipment\": {\n        \"id\": \"cm123456789012345678901234\",\n        \"trackingNumber\": \"EH-0123456789ABCDEF01234567\"\n      },\n      \"recipient\": {\n        \"id\": \"cm123456789012345678901234\",\n        \"name\": \"Example Customer\",\n        \"email\": \"customer@example.com\"\n      }\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -3253,6 +3397,159 @@
                 }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Assistant replied successfully\",\n  \"data\": {\n    \"reply\": \"Your parcel EXH-ABC123 left the Dhaka hub and is in transit to Chattogram.\",\n    \"toolCalls\": [\n      {\n        \"name\": \"get_shipment\",\n        \"shipmentId\": \"cm123456789012345678901234\",\n        \"ok\": true\n      }\n    ],\n    \"shipments\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"trackingNumber\": \"EXH-ABC123\"\n      }\n    ]\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
+      "name": "internal",
+      "item": [
+        {
+          "name": "Send due notification emails",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{stripeSignature}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/internal/notifications/dispatch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "internal",
+                "notifications",
+                "dispatch"
+              ]
+            },
+            "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{stripeSignature}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/internal/notifications/dispatch",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "internal",
+                    "notifications",
+                    "dispatch"
+                  ]
+                },
+                "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Notifications dispatched\",\n  \"data\": {\n    \"summary\": {\n      \"claimed\": 3,\n      \"sent\": 2,\n      \"skipped\": 0,\n      \"retrying\": 1,\n      \"dead\": 0\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Send due notification emails",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{stripeSignature}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/internal/notifications/dispatch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "internal",
+                "notifications",
+                "dispatch"
+              ]
+            },
+            "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{stripeSignature}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/internal/notifications/dispatch",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "internal",
+                    "notifications",
+                    "dispatch"
+                  ]
+                },
+                "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Notifications dispatched\",\n  \"data\": {\n    \"summary\": {\n      \"claimed\": 3,\n      \"sent\": 2,\n      \"skipped\": 0,\n      \"retrying\": 1,\n      \"dead\": 0\n    }\n  }\n}"
             }
           ],
           "event": []
