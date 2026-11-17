@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AppError } from "@/lib/http/errors";
+import { AppError, requestCorrelationId } from "@/lib/http/errors";
 import { errorResponse } from "@/lib/http/responses";
 
 import { isProtectedPage, permittedPath, roleHome } from "@/lib/auth/route-access";
@@ -90,8 +90,7 @@ export function proxy(request: NextRequest) {
 
     return response;
   } catch (error) {
-    const correlationId = request.headers.get("x-correlation-id") || request.headers.get("x-request-id") || undefined;
-    const response = errorResponse(error, correlationId ? { correlationId } : undefined);
+    const response = errorResponse(error, { correlationId: requestCorrelationId(request.headers) });
     response.headers.set("Vary", "Origin");
     return response;
   }

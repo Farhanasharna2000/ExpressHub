@@ -71,6 +71,33 @@ export function bangladeshDay(now: Date) {
   return { start, label: new Date(start.getTime() + BANGLADESH_OFFSET_MS).toISOString().slice(0, 10) };
 }
 
+export function hoursSince(now: Date, then: Date) {
+  return Math.max(0, Math.floor((now.getTime() - then.getTime()) / 3_600_000));
+}
+
+type DelayedCandidate = {
+  id: string;
+  trackingNumber: string;
+  status: string;
+  createdAt: Date;
+  events: { occurredAt: Date }[];
+};
+
+// A delayed shipment's age is the time since its latest event. updatedAt also moves on
+// payment and webhook writes, so it would make a stalled shipment look recent.
+export function delayedExamples(candidates: DelayedCandidate[], now: Date, limit: number) {
+  return candidates
+    .map((shipment) => ({ shipment, lastActivity: shipment.events[0]?.occurredAt ?? shipment.createdAt }))
+    .sort((a, b) => a.lastActivity.getTime() - b.lastActivity.getTime() || a.shipment.id.localeCompare(b.shipment.id))
+    .slice(0, limit)
+    .map(({ shipment, lastActivity }) => ({
+      id: shipment.id,
+      trackingNumber: shipment.trackingNumber,
+      status: shipment.status,
+      hoursSinceUpdate: hoursSince(now, lastActivity),
+    }));
+}
+
 function requireAdmin(actor: AuthenticatedUser) {
   if (actor.role !== "ADMIN") throw new AppError(403, "Only admins can read the operations brief", "FORBIDDEN");
 }

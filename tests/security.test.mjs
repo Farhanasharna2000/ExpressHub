@@ -18,6 +18,7 @@ let reads = 0;
 globalThis.prisma = { user: { async findFirst() { reads++; return { id: "test-user", role: "CUSTOMER", name: "Test", email: "test@example.com" }; } } };
 const { limitApiRequests, getRateLimitIdentifier } = await import("../lib/rate-limit.ts");
 const { requireUser } = await import("../lib/auth/require-user.ts");
+const { accountRateLimitKey, checkAuthRateLimit, refreshTokenRateLimitKey } = await import("../lib/auth/route-helpers.ts");
 const { signAccessToken } = await import("../lib/auth/tokens.ts");
 const { errorResponse } = await import("../lib/http/responses.ts");
 const { proxy } = await import("../proxy.ts");
@@ -46,6 +47,32 @@ test("IP buckets ignore forwarding headers unless a trusted single-IP header is 
   assert.equal(getRateLimitIdentifier(request({ "x-forwarded-for": "2001:db8::1" })), "2001:db8::1");
   assert.equal(getRateLimitIdentifier(request({ "x-forwarded-for": "attacker-input" })), "unknown");
   delete process.env.RATE_LIMIT_IP_HEADER;
+});
+
+test("on Vercel the overwritten x-real-ip is trusted when no header is configured", () => {
+  delete process.env.RATE_LIMIT_IP_HEADER;
+  process.env.VERCEL = "1";
+  assert.equal(getRateLimitIdentifier(request({ "x-real-ip": "203.0.113.9", "x-forwarded-for": "198.51.100.1" })), "203.0.113.9");
+  assert.equal(getRateLimitIdentifier(request({ "x-real-ip": "not-an-ip" })), "unknown");
+  delete process.env.VERCEL;
+});
+
+test("refresh limits are per session and login limits are per account, not one shared bucket", async () => {
+  delete process.env.RATE_LIMIT_IP_HEADER;
+  const withCookie = (token) => new NextRequest("http://localhost:3000/api/v1/auth/refresh-token", { method: "POST", headers: { cookie: `expresshub_refresh=${token}` } });
+  const first = refreshTokenRateLimitKey(withCookie("token-a"));
+  assert.match(first, /^session:[0-9a-f]{64}$/);
+  assert.notEqual(first, refreshTokenRateLimitKey(withCookie("token-b")));
+  assert.equal(refreshTokenRateLimitKey(request({})), "unknown");
+
+  assert.equal(accountRateLimitKey(" Rina@Example.com "), accountRateLimitKey("rina@example.com"));
+  assert.notEqual(accountRateLimitKey("a@example.com"), accountRateLimitKey("b@example.com"));
+  assert.equal(accountRateLimitKey("a@example.com").includes("example"), false);
+
+  const login = new NextRequest("http://localhost:3000/api/v1/auth/login", { method: "POST" });
+  for (let i = 0; i < 2; i++) assert.equal(await checkAuthRateLimit(login, "test:login-account", 2, accountRateLimitKey("a@example.com")), null);
+  assert.equal((await checkAuthRateLimit(login, "test:login-account", 2, accountRateLimitKey("a@example.com"))).status, 429);
+  assert.equal(await checkAuthRateLimit(login, "test:login-account", 2, accountRateLimitKey("b@example.com")), null);
 });
 
 test("local quotas deny excess requests and separate scopes and policies", async () => {
@@ -93,4 +120,17 @@ test("API responses have restrictive CSP and standard security headers", async (
   assert.equal(api["Cross-Origin-Resource-Policy"], "same-origin");
   assert.match(api["Content-Security-Policy"], /default-src 'none'/);
   assert.equal(config.poweredByHeader, false);
+});
+
+test("HTML pages get a CSP that blocks framing, plugins and base-tag injection", async () => {
+  const entries = await config.headers();
+  const page = entries.find((entry) => entry.source === "/((?!api/).*)");
+  const csp = page.headers.find(({ key }) => key === "Content-Security-Policy").value;
+  for (const directive of ["frame-ancestors 'none'", "base-uri 'none'", "object-src 'none'", "form-action 'self' https://checkout.stripe.com", "connect-src 'self'"]) {
+    assert.ok(csp.includes(directive), directive);
+  }
+  // The page rule never applies to API routes, which keep default-src 'none'.
+  const pattern = new RegExp(`^${page.source.replace("/(", "/(?:")}$`);
+  for (const path of ["/", "/login", "/admin/shipments/1"]) assert.match(path, pattern);
+  for (const path of ["/api/v1/users/me", "/api/v1/auth/login"]) assert.doesNotMatch(path, pattern);
 });

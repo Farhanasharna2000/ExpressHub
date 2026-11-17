@@ -113,10 +113,12 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
     void fetchStatus(paymentId);
   }, [paymentId, authStatus]);
 
-  // Bounded polling for success returns when payment is still PENDING
+  // Bounded polling for success returns when payment is still PENDING. A failed check
+  // stops polling (one toast per failure); the error notice and Refresh button recover.
   useEffect(() => {
     if (
       type === "success" &&
+      !error &&
       payment?.status === "PENDING" &&
       pollAttempt < maxPolls &&
       paymentId
@@ -133,7 +135,7 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
     return () => {
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
     };
-  }, [type, payment?.status, pollAttempt, paymentId]);
+  }, [type, error, payment?.status, pollAttempt, paymentId]);
 
   function handleManualRefresh() {
     if (!paymentId) return;

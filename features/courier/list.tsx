@@ -151,11 +151,15 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
     setSearch(urlSearch);
   }, [urlSearch]);
 
-  function update(key: string, value: string, replace = false) {
+  // Several keys can change in one call so a preset adds a single history entry.
+  function update(key: string | Record<string, string>, value = "", replace = false) {
+    const changes = typeof key === "string" ? { [key]: value } : key;
     const next = new URLSearchParams(window.location.search);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    if (key !== "page") next.set("page", "1");
+    for (const [name, nextValue] of Object.entries(changes)) {
+      if (nextValue) next.set(name, nextValue);
+      else next.delete(name);
+    }
+    if (!("page" in changes)) next.set("page", "1");
     const href = `/courier/shipments${next.size ? `?${next}` : ""}`;
     if (replace) window.history.replaceState(null, "", href);
     else window.history.pushState(null, "", href);
@@ -276,6 +280,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                   <button
                     key={preset.label}
                     type="button"
+                    aria-pressed={isActive}
                     onClick={() => update("status", preset.value)}
                     className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full font-medium transition-all cursor-pointer ${
                       isActive
@@ -284,6 +289,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                     }`}
                   >
                     <span
+                      aria-hidden="true"
                       className={`size-1.5 rounded-full ${
                         isActive ? "bg-white" : preset.dotColor
                       }`}
@@ -318,8 +324,9 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                     }}
                     className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     title="Clear search"
+                    aria-label="Clear search"
                   >
-                    <X className="size-3.5" />
+                    <X className="size-3.5" aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -396,8 +403,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       onClick={() => {
                         const now = new Date();
                         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-                        update("from", startOfDay.toISOString());
-                        update("to", "");
+                        update({ from: startOfDay.toISOString(), to: "" });
                       }}
                       className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                     >
@@ -408,8 +414,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       onClick={() => {
                         const now = new Date();
                         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                        update("from", sevenDaysAgo.toISOString());
-                        update("to", "");
+                        update({ from: sevenDaysAgo.toISOString(), to: "" });
                       }}
                       className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                     >
@@ -451,8 +456,9 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       }}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
                       title="Remove search filter"
+                      aria-label="Remove search filter"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}
@@ -465,8 +471,9 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       onClick={() => update("status", "")}
                       className="text-primary hover:text-primary/70 cursor-pointer"
                       title="Remove status filter"
+                      aria-label="Remove status filter"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}
@@ -479,8 +486,9 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       onClick={() => update("from", "")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
                       title="Remove start date filter"
+                      aria-label="Remove start date filter"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}
@@ -493,8 +501,9 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       onClick={() => update("to", "")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
                       title="Remove end date filter"
+                      aria-label="Remove end date filter"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}
@@ -507,8 +516,9 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       onClick={() => update("sortBy", "createdAt")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
                       title="Reset sorting"
+                      aria-label="Reset sorting"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}
@@ -521,8 +531,9 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       onClick={() => update("order", "desc")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
                       title="Reset order"
+                      aria-label="Reset order"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}

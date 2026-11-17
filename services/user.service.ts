@@ -1,7 +1,9 @@
 import "server-only";
 
 import { Prisma, UserRole } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { requireRole, type AuthenticatedUser } from "@/lib/auth/require-user";
+import { createRefreshToken, getRefreshTokenExpiry, hashRefreshToken } from "@/lib/auth/tokens";
 import { AppError } from "@/lib/http/errors";
 import prisma from "@/lib/prisma";
 import { paginateTransaction } from "@/lib/db/pagination";
@@ -78,17 +80,52 @@ export async function getUserProfile(actor: AuthenticatedUser, id: string) {
   return user;
 }
 
+const passwordIssue = (status: number, code: string, message: string) =>
+  new AppError(status, message, code, [{ code, path: "currentPassword", message }]);
+
+// Email is the login identifier, so changing it needs the current password and
+// signs out every other session. The caller gets a fresh refresh token for this one.
 export async function updateProfile(
   actor: AuthenticatedUser,
   input: UpdateProfileInput,
-) {
+): Promise<{ user: Prisma.UserGetPayload<{ select: typeof profileSelect & { avatar: true } }>; refreshToken: string | null }> {
+  const { currentPassword, ...changes } = input;
+  const existing = await prisma.user.findFirst({
+    where: { id: actor.id, isActive: true, deletedAt: null },
+    select: { email: true, passwordHash: true },
+  });
+  if (!existing) throw new AppError(401, "Authentication required", "UNAUTHENTICATED");
+
+  const emailChanging = changes.email !== undefined && changes.email !== existing.email;
+  if (emailChanging) {
+    // 400, not 401: a 401 from /users/me would make the client treat the session as expired.
+    if (!currentPassword) {
+      throw passwordIssue(400, "CURRENT_PASSWORD_REQUIRED", "Enter your current password to change your email");
+    }
+    if (!(await bcrypt.compare(currentPassword, existing.passwordHash))) {
+      throw passwordIssue(400, "INVALID_CURRENT_PASSWORD", "Current password is incorrect");
+    }
+  }
+
   return mutateUser(async (tx) => {
     const before = await activeActor(tx, actor);
+    if (before.email !== existing.email) {
+      throw new AppError(409, "User changed concurrently; please retry", "USER_CONFLICT");
+    }
     const user = await tx.user.update({
       where: { id: actor.id },
-      data: input,
+      data: changes,
       select: { ...profileSelect, avatar: true },
     });
+    let refreshToken: string | null = null;
+    if (emailChanging) {
+      const now = new Date();
+      await tx.refreshToken.updateMany({ where: { userId: actor.id, revokedAt: null }, data: { revokedAt: now } });
+      refreshToken = createRefreshToken();
+      await tx.refreshToken.create({
+        data: { userId: actor.id, tokenHash: hashRefreshToken(refreshToken), expiresAt: getRefreshTokenExpiry() },
+      });
+    }
     await tx.auditLog.create({
       data: {
         actorId: actor.id,
@@ -102,10 +139,11 @@ export async function updateProfile(
             phone: before.phone,
           },
           after: { name: user.name, email: user.email, phone: user.phone },
+          sessionsRevoked: emailChanging,
         },
       },
     });
-    return user;
+    return { user, refreshToken };
   });
 }
 

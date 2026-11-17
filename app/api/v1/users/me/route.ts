@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 
 import { requireUser } from "@/lib/auth/require-user";
-import { handleRouteError, parseRequestBody, setPageSessionCookie } from "@/lib/auth/route-helpers";
+import { handleRouteError, parseRequestBody, setPageSessionCookie, setRefreshTokenCookie } from "@/lib/auth/route-helpers";
 import { successResponse } from "@/lib/http/responses";
 import { getUserProfile, updateProfile } from "@/services/user.service";
 import { updateProfileSchema } from "@/validators/user";
@@ -24,9 +24,10 @@ export async function PATCH(request: NextRequest) {
   try {
     const actor = await requireUser(request);
     const input = await parseRequestBody(request, updateProfileSchema, 300 * 1024);
-    const user = await updateProfile(actor, input);
+    const { user, refreshToken } = await updateProfile(actor, input);
     const response = successResponse("Profile updated successfully", { user });
     setPageSessionCookie(response, { userId: user.id, role: user.role });
+    if (refreshToken) setRefreshTokenCookie(response, refreshToken);
     return response;
   } catch (error) {
     return handleRouteError(error);

@@ -29,6 +29,7 @@ export const profileFields = z
     email,
     phone: phone.nullable(),
     avatar: profilePhotoSchema,
+    currentPassword: z.string().max(200).optional(),
   })
   .strict();
 

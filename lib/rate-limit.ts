@@ -82,11 +82,24 @@ export async function limitApiRequests(
   };
 }
 
+let hasWarnedAboutUnknownIdentifier = false;
+
+function trustedIpHeader() {
+  const configured = process.env.RATE_LIMIT_IP_HEADER;
+  if (configured === "x-real-ip" || configured === "x-forwarded-for") return configured;
+  // Vercel's edge overwrites x-real-ip with the connecting client's address.
+  return process.env.VERCEL ? "x-real-ip" : null;
+}
+
 export function getRateLimitIdentifier(request: Request) {
-  // Only trust a header explicitly configured for an ingress that overwrites it.
+  // Only trust a header set by an ingress that overwrites it.
   // Never pick the leftmost element of a caller-controlled forwarding chain.
-  const header = process.env.RATE_LIMIT_IP_HEADER;
-  if (header !== "x-real-ip" && header !== "x-forwarded-for") return "unknown";
-  const address = request.headers.get(header)?.trim();
-  return address && isIP(address) ? address : "unknown";
+  const header = trustedIpHeader();
+  const address = header ? request.headers.get(header)?.trim() : undefined;
+  if (address && isIP(address)) return address;
+  if (process.env.NODE_ENV === "production" && !hasWarnedAboutUnknownIdentifier) {
+    hasWarnedAboutUnknownIdentifier = true;
+    console.warn("Rate limiting has no client IP; anonymous callers share one bucket. Set RATE_LIMIT_IP_HEADER for your ingress.");
+  }
+  return "unknown";
 }

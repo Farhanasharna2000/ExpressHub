@@ -635,16 +635,24 @@ export function ProfileForm() {
     }
   }
 
+  const emailChanged = Boolean(user) && (form.watch("email") ?? "").trim().toLowerCase() !== user?.email;
+
   async function submit(input: z.output<typeof profileFormFields>) {
-    if (photoPending.current || !feedback.start()) return;
+    if (photoPending.current) return;
+    if (emailChanged && !input.currentPassword) {
+      form.setError("currentPassword", { type: "required", message: "Enter your current password to change your email" });
+      return;
+    }
+    if (!feedback.start()) return;
     setSaved(false);
     try {
-      const updated = await store.updateProfile(input);
+      const updated = await store.updateProfile({ ...input, currentPassword: emailChanged ? input.currentPassword : undefined });
       form.reset({
         name: updated.name,
         email: updated.email,
         phone: updated.phone ?? "",
         avatar: undefined,
+        currentPassword: "",
       });
       setPhotoError("");
       setSaved(true);
@@ -807,6 +815,24 @@ export function ProfileForm() {
                 error={form.formState.errors.phone?.message}
               />
             </div>
+            {emailChanged && (
+              <div className="space-y-2">
+                <Input
+                  id="profile-current-password"
+                  {...form.register("currentPassword")}
+                  label="Current password"
+                  type="password"
+                  autoComplete="current-password"
+                  maxLength={200}
+                  required
+                  disabled={feedback.busy}
+                  error={form.formState.errors.currentPassword?.message}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Changing your email signs you out on your other devices.
+                </p>
+              </div>
+            )}
             <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-4">
               <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
               <div>

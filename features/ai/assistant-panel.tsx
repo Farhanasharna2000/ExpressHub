@@ -121,7 +121,10 @@ function AssistantPanel({ role, name }: { role: string; name?: string }) {
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey) {
+    // Enter that confirms an IME word (Avro, mobile Bangla keyboards) must not send.
+    // Safari reports that keystroke with keyCode 229 rather than isComposing.
+    const composing = event.nativeEvent.isComposing || event.keyCode === 229;
+    if (event.key === "Enter" && !event.shiftKey && !composing) {
       event.preventDefault();
       void send(draft);
     }

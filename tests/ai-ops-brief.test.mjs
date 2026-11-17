@@ -5,7 +5,7 @@ import { test } from "node:test";
 const { AppError } = await import("../lib/http/errors.ts");
 const { opsBriefRequestSchema } = await import("../validators/ai.ts");
 const {
-  bangladeshDay, factsForModel, generateOpsBrief, getCachedBrief, parseBrief, readCachedBrief, unverifiedNumbers,
+  bangladeshDay, delayedExamples, factsForModel, generateOpsBrief, getCachedBrief, parseBrief, readCachedBrief, unverifiedNumbers,
 } = await import("../services/ai/ops-brief.service.ts");
 const { OPS_BRIEF_SCHEMA, OPS_BRIEF_PROMPT_VERSION } = await import("../services/ai/prompts/ops-brief.ts");
 const { bangladeshDate, briefFigures, briefShipments, latestBrief } = await import("../features/ai/contracts.ts");
@@ -202,6 +202,19 @@ test("provider and rate limit errors pass through; only admins can use the brief
   await assert.rejects(generateOpsBrief(customer, { refresh: false }, deps), (error) => error.status === 403);
   await assert.rejects(getCachedBrief(customer, deps), (error) => error.status === 403);
   assert.equal(calls.generate.length, 0);
+});
+
+test("delayed shipments are aged and ordered by their last event, not updatedAt", () => {
+  const hoursAgo = (hours) => new Date(NOW.getTime() - hours * 3_600_000);
+  const candidates = [
+    { id: "b", trackingNumber: TRACK_B, status: "IN_TRANSIT", createdAt: hoursAgo(200), events: [{ occurredAt: hoursAgo(50) }] },
+    { id: "a", trackingNumber: TRACK_A, status: "PICKED_UP", createdAt: hoursAgo(300), events: [{ occurredAt: hoursAgo(72) }] },
+    // No events at all: falls back to when the shipment was created.
+    { id: "c", trackingNumber: "EH-C", status: "OUT_FOR_DELIVERY", createdAt: hoursAgo(90), events: [] },
+  ];
+  const examples = delayedExamples(candidates, NOW, 2);
+  assert.deepEqual(examples.map((row) => [row.id, row.hoursSinceUpdate]), [["c", 90], ["a", 72]]);
+  assert.deepEqual(Object.keys(examples[0]).sort(), ["hoursSinceUpdate", "id", "status", "trackingNumber"]);
 });
 
 test("dashboard helpers order figures and shipments by urgency without repeats", () => {

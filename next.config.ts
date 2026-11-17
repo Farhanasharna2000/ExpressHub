@@ -16,6 +16,24 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+const isDev = process.env.NODE_ENV !== "production";
+
+// Next.js inlines its bootstrap scripts, so script-src needs 'unsafe-inline' until
+// pages adopt per-request nonces. Everything else is limited to this origin; avatars
+// are data/blob URLs and checkout leaves the site by navigation, not by form post.
+const pageContentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
+  "object-src 'none'",
+  "base-uri 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self' https://checkout.stripe.com",
+].join("; ");
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
@@ -30,6 +48,10 @@ const nextConfig: NextConfig = {
           { key: "Content-Security-Policy", value: "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'" },
           { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
         ],
+      },
+      {
+        source: "/((?!api/).*)",
+        headers: [{ key: "Content-Security-Policy", value: pageContentSecurityPolicy }],
       },
     ];
   },

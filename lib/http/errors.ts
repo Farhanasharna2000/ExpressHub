@@ -24,6 +24,18 @@ export interface ErrorResponseOptions {
   correlationId?: string;
 }
 
+const CORRELATION_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
+
+// Caller-supplied IDs are echoed in bodies, headers, logs and APM tags, so only
+// short, plain IDs are kept; anything else gets a fresh UUID.
+export function safeCorrelationId(value: string | null | undefined) {
+  return value && CORRELATION_ID_PATTERN.test(value) ? value : randomUUID();
+}
+
+export function requestCorrelationId(headers: Headers) {
+  return safeCorrelationId(headers.get("x-correlation-id") || headers.get("x-request-id"));
+}
+
 export type TelemetryReporter = (
   error: unknown,
   context: { incidentId: string; errorId: string },
@@ -102,7 +114,7 @@ export function toErrorResponse(error: unknown, options?: ErrorResponseOptions) 
   }
 
   // Generate unique correlation identifier
-  const incidentId = options?.correlationId || randomUUID();
+  const incidentId = safeCorrelationId(options?.correlationId);
   const errorId = incidentId;
 
   // Extract error details safely for internal diagnostic logging

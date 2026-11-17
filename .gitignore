@@ -1,5 +1,7 @@
 node_modules
 dist
+.env
+.env.*
 !.env.example
 /generated/prisma
 .next
@@ -11,4 +13,3 @@ next-env.d.ts
 
 # Claude Code local settings
 .claude/settings.local.json
-config.bat

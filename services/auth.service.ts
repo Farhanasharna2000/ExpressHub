@@ -138,6 +138,24 @@ export async function loginUser(input: LoginInput) {
   return { user: safeUser, accessToken, refreshToken };
 }
 
+// Tabs that refresh at the same moment present the same token; that is not theft.
+export const REFRESH_REUSE_GRACE_MS = 30_000;
+
+// A token that was rotated (lastUsedAt set), is presented again after the grace
+// window and has not expired signals a stolen refresh token. Logout revocations
+// never set lastUsedAt, so a stale logged-out cookie does not trigger this.
+export function isRotatedTokenReuse(
+  token: { revokedAt: Date | null; lastUsedAt: Date | null; expiresAt: Date },
+  now: Date,
+) {
+  return Boolean(
+    token.revokedAt &&
+    token.lastUsedAt &&
+    token.expiresAt > now &&
+    now.getTime() - token.revokedAt.getTime() > REFRESH_REUSE_GRACE_MS,
+  );
+}
+
 export async function rotateRefreshToken(currentToken: string) {
   assertAccessTokenConfiguration();
 
@@ -159,6 +177,24 @@ export async function rotateRefreshToken(currentToken: string) {
         },
       },
     });
+
+    if (storedToken && isRotatedTokenReuse(storedToken, now)) {
+      await tx.refreshToken.updateMany({
+        where: { userId: storedToken.userId, revokedAt: null },
+        data: { revokedAt: now },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: storedToken.userId,
+          entityType: "USER",
+          entityId: storedToken.userId,
+          action: "REFRESH_TOKEN_REUSE",
+          details: { tokenId: storedToken.id, rotatedAt: storedToken.revokedAt?.toISOString() ?? null },
+        },
+      });
+      // Returning instead of throwing commits the revocation before the 401 below.
+      return null;
+    }
 
     if (
       !storedToken ||
@@ -204,6 +240,10 @@ export async function rotateRefreshToken(currentToken: string) {
 
     return storedToken.user;
   });
+
+  if (!user) {
+    throw new AppError(401, "Invalid or expired refresh token", "INVALID_REFRESH_TOKEN");
+  }
 
   return {
     accessToken: signAccessToken({ userId: user.id, role: user.role }),

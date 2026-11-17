@@ -6,7 +6,7 @@ import { AppError } from "@/lib/http/errors";
 import prisma from "@/lib/prisma";
 import { paginateTransaction } from "@/lib/db/pagination";
 import type { PaymentGateway } from "@/lib/payments/stripe";
-import { executeRefund } from "@/services/payment.service";
+import { applyRefund, reserveRefund, sendRefund } from "@/services/payment.service";
 import type {
   AssignCourierInput,
   CreateShipmentInput,
@@ -302,7 +302,7 @@ export async function updateShipmentStatus(
   input: ShipmentStatusInput,
   gateway?: PaymentGateway,
 ) {
-  return transaction(async (tx) => {
+  const outcome = await transaction(async (tx) => {
     const user = await currentActor(tx, actor);
     const before = await tx.shipment.findFirst({
       where: { ...scope(user), id },
@@ -344,13 +344,12 @@ export async function updateShipmentStatus(
         where: { shipmentId: id, status: "PAID" },
       });
       if (paidPayment) {
-        await executeRefund(
-          tx,
-          paidPayment,
-          user,
-          input.note ?? "Shipment cancelled by user",
-          gateway,
-        );
+        // The refund is reserved here and sent to Stripe after this transaction.
+        return {
+          refund: await reserveRefund(tx, paidPayment),
+          before,
+          role: user.role,
+        };
       } else if (before.paymentStatus === "PAID") {
         throw conflict(
           "Paid shipment requires an active payment record for refund reconciliation",
@@ -375,25 +374,48 @@ export async function updateShipmentStatus(
         }));
       if (!courier) throw conflict("An active assigned Courier is required");
     }
-    const shipment = await tx.shipment.update({
-      where: { id },
-      data: {
-        status: input.status,
-        ...(input.status === "DELIVERED" ? { deliveredAt: new Date() } : {}),
-      },
-    });
-    await record(
-      tx,
-      user.id,
-      shipment,
-      user.role === "CUSTOMER" ? "CUSTOMER_CANCELLED" : "STATUS_CHANGED",
-      "SHIPMENT_STATUS_UPDATED",
-      { before: { status: before.status }, after: { status: shipment.status } },
-      before.status,
-      input.note,
-    );
-    return shipment;
+    return { shipment: await applyStatus(tx, user, before, input) };
   });
+  if ("shipment" in outcome) return outcome.shipment;
+
+  const reason = input.note ?? "Shipment cancelled by user";
+  const result = await sendRefund(outcome.refund, reason, gateway);
+  return transaction(async (tx) => {
+    await applyRefund(tx, outcome.refund.payment.id, result, actor.id, reason);
+    // The reservation keeps the payment out of PAID, so nothing else can move
+    // this shipment between the two transactions.
+    const before = await tx.shipment.findUniqueOrThrow({ where: { id } });
+    if (before.status === "CANCELLED") return before;
+    if (before.status !== outcome.before.status)
+      throw conflict("Shipment status changed; reload the shipment");
+    return applyStatus(tx, { id: actor.id, role: outcome.role }, before, input);
+  });
+}
+
+async function applyStatus(
+  tx: Prisma.TransactionClient,
+  user: { id: string; role: string },
+  before: Shipment,
+  input: ShipmentStatusInput,
+) {
+  const shipment = await tx.shipment.update({
+    where: { id: before.id },
+    data: {
+      status: input.status,
+      ...(input.status === "DELIVERED" ? { deliveredAt: new Date() } : {}),
+    },
+  });
+  await record(
+    tx,
+    user.id,
+    shipment,
+    user.role === "CUSTOMER" ? "CUSTOMER_CANCELLED" : "STATUS_CHANGED",
+    "SHIPMENT_STATUS_UPDATED",
+    { before: { status: before.status }, after: { status: shipment.status } },
+    before.status,
+    input.note,
+  );
+  return shipment;
 }
 
 export async function softDeleteShipment(

@@ -235,7 +235,7 @@ in your local environment or deployment secret settings.
 | `JWT_ACCESS_SECRET` | Signing secret of at least 32 bytes for access tokens and page-session cookies |
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Initial admin seed inputs; password must be at least 12 characters and at most 72 UTF-8 bytes |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Required for production rate limiting; leave both empty for the local development limiter |
-| `RATE_LIMIT_IP_HEADER` | Optional trusted ingress header: `x-real-ip` or `x-forwarded-for`; ingress must overwrite it with a single IP |
+| `RATE_LIMIT_IP_HEADER` | Optional trusted ingress header: `x-real-ip` or `x-forwarded-for`; ingress must overwrite it with a single IP. When empty, Vercel deployments use `x-real-ip`; other hosts share one anonymous bucket for login and register. Refresh and logout are limited per session, and login is also limited per account |
 | `STRIPE_SECRET_KEY` | Stripe test-mode secret API key |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for the webhook endpoint or local Stripe CLI listener |
 | `STRIPE_SUCCESS_URL` | Default: `http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}` |
@@ -244,7 +244,7 @@ in your local environment or deployment secret settings.
 | `AI_PROVIDER` | `anthropic` (default) or `gemini` |
 | `ANTHROPIC_API_KEY` | Claude API key; required when the provider is `anthropic` |
 | `GEMINI_API_KEY` | Gemini API key from Google AI Studio (free tier available); required when the provider is `gemini` |
-| `AI_MODEL` | Optional model override; defaults to `claude-opus-5-5` or `gemini-3.5-flash-lite` |
+| `AI_MODEL` | Optional model override; defaults to `claude-opus-5-5` or `gemini-3.1-flash-lite` |
 
 Production rate limiting fails closed if Upstash is unavailable or unconfigured.
 There is no process-local production fallback.
@@ -311,14 +311,28 @@ actual addresses. Apply seeds deliberately against the intended database.
 
 ```bash
 npm run typecheck
+npm test
+```
+
+`npm test` runs every unit suite below in turn; each can also be run on its own:
+
+```bash
 npm run test:frontend
 npm run test:auth
 npm run test:security
 npm run test:payments
 npm run test:checkout-return
+npm run test:pagination
 npm run test:errors
 npm run test:ai
+npm run test:misc
 ```
+
+`test:misc` checks that every API route is documented in the OpenAPI/Postman files,
+profile photo validation and rate limit diagnostics.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs typecheck, lint, `npm test` and the
+production build on every push and pull request to `main`.
 
 `test:frontend` covers frontend contracts and workflows, form validation, and query
 cache behavior. `test:security` includes proxy redirects and cookie validation.

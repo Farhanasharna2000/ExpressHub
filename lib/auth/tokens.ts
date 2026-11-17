@@ -126,9 +126,13 @@ export function isAllowedCookieRequest(request: Request) {
 }
 
 // An optimistic page-access hint, never an API credential or a refresh token.
+// It is re-signed on every login, refresh and profile read, so a short lifetime
+// only limits how long a demoted or deactivated user keeps seeing page shells.
+const PAGE_SESSION_TTL_SECONDS = 24 * 60 * 60;
+
 export const pageSessionCookie = {
   name: "expresshub_page_session",
-  maxAge: Math.floor(REFRESH_TOKEN_TTL_MS / 1000),
+  maxAge: PAGE_SESSION_TTL_SECONDS,
   path: "/",
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",

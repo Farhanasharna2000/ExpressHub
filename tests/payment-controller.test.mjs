@@ -81,22 +81,35 @@ test("mapPaymentError maps Prisma known request errors to 404 and 409", () => {
   assert.equal(mappedP2034.code, "CONFLICT");
 });
 
-test("mapPaymentError maps generic Error objects indicating NotFound or Conflict", () => {
-  const notFoundNamed = new Error("Payment record does not exist");
-  notFoundNamed.name = "NotFoundError";
-  const mappedNamed = mapPaymentError(notFoundNamed);
-  assert.ok(mappedNamed instanceof AppError);
-  assert.equal(mappedNamed.status, 404);
+test("mapPaymentError maps a Prisma transaction timeout to a retryable 503", () => {
+  const p2028 = new Prisma.PrismaClientKnownRequestError(
+    "Transaction already closed",
+    { code: "P2028", clientVersion: "5.22.0" },
+  );
+  const mapped = mapPaymentError(p2028);
+  assert.ok(mapped instanceof AppError);
+  assert.equal(mapped.status, 503);
+  assert.equal(mapped.code, "PAYMENT_RETRY");
+});
 
-  const notFoundMessage = new Error("Requested shipment not found");
-  const mappedMsg = mapPaymentError(notFoundMessage);
-  assert.ok(mappedMsg instanceof AppError);
-  assert.equal(mappedMsg.status, 404);
-
-  const conflictMessage = new Error("Payment conflict occurred");
-  const mappedConflict = mapPaymentError(conflictMessage);
-  assert.ok(mappedConflict instanceof AppError);
-  assert.equal(mappedConflict.status, 409);
+test("unknown errors are never mapped to 4xx from their message text", async () => {
+  for (const error of [
+    new Error("Environment variable not found: DATABASE_URL"),
+    new Error("Payment conflict occurred"),
+    Object.assign(new Error("Payment record does not exist"), { name: "NotFoundError" }),
+  ]) {
+    assert.equal(mapPaymentError(error), error);
+  }
+  const logger = mock.method(console, "error", () => {});
+  try {
+    const response = handlePaymentError(new Error("Environment variable not found: DATABASE_URL"));
+    assert.equal(response.status, 500);
+    const body = await response.json();
+    assert.equal(body.message, "Something went wrong");
+    assert.equal(JSON.stringify(body).includes("DATABASE_URL"), false);
+  } finally {
+    logger.mock.restore();
+  }
 });
 
 test("mapPaymentError preserves validation, forbidden, unauthenticated, and rate limit errors", () => {
