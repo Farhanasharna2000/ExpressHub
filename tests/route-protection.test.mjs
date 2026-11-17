@@ -74,6 +74,19 @@ test('auth cookie lifecycle issues and clears both cookies without broadening re
   for (const name of [tokens.pageSessionCookie.name, tokens.refreshTokenCookie.name]) assert.equal(response.cookies.get(name).maxAge, 0);
 });
 
+test('a page session lasts at most a day so revoked roles stop being served soon', () => {
+  assert.ok(tokens.pageSessionCookie.maxAge <= 24 * 60 * 60);
+  const { iat, exp } = jwt.decode(tokens.signPageSession({ userId: 'user-1', role: 'ADMIN' }));
+  assert.ok(exp - iat <= 24 * 60 * 60);
+  // A page session older than a day is rejected and cleared like any invalid one.
+  const stale = jwt.sign({ role: 'ADMIN', tokenType: 'page' }, process.env.JWT_ACCESS_SECRET, {
+    subject: 'user-1', issuer: 'expresshub', audience: 'expresshub-pages', expiresIn: -1,
+  });
+  const response = proxy(request('/admin', stale));
+  assert.match(response.headers.get('location'), /\/login\?next=/);
+  assert.equal(response.cookies.get(tokens.pageSessionCookie.name).maxAge, 0);
+});
+
 test('return URLs remain constrained to the signed role', () => {
   for (const url of ['https://evil.test', '//evil.test', '/admin', '/customer/../admin', '/customer/%2e%2e/admin']) assert.equal(safeReturnUrl(url, 'CUSTOMER'), '/customer');
   assert.equal(safeReturnUrl('/customer/shipments?q=Dhaka%20City&page=2', 'CUSTOMER'), '/customer/shipments?q=Dhaka%20City&page=2');
