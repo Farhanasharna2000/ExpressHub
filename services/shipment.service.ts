@@ -2,6 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { Prisma, ShipmentStatus, type Shipment } from "@prisma/client";
 import { requireRole, type AuthenticatedUser } from "@/lib/auth/require-user";
+import { proofSummary } from "@/lib/delivery-proof";
 import { AppError } from "@/lib/http/errors";
 import prisma from "@/lib/prisma";
 import { paginateTransaction } from "@/lib/db/pagination";
@@ -197,10 +198,14 @@ export async function getShipment(actor: AuthenticatedUser, id: string) {
           ...(actor.role !== "CUSTOMER" ? { internalNote: true, actorId: true } : {}),
         },
       },
+      deliveryProof: {
+        select: { recipientName: true, capturedAt: true, photoKey: true, signatureKey: true },
+      },
     },
   });
   if (!shipment) throw missing();
-  return shipment;
+  const { deliveryProof, ...rest } = shipment;
+  return { ...rest, deliveryProof: deliveryProof ? proofSummary(deliveryProof) : null };
 }
 
 export async function listShipments(
@@ -375,6 +380,20 @@ export async function updateShipmentStatus(
           select: { id: true },
         }));
       if (!courier) throw conflict("An active assigned Courier is required");
+    }
+    if (input.status === "DELIVERED") {
+      const proof = await tx.deliveryProof.findUnique({
+        where: { shipmentId: id },
+        select: { courierId: true },
+      });
+      // Proof must come from the courier currently assigned, not an earlier one.
+      if (!proof || proof.courierId !== before.courierId) {
+        throw new AppError(
+          409,
+          "Capture proof of delivery before marking this shipment delivered",
+          "PROOF_REQUIRED",
+        );
+      }
     }
     return { shipment: await applyStatus(tx, user, before, input) };
   });

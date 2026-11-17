@@ -156,6 +156,11 @@ try {
   assert.equal((await status(shipment.id, assigned, "FAILED", "IN_TRANSIT")).status, 403);
   assert.equal((await status(shipment.id, admin, "FAILED", "IN_TRANSIT")).status, 200);
   assert.equal((await status(shipment.id, assigned, "IN_TRANSIT", "OUT_FOR_DELIVERY")).status, 200);
+  // Delivery needs proof from the assigned courier; tests/proof.integration.mjs covers the upload itself.
+  const noProof = await status(shipment.id, assigned, "OUT_FOR_DELIVERY", "DELIVERED", "Confirmed receipt by recipient");
+  assert.equal(noProof.status, 409);
+  assert.equal(noProof.body.errors[0].code, "PROOF_REQUIRED");
+  await prisma.deliveryProof.create({ data: { shipmentId: shipment.id, courierId: assigned.id, recipientName: "Recipient Test", capturedAt: new Date() } });
   const delivered = await status(shipment.id, assigned, "OUT_FOR_DELIVERY", "DELIVERED", "Confirmed receipt by recipient");
   assert.equal(delivered.status, 200);
   assert.ok(delivered.body.data.shipment.deliveredAt);
