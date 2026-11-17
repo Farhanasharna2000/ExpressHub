@@ -121,3 +121,16 @@ test("API responses have restrictive CSP and standard security headers", async (
   assert.match(api["Content-Security-Policy"], /default-src 'none'/);
   assert.equal(config.poweredByHeader, false);
 });
+
+test("HTML pages get a CSP that blocks framing, plugins and base-tag injection", async () => {
+  const entries = await config.headers();
+  const page = entries.find((entry) => entry.source === "/((?!api/).*)");
+  const csp = page.headers.find(({ key }) => key === "Content-Security-Policy").value;
+  for (const directive of ["frame-ancestors 'none'", "base-uri 'none'", "object-src 'none'", "form-action 'self' https://checkout.stripe.com", "connect-src 'self'"]) {
+    assert.ok(csp.includes(directive), directive);
+  }
+  // The page rule never applies to API routes, which keep default-src 'none'.
+  const pattern = new RegExp(`^${page.source.replace("/(", "/(?:")}$`);
+  for (const path of ["/", "/login", "/admin/shipments/1"]) assert.match(path, pattern);
+  for (const path of ["/api/v1/users/me", "/api/v1/auth/login"]) assert.doesNotMatch(path, pattern);
+});
