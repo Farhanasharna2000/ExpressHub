@@ -236,6 +236,31 @@ try {
   assert.equal(untouchedShipment.paymentStatus, "PAID");
   const untouchedPayment = await prisma.payment.findUniqueOrThrow({ where: { id: failPaymentId } });
   assert.equal(untouchedPayment.status, "PAID");
+  // The released reservation can be retried, and the retry reaches Stripe with the same key.
+  const retriedCancel = await updateShipmentStatus(customer, failRefundBooking.id, { status: "CANCELLED", expectedStatus: "CREATED" }, gateway);
+  assert.equal(retriedCancel.status, "CANCELLED");
+  await state(failPaymentId, "REFUNDED");
+
+  // Stripe is called outside the database transaction, so a refund slower than
+  // Prisma's 5s interactive-transaction timeout still completes the cancellation.
+  const slowBooking = await shipment(customer);
+  const initSlow = await initiatePayment(customer, slowBooking.id, randomUUID(), gateway);
+  const slowSession = await pay(initSlow.payment.id);
+  await processEvent(event("checkout.session.completed", { id: slowSession.id }));
+  await state(initSlow.payment.id, "PAID");
+  const refundKeys = [];
+  let observedReservation;
+  const slowGateway = { ...gateway, async createRefund(params, refundKey) {
+    refundKeys.push(refundKey);
+    observedReservation = (await prisma.payment.findUniqueOrThrow({ where: { id: initSlow.payment.id } })).status;
+    await new Promise((resolve) => setTimeout(resolve, 6000));
+    return gateway.createRefund(params, refundKey);
+  } };
+  const slowCancel = await updateShipmentStatus(customer, slowBooking.id, { status: "CANCELLED", expectedStatus: "CREATED" }, slowGateway);
+  assert.equal(slowCancel.status, "CANCELLED");
+  assert.equal(observedReservation, "REFUND_PENDING");
+  assert.deepEqual(refundKeys, [`expresshub:refund:${initSlow.payment.id}`]);
+  await state(initSlow.payment.id, "REFUNDED");
 
   // Programmatic refund endpoint: POST /api/v1/payments/:id/refund
   const directRefundBooking = await shipment(customer);

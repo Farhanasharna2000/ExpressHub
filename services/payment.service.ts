@@ -558,13 +558,21 @@ export async function processStripeEvent(
   }
 }
 
-export async function executeRefund(
+export interface RefundReservation {
+  payment: Payment;
+}
+
+export interface RefundResult {
+  refund: Stripe.Refund;
+  intentId: string;
+}
+
+// Step 1, inside the caller's transaction. Holding the payment in REFUND_PENDING
+// blocks pickup (which needs PAID) and a second refund while Stripe is called.
+export async function reserveRefund(
   tx: Prisma.TransactionClient,
   payment: Payment,
-  actor: AuthenticatedUser,
-  reason?: string,
-  gateway?: PaymentGateway,
-) {
+): Promise<RefundReservation> {
   if (payment.status === "REFUNDED") {
     throw conflict("Payment is already refunded");
   }
@@ -577,87 +585,149 @@ export async function executeRefund(
   if (payment.provider !== "STRIPE") {
     throw conflict("Only Stripe payments can be refunded via this method");
   }
-
-  const provider = gateway ?? stripeGateway();
-  let intentId = payment.providerIntentId;
-  if (!intentId && payment.providerReference) {
-    const session = await provider.retrieve(payment.providerReference);
-    intentId = objectId(session.payment_intent) ?? null;
-  }
-  if (!intentId) {
-    throw new AppError(
-      503,
-      "Payment intent reference is missing; reconciliation required",
-      "PAYMENT_RETRY",
-    );
-  }
-
-  let refund: Stripe.Refund;
-  try {
-    refund = await provider.createRefund(
-      {
-        payment_intent: intentId,
-        reason: "requested_by_customer",
-        metadata: {
-          paymentId: payment.id,
-          shipmentId: payment.shipmentId,
-          payerId: payment.payerId,
-          ...(reason ? { reason: reason.slice(0, 500) } : {}),
-        },
-      },
-      `expresshub:refund:${payment.id}`,
-    );
-  } catch (error) {
-    if (error instanceof AppError) throw error;
-    throw new AppError(
-      502,
-      "Stripe request failed; refund could not be processed",
-      "PAYMENT_PROVIDER_UNAVAILABLE",
-    );
-  }
-
-  if (refund.status === "failed") {
-    throw new AppError(
-      502,
-      "Stripe refund was declined or failed",
-      "PAYMENT_PROVIDER_UNAVAILABLE",
-    );
-  }
-
-  const nextStatus: PaymentStatus =
-    refund.status === "succeeded" ? "REFUNDED" : "REFUND_PENDING";
-
-  const updated = await tx.payment.update({
+  const reserved = await tx.payment.update({
     where: { id: payment.id },
+    data: { status: "REFUND_PENDING" },
+  });
+  await tx.shipment.update({
+    where: { id: payment.shipmentId },
+    data: { paymentStatus: "REFUND_PENDING" },
+  });
+  return { payment: reserved };
+}
+
+// Undo a reservation whose Stripe call failed, unless a webhook has recorded a
+// newer observation since. If Stripe did create the refund, its webhook settles it.
+async function releaseRefund({ payment }: RefundReservation) {
+  try {
+    await prisma.$transaction(async (tx) => {
+      const released = await tx.payment.updateMany({
+        where: {
+          id: payment.id,
+          status: "REFUND_PENDING",
+          updatedAt: payment.updatedAt,
+        },
+        data: { status: "PAID" },
+      });
+      if (released.count) {
+        await tx.shipment.updateMany({
+          where: { id: payment.shipmentId, paymentStatus: "REFUND_PENDING" },
+          data: { paymentStatus: "PAID" },
+        });
+      }
+    });
+  } catch (error) {
+    console.error(
+      "Refund reservation release failed",
+      error instanceof Error ? error.message : error,
+    );
+  }
+}
+
+// Step 2, outside any database transaction so a slow Stripe call can't hit the
+// interactive transaction timeout. The idempotency key makes a retry after an
+// uncertain result return the same refund instead of creating a second one.
+export async function sendRefund(
+  reservation: RefundReservation,
+  reason?: string,
+  gateway?: PaymentGateway,
+): Promise<RefundResult> {
+  const { payment } = reservation;
+  try {
+    const provider = gateway ?? stripeGateway();
+    let intentId = payment.providerIntentId;
+    let refund: Stripe.Refund;
+    try {
+      if (!intentId && payment.providerReference) {
+        const session = await provider.retrieve(payment.providerReference);
+        intentId = objectId(session.payment_intent) ?? null;
+      }
+      if (!intentId) {
+        throw new AppError(
+          503,
+          "Payment intent reference is missing; reconciliation required",
+          "PAYMENT_RETRY",
+        );
+      }
+      refund = await provider.createRefund(
+        {
+          payment_intent: intentId,
+          reason: "requested_by_customer",
+          metadata: {
+            paymentId: payment.id,
+            shipmentId: payment.shipmentId,
+            payerId: payment.payerId,
+            ...(reason ? { reason: reason.slice(0, 500) } : {}),
+          },
+        },
+        `expresshub:refund:${payment.id}`,
+      );
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError(
+        502,
+        "Stripe request failed; refund could not be processed",
+        "PAYMENT_PROVIDER_UNAVAILABLE",
+      );
+    }
+    if (refund.status === "failed") {
+      throw new AppError(
+        502,
+        "Stripe refund was declined or failed",
+        "PAYMENT_PROVIDER_UNAVAILABLE",
+      );
+    }
+    return { refund, intentId };
+  } catch (error) {
+    await releaseRefund(reservation);
+    throw error;
+  }
+}
+
+// Step 3, inside the caller's transaction. A webhook may already have settled
+// the refund while Stripe was being called, so REFUNDED is never regressed.
+export async function applyRefund(
+  tx: Prisma.TransactionClient,
+  paymentId: string,
+  { refund, intentId }: RefundResult,
+  actorId: string,
+  reason?: string,
+) {
+  const current = await tx.payment.findUniqueOrThrow({
+    where: { id: paymentId },
+  });
+  const status: PaymentStatus =
+    current.status === "REFUNDED" || refund.status === "succeeded"
+      ? "REFUNDED"
+      : "REFUND_PENDING";
+  const updated = await tx.payment.update({
+    where: { id: paymentId },
     data: {
-      status: nextStatus,
+      status,
       providerIntentId: intentId,
-      ...(nextStatus === "REFUNDED" && !payment.refundedAt
+      ...(status === "REFUNDED" && !current.refundedAt
         ? { refundedAt: new Date() }
         : {}),
     },
   });
-
   await tx.shipment.update({
-    where: { id: payment.shipmentId },
-    data: { paymentStatus: nextStatus },
+    where: { id: current.shipmentId },
+    data: { paymentStatus: status },
   });
-
   await audit(
     tx,
     updated,
     "PAYMENT_REFUND_INITIATED",
     {
       refundId: refund.id,
-      status: nextStatus,
+      status,
       amount: updated.amount.toString(),
       currency: updated.currency,
       reason: reason ?? "Refund initiated",
     },
-    actor.id,
+    actorId,
   );
-
-  return { payment: updated, refund };
+  return updated;
 }
 
 export async function initiateRefund(
@@ -670,7 +740,7 @@ export async function initiateRefund(
     throw new AppError(403, "Payment access is not allowed", "FORBIDDEN");
   }
 
-  await atomic(async (tx) => {
+  const reservation = await atomic(async (tx) => {
     const current = await tx.user.findFirst({
       where: { id: actor.id, isActive: true, deletedAt: null },
     });
@@ -696,8 +766,10 @@ export async function initiateRefund(
       );
     }
 
-    await executeRefund(tx, payment, actor, reason, gateway);
+    return reserveRefund(tx, payment);
   });
+  const result = await sendRefund(reservation, reason, gateway);
+  await atomic((tx) => applyRefund(tx, paymentId, result, actor.id, reason));
 
   return { payment: await getPayment(actor, paymentId) };
 }
