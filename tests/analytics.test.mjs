@@ -116,3 +116,23 @@ test("only admins can read analytics, and cached reports are flagged", async () 
   await assert.rejects(getAnalytics(customer, input, deps), (error) => error.status === 403);
   assert.equal(loads, 1);
 });
+
+test("dashboard helpers build presets, queries and change labels", async () => {
+  const { analyticsQuery, bangladeshToday, changeTone, formatChange, formatHours, formatRate, periodLabel, presetRange } = await import("../features/admin/analytics-contracts.ts");
+  assert.equal(bangladeshToday(NOW), "2026-11-18");
+  assert.deepEqual(presetRange(7, NOW), { from: "2026-11-12", to: "2026-11-18" });
+  // The client presets match the server's default 30-day range.
+  const serverDefault = resolveRange({ granularity: "day" }, NOW);
+  assert.deepEqual(presetRange(30, NOW), { from: serverDefault.from, to: serverDefault.to });
+  assert.equal(analyticsQuery({ from: "2026-11-01", to: "2026-11-30", granularity: "week" }), "from=2026-11-01&to=2026-11-30&granularity=week");
+  assert.equal(formatChange(12.5, "percent"), "+12.5%");
+  assert.equal(formatChange(-3, "points"), "−3 pts");
+  assert.equal(formatChange(0, "hours"), "±0 h");
+  assert.equal(formatChange(null, "percent"), null);
+  assert.equal(changeTone(5, true), "good");
+  assert.equal(changeTone(5, false), "bad");
+  assert.equal(changeTone(null, true), "neutral");
+  assert.equal(formatRate(null), "—");
+  assert.equal(formatHours(26.5), "26.5 h");
+  assert.match(periodLabel("2026-11-16", "week"), /^Week of /);
+});

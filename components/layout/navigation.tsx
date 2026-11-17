@@ -26,6 +26,7 @@ const navigation: Record<UserRole, Item[]> = {
     { href: "/admin", label: "Overview" },
     { href: "/admin/shipments", label: "Shipments" },
     { href: "/admin/users", label: "Users" },
+    { href: "/admin/analytics", label: "Analytics" },
     { href: "/admin/audit-logs", label: "Audit logs" },
   ],
 };
@@ -84,6 +85,7 @@ export function Navigation({ role }: { role?: UserRole }) {
         : [
             { href: "/admin/shipments", label: "Shipments" },
             { href: "/admin/users", label: "Users" },
+            { href: "/admin/analytics", label: "Analytics" },
             { href: "/admin/audit-logs", label: "Audit logs" },
           ]),
     ];
