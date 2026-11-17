@@ -327,6 +327,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                   <button
                     key={preset.label}
                     type="button"
+                    aria-pressed={isActive}
                     onClick={() => update("status", preset.value)}
                     className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full font-medium transition-all cursor-pointer ${
                       isActive
@@ -335,6 +336,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                     }`}
                   >
                     <span
+                      aria-hidden="true"
                       className={`size-1.5 rounded-full ${
                         isActive ? "bg-white" : preset.dotColor
                       }`}
@@ -369,8 +371,9 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                     }}
                     className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     title="Clear search"
+                    aria-label="Clear search"
                   >
-                    <X className="size-3.5" />
+                    <X className="size-3.5" aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -527,8 +530,9 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                       }}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
                       title="Remove search filter"
+                      aria-label="Remove search filter"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}
@@ -541,8 +545,9 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                       onClick={() => update("status", "")}
                       className="text-primary hover:text-primary/70 cursor-pointer"
                       title="Remove status filter"
+                      aria-label="Remove status filter"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}
@@ -555,8 +560,9 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                       onClick={() => update("paymentStatus", "")}
                       className="text-emerald-800 hover:text-emerald-950 cursor-pointer"
                       title="Remove payment filter"
+                      aria-label="Remove payment filter"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}
@@ -569,8 +575,9 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                       onClick={() => update("from", "")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
                       title="Remove start date filter"
+                      aria-label="Remove start date filter"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}
@@ -583,8 +590,9 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                       onClick={() => update("to", "")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
                       title="Remove end date filter"
+                      aria-label="Remove end date filter"
                     >
-                      <X className="size-3" />
+                      <X className="size-3" aria-hidden="true" />
                     </button>
                   </span>
                 )}

@@ -285,6 +285,7 @@ export function AdminShipmentsListView() {
                 <button
                   key={preset.value || "all"}
                   type="button"
+                  aria-pressed={isActive}
                   onClick={() => update("status", preset.value)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full font-medium transition-all cursor-pointer ${
                     isActive
@@ -293,6 +294,7 @@ export function AdminShipmentsListView() {
                   }`}
                 >
                   <span
+                    aria-hidden="true"
                     className={`size-1.5 rounded-full ${
                       isActive ? "bg-white" : preset.dotColor
                     }`}
@@ -327,8 +329,9 @@ export function AdminShipmentsListView() {
                   }}
                   className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   title="Clear search"
+                  aria-label="Clear search"
                 >
-                  <X className="size-3.5" />
+                  <X className="size-3.5" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -457,8 +460,9 @@ export function AdminShipmentsListView() {
                     }}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
                     title="Remove search filter"
+                    aria-label="Remove search filter"
                   >
-                    <X className="size-3" />
+                    <X className="size-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -471,8 +475,9 @@ export function AdminShipmentsListView() {
                     onClick={() => update("status", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
                     title="Remove status filter"
+                    aria-label="Remove status filter"
                   >
-                    <X className="size-3" />
+                    <X className="size-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -485,8 +490,9 @@ export function AdminShipmentsListView() {
                     onClick={() => update("paymentStatus", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
                     title="Remove payment filter"
+                    aria-label="Remove payment filter"
                   >
-                    <X className="size-3" />
+                    <X className="size-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -499,8 +505,9 @@ export function AdminShipmentsListView() {
                     onClick={() => update("from", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
                     title="Remove from date filter"
+                    aria-label="Remove from date filter"
                   >
-                    <X className="size-3" />
+                    <X className="size-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -513,8 +520,9 @@ export function AdminShipmentsListView() {
                     onClick={() => update("to", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
                     title="Remove to date filter"
+                    aria-label="Remove to date filter"
                   >
-                    <X className="size-3" />
+                    <X className="size-3" aria-hidden="true" />
                   </button>
                 </span>
               )}

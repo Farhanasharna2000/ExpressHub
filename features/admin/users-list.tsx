@@ -277,6 +277,7 @@ export function AdminUsersListView() {
                 <button
                   key={preset.label}
                   type="button"
+                  aria-pressed={isActive}
                   onClick={() => applyRolePreset(preset.role, preset.status)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full font-medium transition-all cursor-pointer ${
                     isActive
@@ -285,6 +286,7 @@ export function AdminUsersListView() {
                   }`}
                 >
                   <span
+                    aria-hidden="true"
                     className={`size-1.5 rounded-full ${
                       isActive ? "bg-white" : preset.dotColor
                     }`}
@@ -319,8 +321,9 @@ export function AdminUsersListView() {
                   }}
                   className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   title="Clear search"
+                  aria-label="Clear search"
                 >
-                  <X className="size-3.5" />
+                  <X className="size-3.5" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -466,8 +469,9 @@ export function AdminUsersListView() {
                     }}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
                     title="Remove search filter"
+                    aria-label="Remove search filter"
                   >
-                    <X className="size-3" />
+                    <X className="size-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -480,8 +484,9 @@ export function AdminUsersListView() {
                     onClick={() => update("role", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
                     title="Remove role filter"
+                    aria-label="Remove role filter"
                   >
-                    <X className="size-3" />
+                    <X className="size-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -502,8 +507,9 @@ export function AdminUsersListView() {
                     onClick={() => update("isActive", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
                     title="Remove status filter"
+                    aria-label="Remove status filter"
                   >
-                    <X className="size-3" />
+                    <X className="size-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -527,8 +533,9 @@ export function AdminUsersListView() {
                     }}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
                     title="Reset sorting"
+                    aria-label="Reset sorting"
                   >
-                    <X className="size-3" />
+                    <X className="size-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
