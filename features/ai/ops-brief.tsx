@@ -19,7 +19,7 @@ export function OpsBriefCard() {
 
 function OpsBriefPanel() {
   const { store } = useSession();
-  const { data, loading } = useResource<{ brief: OpsBrief | null }>("/ai/ops-brief");
+  const { data, loading, error: readError, reload } = useResource<{ brief: OpsBrief | null }>("/ai/ops-brief");
   const [generated, setGenerated] = useState<OpsBrief | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +66,20 @@ function OpsBriefPanel() {
           </p>
         )}
 
-        {!brief && (
+        {/* A failed read must not look like "no brief yet", or the admin spends a generation. */}
+        {!brief && readError && (
+          <div className="flex flex-wrap items-center gap-3">
+            <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              Couldn&apos;t check for today&apos;s saved brief. {aiErrorMessage(readError)}
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={reload}>
+              <RefreshCw aria-hidden="true" /> Try again
+            </Button>
+          </div>
+        )}
+
+        {!brief && !readError && (
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" onClick={() => void generate(false)} disabled={busy || loading}>
               {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Sparkles aria-hidden="true" />}

@@ -88,11 +88,15 @@ export function AdminAuditLogsView() {
     setActionSearch(urlAction);
   }, [urlAction]);
 
-  function update(key: string, value: string, replace = false) {
+  // Several keys can change in one call so a preset adds a single history entry.
+  function update(key: string | Record<string, string>, value = "", replace = false) {
+    const changes = typeof key === "string" ? { [key]: value } : key;
     const next = new URLSearchParams(window.location.search);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    if (key !== "page") next.set("page", "1");
+    for (const [name, nextValue] of Object.entries(changes)) {
+      if (nextValue) next.set(name, nextValue);
+      else next.delete(name);
+    }
+    if (!("page" in changes)) next.set("page", "1");
     const href = `/admin/audit-logs${next.size ? `?${next}` : ""}`;
     if (replace) window.history.replaceState(null, "", href);
     else window.history.pushState(null, "", href);
@@ -400,8 +404,7 @@ export function AdminAuditLogsView() {
                     onClick={() => {
                       const now = new Date();
                       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-                      update("from", startOfDay.toISOString());
-                      update("to", "");
+                      update({ from: startOfDay.toISOString(), to: "" });
                     }}
                     className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                   >
@@ -412,8 +415,7 @@ export function AdminAuditLogsView() {
                     onClick={() => {
                       const now = new Date();
                       const past7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                      update("from", past7.toISOString());
-                      update("to", "");
+                      update({ from: past7.toISOString(), to: "" });
                     }}
                     className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                   >
@@ -424,8 +426,7 @@ export function AdminAuditLogsView() {
                     onClick={() => {
                       const now = new Date();
                       const past30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-                      update("from", past30.toISOString());
-                      update("to", "");
+                      update({ from: past30.toISOString(), to: "" });
                     }}
                     className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                   >
@@ -435,8 +436,7 @@ export function AdminAuditLogsView() {
                     <button
                       type="button"
                       onClick={() => {
-                        update("from", "");
-                        update("to", "");
+                        update({ from: "", to: "" });
                       }}
                       className="text-xs px-2 py-1 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                     >
