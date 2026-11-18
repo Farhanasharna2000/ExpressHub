@@ -13,22 +13,32 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Placeholders only: no job contacts Stripe, Resend, an AI provider or Upstash.
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  JWT_ACCESS_SECRET: ci-placeholder-access-secret-at-least-32-chars
+  JWT_REFRESH_SECRET: ci-placeholder-refresh-secret-at-least-32-chars
+  STRIPE_SECRET_KEY: sk_test_dummy
+  STRIPE_WEBHOOK_SECRET: whsec_dummy
+  STRIPE_SUCCESS_URL: http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}
+  STRIPE_CANCEL_URL: http://localhost:3000/checkout/cancel
+  ALLOWED_ORIGIN: http://localhost:3000
+  APP_URL: http://localhost:3000
+  CRON_SECRET: ci-placeholder-cron-secret
+  AI_ENABLED: "false"
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      # Placeholders so the build and unit tests can load config; no real services are contacted.
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-      JWT_ACCESS_SECRET: ci-placeholder-access-secret-at-least-32-chars
-      JWT_REFRESH_SECRET: ci-placeholder-refresh-secret-at-least-32-chars
-      NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -39,3 +49,93 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        # pgvector image: the help chat migration enables the vector extension.
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: expresshub
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci -d expresshub"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/expresshub?schema=public
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx prisma migrate deploy
+      # The error suite runs against a production build.
+      - run: npm run build
+      - name: Integration suites
+        run: |
+          for suite in auth users shipments payments admin lists soft-delete errors notifications proof help tracking analytics; do
+            echo "::group::$suite"
+            npm run "test:$suite:integration"
+            echo "::endgroup::"
+          done
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: expresshub
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci -d expresshub"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/expresshub?schema=public
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx prisma migrate deploy
+      # Global setup reseeds too; seeding here fails fast on schema problems.
+      - run: npm run e2e:seed
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Browser tests with a mocked API
+        run: npm run test:frontend:browser
+      - name: Full-stack end-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report and traces
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
