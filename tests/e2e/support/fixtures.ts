@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { test as base, expect, type Browser, type Page } from "@playwright/test";
+import { test as base, expect, type Browser, type BrowserContextOptions, type Page } from "@playwright/test";
 import { PrismaClient, type UserRole } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { E2E_USERS, createPaidShipment } from "../../../prisma/seed-e2e.mjs";
@@ -39,7 +39,7 @@ async function seededUser(role: Role) {
 
 type Fixtures = {
   // Opens a separate signed-in browser context for a seeded role.
-  signedInPage: (role: Role) => Promise<Page>;
+  signedInPage: (role: Role, options?: BrowserContextOptions) => Promise<Page>;
   db: PrismaClient;
   seededUser: typeof seededUser;
   paidShipment: () => Promise<{ id: string; trackingNumber: string }>;
@@ -48,10 +48,10 @@ type Fixtures = {
 export const test = base.extend<Fixtures>({
   signedInPage: async ({ browser, baseURL }, provide) => {
     const contexts: Awaited<ReturnType<Browser["newContext"]>>[] = [];
-    await provide(async (role) => {
+    await provide(async (role, options = {}) => {
       const user = await seededUser(role);
       // Reduced motion, like the default context: axe must scan settled pages, not fade-ins.
-      const context = await browser.newContext({ baseURL, reducedMotion: "reduce" });
+      const context = await browser.newContext({ baseURL, reducedMotion: "reduce", ...options });
       contexts.push(context);
       await context.addCookies(await sessionCookies(baseURL!, user.id, user.role));
       return context.newPage();
