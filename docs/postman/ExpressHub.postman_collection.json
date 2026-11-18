@@ -1145,7 +1145,7 @@
                 "shipments"
               ]
             },
-            "description": "CUSTOMER only. Exactly one effective pricing rule must cover the weight, otherwise 503. Server controls customer, tracking number, status, currency and price. Dimensions must be all supplied or all omitted.",
+            "description": "CUSTOMER only. Exactly one effective pricing rule must cover the weight, otherwise 503. Server controls customer, tracking number, status, currency and price. Dimensions must be all supplied or all omitted. Also accepts a merchant API key with the shipments:write scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"pickupContactName\": \"Example Sender\",\n  \"pickupContactPhone\": \"01700000000\",\n  \"pickupAddress\": \"Dhaka pickup address\",\n  \"deliveryContactName\": \"Example Recipient\",\n  \"deliveryContactPhone\": \"01800000000\",\n  \"deliveryAddress\": \"Chattogram delivery address\",\n  \"parcelWeightKg\": 1\n}",
@@ -1178,7 +1178,7 @@
                     "shipments"
                   ]
                 },
-                "description": "CUSTOMER only. Exactly one effective pricing rule must cover the weight, otherwise 503. Server controls customer, tracking number, status, currency and price. Dimensions must be all supplied or all omitted.",
+                "description": "CUSTOMER only. Exactly one effective pricing rule must cover the weight, otherwise 503. Server controls customer, tracking number, status, currency and price. Dimensions must be all supplied or all omitted. Also accepts a merchant API key with the shipments:write scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"pickupContactName\": \"Example Sender\",\n  \"pickupContactPhone\": \"01700000000\",\n  \"pickupAddress\": \"Dhaka pickup address\",\n  \"deliveryContactName\": \"Example Recipient\",\n  \"deliveryContactPhone\": \"01800000000\",\n  \"deliveryAddress\": \"Chattogram delivery address\",\n  \"parcelWeightKg\": 1\n}",
@@ -1289,7 +1289,7 @@
                 }
               ]
             },
-            "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+            "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes. Also accepts a merchant API key with the shipments:read scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
           },
           "response": [
             {
@@ -1364,7 +1364,7 @@
                     }
                   ]
                 },
-                "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+                "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes. Also accepts a merchant API key with the shipments:read scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
               },
               "status": "OK",
               "code": 200,
@@ -1456,7 +1456,7 @@
                 }
               ]
             },
-            "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+            "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes. Also accepts a merchant API key with the shipments:read scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
           },
           "response": [
             {
@@ -1532,7 +1532,7 @@
                     }
                   ]
                 },
-                "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+                "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes. Also accepts a merchant API key with the shipments:read scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
               },
               "status": "OK",
               "code": 200,
@@ -1624,7 +1624,7 @@
                 }
               ]
             },
-            "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+            "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes. Also accepts a merchant API key with the shipments:read scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
           },
           "response": [
             {
@@ -1700,7 +1700,7 @@
                     }
                   ]
                 },
-                "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes."
+                "description": "CUSTOMER sees owned, COURIER assigned, ADMIN all non-deleted shipments. On my-shipments ADMIN sees only owned shipments. Filters intersect ownership. Stable ID tie-breaker; offset pagination may shift with concurrent writes. Also accepts a merchant API key with the shipments:read scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
               },
               "status": "OK",
               "code": 200,
@@ -1736,7 +1736,7 @@
                 "{{shipmentId}}"
               ]
             },
-            "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404. Events are ordered by occurredAt ascending, then ID. Customers receive public event fields only; internalNote and actorId are included only for assigned Couriers/Admins."
+            "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404. Events are ordered by occurredAt ascending, then ID. Customers receive public event fields only; internalNote and actorId are included only for assigned Couriers/Admins. Also accepts a merchant API key with the shipments:read scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
           },
           "response": [
             {
@@ -1756,7 +1756,7 @@
                     "{{shipmentId}}"
                   ]
                 },
-                "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404. Events are ordered by occurredAt ascending, then ID. Customers receive public event fields only; internalNote and actorId are included only for assigned Couriers/Admins."
+                "description": "Owner CUSTOMER, assigned COURIER or ADMIN. Deleted/inaccessible shipments return 404. Events are ordered by occurredAt ascending, then ID. Customers receive public event fields only; internalNote and actorId are included only for assigned Couriers/Admins. Also accepts a merchant API key with the shipments:read scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
               },
               "status": "OK",
               "code": 200,
@@ -1884,7 +1884,7 @@
                 "status"
               ]
             },
-            "description": "CREATED→PICKED_UP→IN_TRANSIT→OUT_FOR_DELIVERY→DELIVERED or FAILED. ADMIN retries FAILED→IN_TRANSIT or returns FAILED→RETURNED. Owner/ADMIN can cancel CREATED only. Operational transitions require PAID and an active assigned courier. DELIVERED also requires proof of delivery captured by the currently assigned courier (409 PROOF_REQUIRED). DELIVERED/FAILED/RETURNED require a note. Terminal states cannot transition; pending checkout blocks cancellation.",
+            "description": "CREATED→PICKED_UP→IN_TRANSIT→OUT_FOR_DELIVERY→DELIVERED or FAILED. ADMIN retries FAILED→IN_TRANSIT or returns FAILED→RETURNED. Owner/ADMIN can cancel CREATED only. Operational transitions require PAID and an active assigned courier. DELIVERED also requires proof of delivery captured by the currently assigned courier (409 PROOF_REQUIRED). DELIVERED/FAILED/RETURNED require a note. Terminal states cannot transition; pending checkout blocks cancellation. Also accepts a merchant API key with the shipments:write scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"CANCELLED\",\n  \"expectedStatus\": \"CREATED\",\n  \"note\": \"Booking no longer needed\"\n}",
@@ -1919,7 +1919,7 @@
                     "status"
                   ]
                 },
-                "description": "CREATED→PICKED_UP→IN_TRANSIT→OUT_FOR_DELIVERY→DELIVERED or FAILED. ADMIN retries FAILED→IN_TRANSIT or returns FAILED→RETURNED. Owner/ADMIN can cancel CREATED only. Operational transitions require PAID and an active assigned courier. DELIVERED also requires proof of delivery captured by the currently assigned courier (409 PROOF_REQUIRED). DELIVERED/FAILED/RETURNED require a note. Terminal states cannot transition; pending checkout blocks cancellation.",
+                "description": "CREATED→PICKED_UP→IN_TRANSIT→OUT_FOR_DELIVERY→DELIVERED or FAILED. ADMIN retries FAILED→IN_TRANSIT or returns FAILED→RETURNED. Owner/ADMIN can cancel CREATED only. Operational transitions require PAID and an active assigned courier. DELIVERED also requires proof of delivery captured by the currently assigned courier (409 PROOF_REQUIRED). DELIVERED/FAILED/RETURNED require a note. Terminal states cannot transition; pending checkout blocks cancellation. Also accepts a merchant API key with the shipments:write scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"CANCELLED\",\n  \"expectedStatus\": \"CREATED\",\n  \"note\": \"Booking no longer needed\"\n}",
@@ -4233,6 +4233,773 @@
                 }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Assistant replied successfully\",\n  \"data\": {\n    \"reply\": \"Your parcel EXH-ABC123 left the Dhaka hub and is in transit to Chattogram.\",\n    \"toolCalls\": [\n      {\n        \"name\": \"get_shipment\",\n        \"shipmentId\": \"cm123456789012345678901234\",\n        \"ok\": true\n      }\n    ],\n    \"shipments\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"trackingNumber\": \"EXH-ABC123\"\n      }\n    ]\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
+      "name": "developer",
+      "item": [
+        {
+          "name": "List API keys",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/api-keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "api-keys"
+              ]
+            },
+            "description": "Signed-in CUSTOMER session only; API keys are rejected with 403 API_KEY_NOT_ALLOWED so a key can never create or revoke keys. Returns name, prefix, scopes, last use and expiry; the key itself is never returned again."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/api-keys",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "api-keys"
+                  ]
+                },
+                "description": "Signed-in CUSTOMER session only; API keys are rejected with 403 API_KEY_NOT_ALLOWED so a key can never create or revoke keys. Returns name, prefix, scopes, last use and expiry; the key itself is never returned again."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"API keys fetched successfully\",\n  \"data\": {\n    \"apiKeys\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"name\": \"Shop backend\",\n        \"prefix\": \"a1b2c3d4\",\n        \"scopes\": [\n          \"shipments:read\",\n          \"shipments:write\"\n        ],\n        \"lastUsedAt\": \"2026-10-10T06:00:00.000Z\",\n        \"expiresAt\": null,\n        \"revokedAt\": null,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ]\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Create an API key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/api-keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "api-keys"
+              ]
+            },
+            "description": "Signed-in CUSTOMER session only; API keys are rejected with 403 API_KEY_NOT_ALLOWED so a key can never create or revoke keys. The full key (eh_live_<prefix>_<secret>) is returned once and stored only as a SHA-256 hash. Up to 10 active keys; 409 API_KEY_LIMIT beyond that. Writes an API_KEY_CREATED audit record without the key.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Shop backend\",\n  \"scopes\": [\n    \"shipments:read\",\n    \"shipments:write\"\n  ],\n  \"expiresInDays\": 365\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/api-keys",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "api-keys"
+                  ]
+                },
+                "description": "Signed-in CUSTOMER session only; API keys are rejected with 403 API_KEY_NOT_ALLOWED so a key can never create or revoke keys. The full key (eh_live_<prefix>_<secret>) is returned once and stored only as a SHA-256 hash. Up to 10 active keys; 409 API_KEY_LIMIT beyond that. Writes an API_KEY_CREATED audit record without the key.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Shop backend\",\n  \"scopes\": [\n    \"shipments:read\",\n    \"shipments:write\"\n  ],\n  \"expiresInDays\": 365\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"API key created. Copy it now: it will not be shown again.\",\n  \"data\": {\n    \"apiKey\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Shop backend\",\n      \"prefix\": \"a1b2c3d4\",\n      \"scopes\": [\n        \"shipments:read\",\n        \"shipments:write\"\n      ],\n      \"lastUsedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"expiresAt\": null,\n      \"revokedAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"key\": \"eh_live_a1b2c3d4_<shown-once-secret>\"\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Revoke an API key",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/api-keys/{{apiKeyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "api-keys",
+                "{{apiKeyId}}"
+              ]
+            },
+            "description": "Signed-in CUSTOMER session only; API keys are rejected with 403 API_KEY_NOT_ALLOWED so a key can never create or revoke keys. Requests with the key fail with 401 INVALID_API_KEY immediately. Idempotent for already revoked keys."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/api-keys/{{apiKeyId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "api-keys",
+                    "{{apiKeyId}}"
+                  ]
+                },
+                "description": "Signed-in CUSTOMER session only; API keys are rejected with 403 API_KEY_NOT_ALLOWED so a key can never create or revoke keys. Requests with the key fail with 401 INVALID_API_KEY immediately. Idempotent for already revoked keys."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"API key revoked\",\n  \"data\": {\n    \"apiKey\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"name\": \"Shop backend\",\n      \"prefix\": \"a1b2c3d4\",\n      \"scopes\": [\n        \"shipments:read\",\n        \"shipments:write\"\n      ],\n      \"lastUsedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"expiresAt\": null,\n      \"revokedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "List webhook endpoints",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "webhooks"
+              ]
+            },
+            "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. available is false when the server has no WEBHOOK_ENCRYPTION_KEY. Signing secrets are never returned. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/webhooks",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "webhooks"
+                  ]
+                },
+                "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. available is false when the server has no WEBHOOK_ENCRYPTION_KEY. Signing secrets are never returned. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Webhook endpoints fetched successfully\",\n  \"data\": {\n    \"endpoints\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"url\": \"https://shop.example.com/expresshub/webhooks\",\n        \"description\": \"Order system\",\n        \"events\": [\n          \"shipment.status_changed\",\n          \"shipment.delivered\"\n        ],\n        \"active\": true,\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"available\": true\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Add a webhook endpoint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "webhooks"
+              ]
+            },
+            "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. The URL is resolved and every address must be public (400 WEBHOOK_URL_INVALID otherwise). The signing secret is encrypted at rest and returned once. Up to 5 endpoints (409 WEBHOOK_LIMIT). 503 WEBHOOKS_UNAVAILABLE without WEBHOOK_ENCRYPTION_KEY. Deliveries are POSTs with ExpressHub-Signature: t=<unix>,v1=<hex HMAC-SHA256(secret, \"<t>.<body>\")>, ExpressHub-Event-Id and ExpressHub-Event-Type; any 2xx within 5 seconds counts as delivered, redirects are not followed, and failures retry with backoff for up to 8 attempts. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://shop.example.com/expresshub/webhooks\",\n  \"description\": \"Order system\",\n  \"events\": [\n    \"shipment.status_changed\",\n    \"shipment.delivered\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/webhooks",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "webhooks"
+                  ]
+                },
+                "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. The URL is resolved and every address must be public (400 WEBHOOK_URL_INVALID otherwise). The signing secret is encrypted at rest and returned once. Up to 5 endpoints (409 WEBHOOK_LIMIT). 503 WEBHOOKS_UNAVAILABLE without WEBHOOK_ENCRYPTION_KEY. Deliveries are POSTs with ExpressHub-Signature: t=<unix>,v1=<hex HMAC-SHA256(secret, \"<t>.<body>\")>, ExpressHub-Event-Id and ExpressHub-Event-Type; any 2xx within 5 seconds counts as delivered, redirects are not followed, and failures retry with backoff for up to 8 attempts. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"url\": \"https://shop.example.com/expresshub/webhooks\",\n  \"description\": \"Order system\",\n  \"events\": [\n    \"shipment.status_changed\",\n    \"shipment.delivered\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Webhook endpoint created. Copy the signing secret now: it will not be shown again.\",\n  \"data\": {\n    \"endpoint\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"url\": \"https://shop.example.com/expresshub/webhooks\",\n      \"description\": \"Order system\",\n      \"events\": [\n        \"shipment.status_changed\",\n        \"shipment.delivered\"\n      ],\n      \"active\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"secret\": \"whsec_<shown-once-secret>\"\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Update a webhook endpoint",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/webhooks/{{webhookId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "webhooks",
+                "{{webhookId}}"
+              ]
+            },
+            "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. A new URL is vetted like on creation. Disabled endpoints receive nothing; queued deliveries for them are marked DEAD. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/webhooks/{{webhookId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "webhooks",
+                    "{{webhookId}}"
+                  ]
+                },
+                "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. A new URL is vetted like on creation. Disabled endpoints receive nothing; queued deliveries for them are marked DEAD. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"active\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Webhook endpoint updated\",\n  \"data\": {\n    \"endpoint\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"url\": \"https://shop.example.com/expresshub/webhooks\",\n      \"description\": \"Order system\",\n      \"events\": [\n        \"shipment.status_changed\",\n        \"shipment.delivered\"\n      ],\n      \"active\": false,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Delete a webhook endpoint",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/webhooks/{{webhookId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "webhooks",
+                "{{webhookId}}"
+              ]
+            },
+            "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. Also deletes the endpoint's delivery log. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/webhooks/{{webhookId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "webhooks",
+                    "{{webhookId}}"
+                  ]
+                },
+                "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. Also deletes the endpoint's delivery log. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Webhook endpoint deleted\",\n  \"data\": {\n    \"id\": \"cm123456789012345678901234\"\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Rotate a webhook signing secret",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/webhooks/{{webhookId}}/rotate-secret",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "webhooks",
+                "{{webhookId}}",
+                "rotate-secret"
+              ]
+            },
+            "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. The old secret stops being used immediately. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/webhooks/{{webhookId}}/rotate-secret",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "webhooks",
+                    "{{webhookId}}",
+                    "rotate-secret"
+                  ]
+                },
+                "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. The old secret stops being used immediately. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Signing secret rotated. Copy it now: it will not be shown again.\",\n  \"data\": {\n    \"endpoint\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"url\": \"https://shop.example.com/expresshub/webhooks\",\n      \"description\": \"Order system\",\n      \"events\": [\n        \"shipment.status_changed\",\n        \"shipment.delivered\"\n      ],\n      \"active\": true,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n    },\n    \"secret\": \"whsec_<shown-once-secret>\"\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Send a test webhook",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/webhooks/{{webhookId}}/test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "webhooks",
+                "{{webhookId}}",
+                "test"
+              ]
+            },
+            "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. Queues a signed webhook.test event and sends it right after the response. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/webhooks/{{webhookId}}/test",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "webhooks",
+                    "{{webhookId}}",
+                    "test"
+                  ]
+                },
+                "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. Queues a signed webhook.test event and sends it right after the response. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+              },
+              "status": "OK",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Test event queued\",\n  \"data\": {\n    \"delivery\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"eventId\": \"evt_cm123456789012345678901234_delivered\",\n      \"eventType\": \"webhook.test\",\n      \"shipmentId\": null,\n      \"status\": \"PENDING\",\n      \"attempts\": 0,\n      \"nextAttemptAt\": \"2026-10-10T06:00:00.000Z\",\n      \"lastStatusCode\": null,\n      \"lastError\": null,\n      \"deliveredAt\": null,\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "List webhook deliveries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/webhooks/{{webhookId}}/deliveries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "webhooks",
+                "{{webhookId}}",
+                "deliveries"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "Positive decimal digits only; no leading zeros."
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Optional status filter."
+                }
+              ]
+            },
+            "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. Newest first, with attempts, the last response code and error, and the next retry time. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/webhooks/{{webhookId}}/deliveries",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "webhooks",
+                    "{{webhookId}}",
+                    "deliveries"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true,
+                      "description": "Positive decimal digits only; no leading zeros."
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "disabled": true,
+                      "description": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "disabled": true,
+                      "description": "Optional status filter."
+                    }
+                  ]
+                },
+                "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. Newest first, with attempts, the last response code and error, and the next retry time. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Webhook deliveries fetched successfully\",\n  \"data\": {\n    \"deliveries\": [\n      {\n        \"id\": \"cm123456789012345678901234\",\n        \"eventId\": \"evt_cm123456789012345678901234_delivered\",\n        \"eventType\": \"shipment.delivered\",\n        \"shipmentId\": \"cm123456789012345678901234\",\n        \"status\": \"SENT\",\n        \"attempts\": 1,\n        \"nextAttemptAt\": \"2026-10-10T06:00:00.000Z\",\n        \"lastStatusCode\": 204,\n        \"lastError\": null,\n        \"deliveredAt\": \"2026-10-10T06:00:00.000Z\",\n        \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n      }\n    ],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 20,\n      \"total\": 1,\n      \"totalPages\": 1\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Retry a failed webhook delivery",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/developer/webhook-deliveries/{{deliveryId}}/retry",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "developer",
+                "webhook-deliveries",
+                "{{deliveryId}}",
+                "retry"
+              ]
+            },
+            "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. Moves a DEAD delivery back to PENDING with attempts reset. 409 WEBHOOK_DELIVERY_CONFLICT if it is not DEAD; 404 for another customer's delivery. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/developer/webhook-deliveries/{{deliveryId}}/retry",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "developer",
+                    "webhook-deliveries",
+                    "{{deliveryId}}",
+                    "retry"
+                  ]
+                },
+                "description": "CUSTOMER session, or a merchant API key with the webhooks:manage scope. Moves a DEAD delivery back to PENDING with attempts reset. 409 WEBHOOK_DELIVERY_CONFLICT if it is not DEAD; 404 for another customer's delivery. Also accepts a merchant API key with the webhooks:manage scope (rate limited to 120 requests per minute per key); keys act with CUSTOMER rights."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Delivery queued for retry\",\n  \"data\": {\n    \"delivery\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"eventId\": \"evt_cm123456789012345678901234_delivered\",\n      \"eventType\": \"shipment.delivered\",\n      \"shipmentId\": \"cm123456789012345678901234\",\n      \"status\": \"PENDING\",\n      \"attempts\": 0,\n      \"nextAttemptAt\": \"2026-10-10T06:00:00.000Z\",\n      \"lastStatusCode\": 204,\n      \"lastError\": null,\n      \"deliveredAt\": \"2026-10-10T06:00:00.000Z\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\"\n    }\n  }\n}"
             }
           ],
           "event": []
