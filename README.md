@@ -36,6 +36,20 @@ The interface includes responsive navigation, URL-based filtering and pagination
 accessible field errors, toast feedback, and loading skeletons for lists, details,
 and dashboards.
 
+### Motion
+
+GSAP (`gsap` and `@gsap/react`, set up once in `lib/gsap.ts`) animates the screens people
+see first: the home page hero and its delivery route, metric count-ups and scroll reveals;
+the public tracking timeline, including live updates; KPI count-ups on the admin, courier
+and analytics dashboards; the "Delivery confirmed" checkmark after proof of delivery; and the
+help centre list and new help chat answers. framer-motion keeps the smaller hover and enter
+effects elsewhere, and the two never animate the same element.
+
+Every GSAP animation runs inside a `prefers-reduced-motion: no-preference` media query,
+and framer-motion follows the same setting through `MotionConfig`. With reduced motion,
+or without JavaScript, content renders in its final state. Count-ups write to the existing
+text node, give way to fresh data, and always finish on the exact rendered figure.
+
 ### Forms and validation
 
 React Hook Form manages authentication, profile, shipment booking, and admin and
