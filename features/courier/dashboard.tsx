@@ -14,6 +14,7 @@ import type { CourierDashboardStats } from "./contracts";
 import { CourierShipmentListView } from "./list";
 import { useCountUpOnce } from "@/lib/gsap";
 import { useRef } from "react";
+import { LiveLocationToggle } from "./live-location";
 
 export function CourierDashboard() {
   const { data: stats, loading, refreshing, error, reload } = useResource<CourierDashboardStats>("/courier/stats");
@@ -147,6 +148,7 @@ export function CourierDashboard() {
       </div>
 
       </>}
+      <LiveLocationToggle />
       {/* Recent Deliveries list */}
       <CourierShipmentListView recent={true} />
     </div>

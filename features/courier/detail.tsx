@@ -25,6 +25,7 @@ import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { StatusTransitionControl } from "@/features/shipments/status-transition";
 import { DeliveryProofView } from "@/features/shipments/proof-view";
 import { DeliveryProofCard } from "./proof-capture";
+import { LiveLocationToggle } from "./live-location";
 
 export function CourierShipmentDetailView({ id }: { id: string }) {
   // Set when this courier confirms the delivery here, so the proof card can celebrate it.
@@ -132,6 +133,8 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
               </div>
             </CardContent>
           </Card>
+
+          {shipment.status === "OUT_FOR_DELIVERY" && <LiveLocationToggle />}
 
           {shipment.status === "OUT_FOR_DELIVERY" && (
             <DeliveryProofCard shipment={shipment} onDelivered={() => { setJustDelivered(true); reload(); }} />
