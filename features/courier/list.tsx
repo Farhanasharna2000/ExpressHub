@@ -215,7 +215,8 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
       <div className="page-heading">
         <div>
           <p className="eyebrow">On the Road</p>
-          <h1>{recent ? "Recent Deliveries" : "Assigned Shipments"}</h1>
+          {/* Embedded on the dashboard, which already has the page's h1. */}
+          {recent ? <h2>Recent Deliveries</h2> : <h1>Assigned Shipments</h1>}
           <p>
             {recent
               ? "Your most recently assigned shipments and upcoming stops."

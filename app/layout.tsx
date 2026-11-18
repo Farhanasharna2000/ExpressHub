@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { SessionProvider } from "@/features/auth/provider";
 import { Toaster } from "@/components/ui/toast";
+import { MotionProvider } from "@/components/motion-provider";
 
 export const metadata: Metadata = {
   title: {
@@ -26,10 +27,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <a className="skip-link" href="#main-content">
           Skip to content
         </a>
-        <SessionProvider>
-          {children}
-          <Toaster />
-        </SessionProvider>
+        <MotionProvider>
+          <SessionProvider>
+            {children}
+            <Toaster />
+          </SessionProvider>
+        </MotionProvider>
       </body>
     </html>
   );

@@ -139,7 +139,7 @@ export function AdminDashboard() {
                 <CardContent>
                   <div className="text-3xl font-bold">{stats.users.total}</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    <span className="font-semibold text-emerald-600">{stats.users.active}</span> active accounts
+                    <span className="font-semibold text-emerald-700">{stats.users.active}</span> active accounts
                   </p>
                 </CardContent>
               </Card>
