@@ -24,7 +24,8 @@ async function setup(page: Page) {
     if (url.pathname.endsWith("refresh-token")) return ok(route, { accessToken: "token" });
     if (url.pathname.endsWith("users/me")) return ok(route, { user: { id: "owner", name: "Sender Name", email: "sender@example.com", phone: null, role: "CUSTOMER", isActive: true } });
     expect(request.headers().authorization).toBe("Bearer token");
-    if (url.pathname.endsWith("/status")) { shipment = { ...shipment, status: "CANCELLED" }; return ok(route, { shipment }); }
+    if (url.pathname.endsWith("/ai/status")) return ok(route, { enabled: false });
+    if (url.pathname.endsWith(`/shipments/${id}/status`)) { shipment = { ...shipment, status: "CANCELLED" }; return ok(route, { shipment }); }
     if (url.pathname.endsWith(`/shipments/${id}`)) return ok(route, { shipment });
     if (url.pathname.endsWith("/shipments") && request.method() === "POST") return ok(route, { shipment });
     if (url.pathname.endsWith("/shipments")) {
