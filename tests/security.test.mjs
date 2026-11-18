@@ -129,6 +129,9 @@ test("HTML pages get a CSP that blocks framing, plugins and base-tag injection",
   for (const directive of ["frame-ancestors 'none'", "base-uri 'none'", "object-src 'none'", "form-action 'self' https://checkout.stripe.com", "connect-src 'self'"]) {
     assert.ok(csp.includes(directive), directive);
   }
+  // Geolocation only for this origin (courier live location); camera and microphone stay off.
+  const shared = entries.find((entry) => entry.source === "/:path*").headers.find(({ key }) => key === "Permissions-Policy").value;
+  assert.equal(shared, "camera=(), microphone=(), geolocation=(self)");
   // Map tiles are the only third-party images; scripts and connections stay same-origin.
   const imgSrc = csp.split(";").map((part) => part.trim()).find((part) => part.startsWith("img-src"));
   assert.equal(imgSrc, "img-src 'self' data: blob: https://tile.openstreetmap.org");
