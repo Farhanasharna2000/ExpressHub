@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import { BookOpen, HelpCircle, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { RevealIn } from "@/components/stagger-in";
 import { useSession } from "@/features/auth/provider";
 import { isCancelled } from "@/lib/client/api";
 import { aiErrorMessage } from "./ai-error";
@@ -129,7 +130,7 @@ function HelpPanel() {
                 </div>
               </div>
             )}
-            {exchanges.map((item) => (
+            {exchanges.map((item, index) => (
               <div key={item.id} className="space-y-2">
                 <p className="ml-8 rounded-lg bg-primary/10 px-3 py-2"><span className="sr-only">You asked: </span>{item.question}</p>
                 {!item.reply && !item.error && (
@@ -139,7 +140,8 @@ function HelpPanel() {
                 )}
                 {item.error && <p role="alert" className="text-destructive">{item.error}</p>}
                 {item.reply && (
-                  <div className="mr-8 space-y-2 rounded-lg border bg-background px-3 py-2">
+                  // Only the newest answer animates, so reopening the panel doesn't replay old ones.
+                  <RevealIn animate={index === exchanges.length - 1} className="mr-8 space-y-2 rounded-lg border bg-background px-3 py-2">
                     <p>{item.reply.answer}</p>
                     {item.reply.fallback ? (
                       <Link href="/help" onClick={() => setOpen(false)} className="text-xs font-medium text-primary hover:underline">
@@ -159,7 +161,7 @@ function HelpPanel() {
                         </ul>
                       </div>
                     )}
-                  </div>
+                  </RevealIn>
                 )}
               </div>
             ))}

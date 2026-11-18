@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import { StaggerIn } from "@/components/stagger-in";
 import { readHelpArticles } from "@/lib/help-articles";
 
 export const dynamic = "force-static";
@@ -23,6 +24,7 @@ export default function HelpCentrePage() {
       </div>
       <Card>
         <CardContent className="pt-6">
+          <StaggerIn selector=":scope > ul > li">
           <ul className="grid gap-3 sm:grid-cols-2">
             {articles.map((article) => (
               <li key={article.slug}>
@@ -36,6 +38,7 @@ export default function HelpCentrePage() {
               </li>
             ))}
           </ul>
+          </StaggerIn>
         </CardContent>
       </Card>
     </div>
