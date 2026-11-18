@@ -52,7 +52,8 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/((?!api/).*)",
+        // Excludes /api itself as well as /api/*, so no JSON route gets the page policy.
+        source: "/((?!api(?:/|$)).*)",
         headers: [{ key: "Content-Security-Policy", value: pageContentSecurityPolicy }],
       },
       {
