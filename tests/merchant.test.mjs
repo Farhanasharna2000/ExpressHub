@@ -38,7 +38,7 @@ test("API keys are allowed only on listed routes with the matching scope", () =>
   assert.equal(scope("POST", "/api/v1/shipments"), "shipments:write");
   assert.equal(scope("PATCH", "/api/v1/shipments/cmabc123/status"), "shipments:write");
   assert.equal(scope("POST", "/api/v1/developer/webhooks"), "webhooks:manage");
-  assert.equal(scope("POST", "/api/v1/developer/webhooks/cm1/deliveries/cm2/retry"), "webhooks:manage");
+  assert.equal(scope("POST", "/api/v1/developer/webhook-deliveries/cm2/retry"), "webhooks:manage");
   // Never reachable with a key: key management, auth, profile, payments, AI, admin and courier routes.
   for (const [method, path] of [
     ["GET", "/api/v1/developer/api-keys"], ["POST", "/api/v1/developer/api-keys"], ["DELETE", "/api/v1/developer/api-keys/cm1"],

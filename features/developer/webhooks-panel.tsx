@@ -200,7 +200,7 @@ function DeliveryLog({ path, run }: { path: string; run: Run }) {
               <td className="py-1.5">
                 {delivery.status === "DEAD" && (
                   <Button size="sm" variant="outline" onClick={() => void run(async () => {
-                    await store.api.request(`${path}/deliveries/${encodeURIComponent(delivery.id)}/retry`, { method: "POST" });
+                    await store.api.request(`/developer/webhook-deliveries/${encodeURIComponent(delivery.id)}/retry`, { method: "POST" });
                     toast.success("Delivery queued", "It will be sent again in a moment.");
                   }, "Could not retry delivery")}>Retry</Button>
                 )}

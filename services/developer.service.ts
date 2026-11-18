@@ -228,16 +228,17 @@ export async function listDeliveries(actor: AuthenticatedUser, id: string, input
   return { deliveries: result.items, pagination: result.pagination };
 }
 
-export async function retryDelivery(actor: AuthenticatedUser, endpointId: string, deliveryId: string) {
+export async function retryDelivery(actor: AuthenticatedUser, deliveryId: string) {
   requireCustomer(actor);
+  // Ownership goes through the endpoint, so another customer's delivery is simply not found.
+  const owned = { id: deliveryId, endpoint: { userId: actor.id } } satisfies Prisma.WebhookDeliveryWhereInput;
   return prisma.$transaction(async (tx) => {
-    await ownEndpoint(tx, actor, endpointId);
     const updated = await tx.webhookDelivery.updateMany({
-      where: { id: deliveryId, endpointId, status: "DEAD" },
+      where: { ...owned, status: "DEAD" },
       data: { status: "PENDING", attempts: 0, nextAttemptAt: new Date(), lastError: null },
     });
     if (updated.count !== 1) {
-      const exists = await tx.webhookDelivery.findFirst({ where: { id: deliveryId, endpointId }, select: { id: true } });
+      const exists = await tx.webhookDelivery.findFirst({ where: owned, select: { id: true } });
       if (!exists) throw new AppError(404, "Delivery not found", "WEBHOOK_DELIVERY_NOT_FOUND");
       throw new AppError(409, "Only deliveries that failed every retry can be retried", "WEBHOOK_DELIVERY_CONFLICT");
     }

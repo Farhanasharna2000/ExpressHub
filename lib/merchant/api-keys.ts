@@ -57,7 +57,7 @@ export const API_KEY_ROUTES: readonly Rule[] = [
   route("POST", "/developer/webhooks/:id/rotate-secret", "webhooks:manage"),
   route("POST", "/developer/webhooks/:id/test", "webhooks:manage"),
   route("GET", "/developer/webhooks/:id/deliveries", "webhooks:manage"),
-  route("POST", "/developer/webhooks/:id/deliveries/:id/retry", "webhooks:manage"),
+  route("POST", "/developer/webhook-deliveries/:id/retry", "webhooks:manage"),
 ];
 
 export function apiKeyScopeFor(method: string, pathname: string): ApiKeyScope | null {

@@ -200,9 +200,10 @@ try {
   assert.equal(dead.lastStatusCode, 503);
   const page = await developer.listDeliveries(customer, endpoint.id, { page: 1, limit: 10, status: "DEAD" });
   assert.deepEqual(page.deliveries.map((delivery) => delivery.id), [test.id]);
-  const retried = await developer.retryDelivery(customer, endpoint.id, test.id);
+  await rejectsWith(developer.retryDelivery(other, test.id), 404, "WEBHOOK_DELIVERY_NOT_FOUND");
+  const retried = await developer.retryDelivery(customer, test.id);
   assert.equal(retried.delivery.status, "PENDING");
-  await rejectsWith(developer.retryDelivery(customer, endpoint.id, test.id), 409, "WEBHOOK_DELIVERY_CONFLICT");
+  await rejectsWith(developer.retryDelivery(customer, test.id), 409, "WEBHOOK_DELIVERY_CONFLICT");
 
   // Rotation changes the signing secret; deleting an endpoint removes its deliveries.
   const rotated = await developer.rotateWebhookSecret(customer, endpoint.id);

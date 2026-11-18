@@ -8,11 +8,11 @@ import { developerIdSchema } from "@/validators/developer";
 
 export const runtime = "nodejs";
 
-export async function POST(request: NextRequest, context: { params: Promise<{ id: string; deliveryId: string }> }) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const actor = await requireUser(request);
-    const params = await context.params;
-    const result = await retryDelivery(actor, developerIdSchema.parse(params.id), developerIdSchema.parse(params.deliveryId));
+    const id = developerIdSchema.parse((await context.params).id);
+    const result = await retryDelivery(actor, id);
     scheduleWebhookDispatch();
     return successResponse("Delivery queued for retry", result);
   } catch (error) {
