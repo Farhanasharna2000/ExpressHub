@@ -1,6 +1,7 @@
 import { lookup as dnsLookup } from "node:dns/promises";
 import { request as httpsRequest } from "node:https";
 import { isIP, type LookupFunction } from "node:net";
+import { MAX_WEBHOOK_URL_LENGTH } from "@/lib/merchant/scopes";
 
 // Outbound requests to merchant-supplied URLs (webhooks). Without these checks a
 // merchant could point ExpressHub at its own internal network or a cloud metadata
@@ -118,7 +119,7 @@ export function classifyAddress(address: string): Classification {
   return blocked("Not an IP address");
 }
 
-export const MAX_WEBHOOK_URL_LENGTH = 2048;
+export { MAX_WEBHOOK_URL_LENGTH };
 
 // Shape checks that need no network. The URL parser already normalises numeric IPv4
 // forms (2130706433, 0x7f.1, 0177.0.0.1) to dotted decimal before we classify them.
@@ -225,10 +226,12 @@ export async function safePost(
       response.on("close", finish);
       response.on("error", finish);
     });
-    const timer = setTimeout(() => request.destroy(new UnsafeUrlError(`No response within ${timeoutMs / 1000}s`)), timeoutMs);
+    // A timeout is retryable, unlike an unsafe address, so it is a plain Error.
+    const timeout = new Error(`No response within ${timeoutMs / 1000}s`);
+    const timer = setTimeout(() => request.destroy(timeout), timeoutMs);
     request.on("error", (error) => {
       clearTimeout(timer);
-      reject(error instanceof UnsafeUrlError ? error : new Error(`Connection failed: ${(error as NodeJS.ErrnoException).code ?? error.message}`));
+      reject(error === timeout ? timeout : new Error(`Connection failed: ${(error as NodeJS.ErrnoException).code ?? error.message}`));
     });
     request.on("close", () => clearTimeout(timer));
     request.end(body);

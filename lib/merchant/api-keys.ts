@@ -1,9 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import type { ApiKeyScope } from "@/lib/merchant/scopes";
 
-export const API_KEY_SCOPES = ["shipments:read", "shipments:write", "webhooks:manage"] as const;
-export type ApiKeyScope = (typeof API_KEY_SCOPES)[number];
-
-export const MAX_ACTIVE_API_KEYS = 10;
+export { API_KEY_SCOPES, MAX_ACTIVE_API_KEYS, type ApiKeyScope } from "@/lib/merchant/scopes";
 const KEY_PREFIX = "eh_live_";
 const KEY_PATTERN = /^eh_live_([a-z0-9]{8})_([A-Za-z0-9_-]{43})$/;
 

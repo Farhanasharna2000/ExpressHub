@@ -9,6 +9,7 @@ import { paginateTransaction } from "@/lib/db/pagination";
 import type { PaymentGateway } from "@/lib/payments/stripe";
 import { enqueueShipmentNotification } from "@/services/notifications/outbox";
 import { releaseCourierLocationIfIdle } from "@/services/courier-location-release";
+import { enqueueShipmentWebhooks } from "@/services/webhooks/outbox";
 import { applyRefund, reserveRefund, sendRefund } from "@/services/payment.service";
 import type {
   AssignCourierInput,
@@ -109,6 +110,7 @@ async function record(
     },
   });
   await enqueueShipmentNotification(tx, shipment, event);
+  await enqueueShipmentWebhooks(tx, shipment, event, fromStatus ?? null);
   await tx.auditLog.create({
     data: {
       actorId,
