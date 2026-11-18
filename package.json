@@ -47,7 +47,7 @@
     "e2e:seed": "node --env-file-if-exists=.env prisma/seed-e2e.mjs",
     "e2e:cleanup": "node --env-file-if-exists=.env prisma/seed-e2e.mjs --cleanup",
     "test:load": "k6 run tests/load/smoke.js",
-    "test:tracking": "node --test tests/tracking.test.mjs",
+    "test:tracking": "node --test tests/tracking.test.mjs tests/courier-location.test.mjs",
     "test:tracking:integration": "node tests/tracking.integration.mjs",
     "test:analytics": "node --test tests/analytics.test.mjs",
     "test:analytics:integration": "node tests/analytics.integration.mjs"

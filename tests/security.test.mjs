@@ -129,6 +129,12 @@ test("HTML pages get a CSP that blocks framing, plugins and base-tag injection",
   for (const directive of ["frame-ancestors 'none'", "base-uri 'none'", "object-src 'none'", "form-action 'self' https://checkout.stripe.com", "connect-src 'self'"]) {
     assert.ok(csp.includes(directive), directive);
   }
+  // Map tiles are the only third-party images; scripts and connections stay same-origin.
+  const imgSrc = csp.split(";").map((part) => part.trim()).find((part) => part.startsWith("img-src"));
+  assert.equal(imgSrc, "img-src 'self' data: blob: https://tile.openstreetmap.org");
+  // The API policy stays untouched by the map change.
+  const api = entries.find((entry) => entry.source === "/api/:path*").headers.find(({ key }) => key === "Content-Security-Policy").value;
+  assert.match(api, /^default-src 'none'/);
   // The page rule never applies to API routes, which keep default-src 'none'.
   const pattern = new RegExp(`^${page.source.replace("/(", "/(?:")}$`);
   for (const path of ["/", "/login", "/admin/shipments/1"]) assert.match(path, pattern);

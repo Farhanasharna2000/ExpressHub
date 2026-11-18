@@ -23,13 +23,26 @@ export const publicTrackingEventSchema = z.strictObject({
   hub: z.string().nullable(),
 });
 
+// At most 3 decimal places (about 110 m): an exact courier position can never pass.
+const roundedCoordinate = (min: number, max: number) =>
+  z.number().finite().min(min).max(max).refine((value) => Math.abs(value * 1000 - Math.round(value * 1000)) < 1e-6, "Public coordinates are rounded to 3 decimals");
+
+export const publicCourierLocationSchema = z.strictObject({
+  lat: roundedCoordinate(-90, 90),
+  lng: roundedCoordinate(-180, 180),
+  updatedAt: z.iso.datetime(),
+});
+
 export const publicTrackingSchema = z.strictObject({
   trackingNumber: z.string().regex(TRACKING_NUMBER_PATTERN),
   status: statuses,
   createdAt: z.iso.datetime(),
   deliveredAt: z.iso.datetime().nullable(),
   events: z.array(publicTrackingEventSchema),
+  // Only while out for delivery with a fresh position; no courier identity, accuracy or heading.
+  courierLocation: publicCourierLocationSchema.nullable(),
 });
 
 export type PublicTracking = z.infer<typeof publicTrackingSchema>;
 export type PublicTrackingEvent = z.infer<typeof publicTrackingEventSchema>;
+export type PublicTrackingCourierLocation = z.infer<typeof publicCourierLocationSchema>;

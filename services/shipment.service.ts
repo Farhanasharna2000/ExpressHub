@@ -8,6 +8,7 @@ import prisma from "@/lib/prisma";
 import { paginateTransaction } from "@/lib/db/pagination";
 import type { PaymentGateway } from "@/lib/payments/stripe";
 import { enqueueShipmentNotification } from "@/services/notifications/outbox";
+import { releaseCourierLocationIfIdle } from "@/services/courier-location-release";
 import { applyRefund, reserveRefund, sendRefund } from "@/services/payment.service";
 import type {
   AssignCourierInput,
@@ -118,6 +119,10 @@ async function record(
       details,
     },
   });
+  // A courier's live location is only kept while they still have a delivery out.
+  if (fromStatus === "OUT_FOR_DELIVERY" && shipment.courierId) {
+    await releaseCourierLocationIfIdle(tx, shipment.courierId);
+  }
 }
 
 export async function createShipment(

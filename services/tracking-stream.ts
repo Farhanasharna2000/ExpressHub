@@ -1,3 +1,4 @@
+import { publicCourierLocation, type StoredLocation } from "@/lib/courier-location";
 import { publicTrackingSchema, type PublicTracking } from "@/validators/track";
 
 export const TERMINAL_STATUSES = new Set(["DELIVERED", "RETURNED", "CANCELLED"]);
@@ -16,11 +17,13 @@ export type TrackingRow = {
     originHub: HubRef;
     destinationHub: HubRef;
   }>;
+  hasCourier?: boolean;
+  courierLocation?: StoredLocation | null;
 };
 
 // Maps a database row to the public shape and validates it, so a field added to
 // the query by mistake fails loudly here instead of reaching an anonymous caller.
-export function toPublicTracking(row: TrackingRow): PublicTracking {
+export function toPublicTracking(row: TrackingRow, now = Date.now()): PublicTracking {
   return publicTrackingSchema.parse({
     trackingNumber: row.trackingNumber,
     status: row.status,
@@ -32,12 +35,17 @@ export function toPublicTracking(row: TrackingRow): PublicTracking {
       occurredAt: event.occurredAt.toISOString(),
       hub: (event.type === "HUB_TRANSFER" ? event.destinationHub : event.destinationHub ?? event.originHub)?.name ?? null,
     })),
+    courierLocation: publicCourierLocation({ status: row.status, hasCourier: row.hasCourier ?? false }, row.courierLocation, now),
   });
 }
 
+// Changes when the timeline or the courier's public position changes (including the
+// position appearing or going stale), so the stream pushes exactly those updates.
 export function trackingSignature(tracking: PublicTracking) {
   const last = tracking.events.at(-1);
-  return `${tracking.status}|${tracking.events.length}|${last?.occurredAt ?? ""}|${last?.type ?? ""}`;
+  const location = tracking.courierLocation;
+  const where = location ? `${location.lat},${location.lng},${location.updatedAt}` : "-";
+  return `${tracking.status}|${tracking.events.length}|${last?.occurredAt ?? ""}|${last?.type ?? ""}|${where}`;
 }
 
 export type TrackingStreamOptions = {

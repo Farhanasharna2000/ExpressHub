@@ -39,7 +39,8 @@ test("tracking numbers are normalised and strictly validated", () => {
 
 test("the public shape holds only status, dates and hub names", () => {
   const tracking = toPublicTracking({ ...row, deliveryAddress: "secret", price: "120.00", customerId: "cm1" });
-  assert.deepEqual(Object.keys(tracking).sort(), ["createdAt", "deliveredAt", "events", "status", "trackingNumber"]);
+  assert.deepEqual(Object.keys(tracking).sort(), ["courierLocation", "createdAt", "deliveredAt", "events", "status", "trackingNumber"]);
+  assert.equal(tracking.courierLocation, null);
   for (const event of tracking.events) assert.deepEqual(Object.keys(event).sort(), ["hub", "occurredAt", "status", "type"]);
   assert.deepEqual(tracking.events.map((event) => event.hub), [null, "Chattogram Hub", "Dhaka Hub"]);
   const json = JSON.stringify(tracking);

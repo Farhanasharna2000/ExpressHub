@@ -17,6 +17,9 @@ export async function getPublicTracking(trackingNumber: string): Promise<PublicT
       status: true,
       createdAt: true,
       deliveredAt: true,
+      // Only the assigned courier's position, read here and rounded and reduced in
+      // toPublicTracking; no courier identity is selected or returned.
+      courier: { select: { courierLocation: { select: { latitude: true, longitude: true, updatedAt: true } } } },
       events: {
         where: { type: { in: [...PUBLIC_EVENT_TYPES] } },
         orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
@@ -26,5 +29,7 @@ export async function getPublicTracking(trackingNumber: string): Promise<PublicT
     },
   });
   // Newest events are fetched so a long history keeps its latest steps, then shown oldest first.
-  return row ? toPublicTracking({ ...row, events: row.events.reverse() }) : null;
+  if (!row) return null;
+  const { courier, ...shipment } = row;
+  return toPublicTracking({ ...shipment, events: shipment.events.reverse(), hasCourier: courier !== null, courierLocation: courier?.courierLocation ?? null });
 }
