@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ArrowRight, LayoutDashboard, LogOut } from "lucide-react";
@@ -9,6 +10,9 @@ import { Navigation } from "./navigation";
 import { Brand } from "./brand";
 import { useSession } from "@/features/auth/provider";
 import { roleHome } from "@/features/auth/session";
+
+// Loaded only on public pages and only in the browser; it hides itself when help is off.
+const HelpWidget = dynamic(() => import("@/features/ai/help-widget"), { ssr: false });
 
 export function PublicHeaderAuth() {
   const { user, status, store } = useSession();
@@ -133,7 +137,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
         ) : (
           <Link href="/#how-it-works">How it works <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
         )}
+        <Link href="/help" className="hover:underline">Help centre</Link>
       </footer>
+      <HelpWidget />
     </>
   );
 }
