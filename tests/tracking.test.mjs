@@ -5,7 +5,15 @@ import { test } from "node:test";
 
 const { trackingNumberSchema, publicTrackingSchema } = await import("../validators/track.ts");
 const { createTrackingStream, toPublicTracking, trackingSignature } = await import("../services/tracking-stream.ts");
-const { eventTitle, parseTrackingInput, reconnectDelay, trackingPath, trackingTime } = await import("../features/tracking/contracts.ts");
+const { eventTitle, journeyProgress, parseTrackingInput, reconnectDelay, trackingPath, trackingTime } = await import("../features/tracking/contracts.ts");
+
+test("the progress line fills between the first and last journey steps", () => {
+  assert.equal(journeyProgress(-1, 5), 0);
+  assert.equal(journeyProgress(0, 5), 0);
+  assert.equal(journeyProgress(2, 5), 0.5);
+  assert.equal(journeyProgress(4, 5), 1);
+  assert.equal(journeyProgress(9, 5), 1);
+});
 
 const TRACK = "EH-0123456789ABCDEF01234567";
 const at = (iso) => new Date(iso);

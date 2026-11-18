@@ -38,4 +38,8 @@ const formatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeSt
 export const trackingTime = (value: string) => formatter.format(new Date(value));
 
 // Delay before reconnecting after the stream fails: 1s, 2s, 4s … capped at 30s.
+// Share of the progress line between the first and last journey steps that is filled.
+export const journeyProgress = (index: number, steps: number) =>
+  index <= 0 || steps < 2 ? 0 : Math.min(1, index / (steps - 1));
+
 export const reconnectDelay = (attempt: number) => Math.min(30_000, 1_000 * 2 ** Math.max(0, attempt));

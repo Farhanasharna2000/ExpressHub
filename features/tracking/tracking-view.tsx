@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { gsap, useGSAP, whenMotionAllowed } from "@/lib/gsap";
 import { CheckCircle2, Circle, Clock3, MapPin, Package, Radio, TriangleAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/primitives";
 import type { ShipmentStatus } from "@/types/api";
-import { FINAL_STATUSES, eventTitle, reconnectDelay, trackingStatusLabel, trackingTime, type PublicTracking } from "./contracts";
+import { FINAL_STATUSES, eventTitle, journeyProgress, reconnectDelay, trackingStatusLabel, trackingTime, type PublicTracking } from "./contracts";
 import { TrackForm } from "./track-form";
 
 type Connection = "connecting" | "live" | "reconnecting" | "ended";
@@ -78,9 +79,12 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
   const events = [...tracking.events].reverse();
   const journeyIndex = JOURNEY.indexOf(tracking.status as (typeof JOURNEY)[number]);
   const offPath = journeyIndex === -1;
+  const progress = journeyProgress(journeyIndex, JOURNEY.length);
+  const scope = useRef<HTMLDivElement>(null);
+  useTrackingAnimations(scope, journeyIndex, tracking.events.length);
 
   return (
-    <div className="page-stack">
+    <div className="page-stack" ref={scope}>
       <div className="page-heading">
         <div>
           <p className="eyebrow">Public tracking</p>
@@ -102,7 +106,7 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
                 <p className="text-xl font-semibold">{trackingStatusLabel(tracking.status)}</p>
               </div>
             </div>
-            <StatusBadge status={tracking.status as ShipmentStatus} />
+            <span data-anim="status" className="inline-flex"><StatusBadge status={tracking.status as ShipmentStatus} /></span>
           </div>
         </CardHeader>
         <CardContent className="space-y-5 pt-5">
@@ -114,18 +118,23 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
                 : `This shipment is ${trackingStatusLabel(tracking.status).toLowerCase()}.`}
             </p>
           ) : (
-            <ol className="grid grid-cols-5 gap-2" aria-label="Delivery progress">
+            <div className="relative">
+            <div className="tracking-progress" aria-hidden="true">
+              <div className="tracking-progress-fill" style={{ transform: `scaleX(${progress})` }} />
+            </div>
+            <ol className="relative grid grid-cols-5 gap-2" aria-label="Delivery progress">
               {JOURNEY.map((step, index) => {
                 const done = index <= journeyIndex;
                 return (
-                  <li key={step} className="flex flex-col items-center gap-1 text-center text-xs" aria-current={index === journeyIndex ? "step" : undefined}>
-                    {done ? <CheckCircle2 className="size-5 text-primary" aria-hidden="true" /> : <Circle className="size-5 text-muted-foreground" aria-hidden="true" />}
+                  <li key={step} data-anim="step" className="flex flex-col items-center gap-1 text-center text-xs" aria-current={index === journeyIndex ? "step" : undefined}>
+                    {done ? <CheckCircle2 className="size-5 rounded-full bg-card text-primary" aria-hidden="true" /> : <Circle className="size-5 rounded-full bg-card text-muted-foreground" aria-hidden="true" />}
                     <span className={done ? "font-medium" : "text-muted-foreground"}>{trackingStatusLabel(step)}</span>
                     <span className="sr-only">{done ? "completed" : "not yet"}</span>
                   </li>
                 );
               })}
             </ol>
+            </div>
           )}
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div><dt className="text-xs text-muted-foreground">Booked</dt><dd><time dateTime={tracking.createdAt}>{trackingTime(tracking.createdAt)}</time></dd></div>
@@ -163,6 +172,37 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
       </Card>
     </div>
   );
+}
+
+// The first render plays an entrance; later renders animate only what changed: the
+// progress line grows to the new step and the newest history entry slides in. React has
+// already put the new status text in the DOM, so nothing waits on an animation.
+function useTrackingAnimations(scope: React.RefObject<HTMLDivElement | null>, journeyIndex: number, eventCount: number) {
+  const previous = useRef<{ index: number; count: number } | null>(null);
+  useGSAP(() => {
+    const before = previous.current;
+    previous.current = { index: journeyIndex, count: eventCount };
+    const fill = scope.current?.querySelector(".tracking-progress-fill");
+    const to = journeyProgress(journeyIndex, JOURNEY.length);
+    whenMotionAllowed(() => {
+      if (!before) {
+        const intro = gsap.timeline({ defaults: { ease: "power3.out" } });
+        intro.fromTo("[data-anim=step]", { opacity: 0, y: 10 }, { opacity: 1, y: 0, stagger: 0.08, duration: 0.45, clearProps: "opacity,transform" });
+        if (fill) intro.fromTo(fill, { scaleX: 0 }, { scaleX: to, duration: 0.9, ease: "power2.inOut" }, 0.15);
+        intro.fromTo(".shipment-timeline > li", { opacity: 0, x: -12 }, { opacity: 1, x: 0, stagger: 0.07, duration: 0.45, clearProps: "opacity,transform" }, 0.2);
+        return;
+      }
+      if (fill && before.index !== journeyIndex) {
+        gsap.fromTo(fill, { scaleX: journeyProgress(before.index, JOURNEY.length) }, { scaleX: to, duration: 0.7, ease: "power2.inOut" });
+      }
+      if (eventCount > before.count) {
+        gsap.fromTo(".shipment-timeline > li:first-child", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.5, clearProps: "opacity,transform" });
+        gsap.fromTo("[data-anim=status]", { scale: 1.15 }, { scale: 1, duration: 0.6, ease: "back.out(3)", clearProps: "transform" });
+      }
+    });
+    // Reset on unmount (and React Strict Mode's simulated one) so the entrance replays.
+    return () => { previous.current = null; };
+  }, { scope, dependencies: [journeyIndex, eventCount] });
 }
 
 function ConnectionBadge({ connection }: { connection: Connection }) {
