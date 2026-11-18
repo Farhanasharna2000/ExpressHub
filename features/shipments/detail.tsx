@@ -9,6 +9,7 @@ import { Clock3, Package, MapPin, Loader2, RefreshCw, CheckCircle2, ArrowLeft } 
 import { PayWithStripeButton } from "@/features/payments/initiate-button";
 import { CopyTrackingLink } from "@/features/tracking/copy-tracking-link";
 import { DeliveryProofView } from "./proof-view";
+import { ShipmentCourierMap } from "@/features/maps/shipment-courier-map";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
@@ -71,6 +72,7 @@ export function ShipmentDetails({ id }: { id: string }) {
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="size-5" />Delivery route</CardTitle></CardHeader><CardContent className="space-y-6 break-words"><Address title="Pickup" name={shipment.pickupContactName} phone={shipment.pickupContactPhone} address={shipment.pickupAddress} /><Address title="Delivery" name={shipment.deliveryContactName} phone={shipment.deliveryContactPhone} address={shipment.deliveryAddress} /></CardContent></Card>
         <Card><CardHeader><CardTitle className="flex items-center gap-2"><Package className="size-5" />Parcel details</CardTitle></CardHeader><CardContent className="space-y-3 break-words"><p><strong>Weight:</strong> {shipment.parcelWeightKg} kg</p><p>{shipment.packageDescription || "No parcel description provided."}</p><p><strong>Preferred pickup:</strong> {shipment.pickupScheduledAt ? dateTime(shipment.pickupScheduledAt) : "Not specified"}</p>{shipment.deliveredAt && <p><strong>Delivered:</strong> {dateTime(shipment.deliveredAt)}</p>}<p className="text-xs">Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p></CardContent></Card>
       </div>
+      <ShipmentCourierMap shipmentId={shipment.id} status={shipment.status} />
       {shipment.deliveryProof && <DeliveryProofView shipmentId={shipment.id} proof={shipment.deliveryProof} />}
       <Card><CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-5" />Shipment history</CardTitle></CardHeader><CardContent>{events.length ? <ol className="shipment-timeline">{events.map((event, idx) => <motion.li initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.07, duration: 0.3 }} key={event.id}><div className="flex flex-wrap items-center gap-3"><h3 className="text-base">{statusLabel(event.type)}</h3>{event.toStatus && <StatusBadge status={event.toStatus} />}</div><time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{dateTime(event.occurredAt)}</time>{event.publicNote && <p className="break-words">{event.publicNote}</p>}</motion.li>)}</ol> : <EmptyState title="No history yet" description="Delivery updates will appear here as your shipment progresses." />}</CardContent></Card>
       <Card><CardHeader><CardTitle>Next steps</CardTitle></CardHeader><CardContent className="space-y-4">

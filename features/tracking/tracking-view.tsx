@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/primitives";
 import type { ShipmentStatus } from "@/types/api";
 import { FINAL_STATUSES, eventTitle, journeyProgress, reconnectDelay, trackingStatusLabel, trackingTime, type PublicTracking } from "./contracts";
 import { TrackForm } from "./track-form";
+import { CourierLocationCard } from "@/features/maps/courier-location-card";
 
 type Connection = "connecting" | "live" | "reconnecting" | "ended";
 
@@ -142,6 +143,8 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
           </dl>
         </CardContent>
       </Card>
+
+      {tracking.courierLocation && <CourierLocationCard location={tracking.courierLocation} />}
 
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-5" aria-hidden="true" />Tracking history</CardTitle></CardHeader>

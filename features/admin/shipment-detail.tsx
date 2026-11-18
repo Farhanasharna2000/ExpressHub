@@ -23,6 +23,7 @@ import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { AssignCourierControl } from "@/features/shipments/assign-courier";
 import { StatusTransitionControl } from "@/features/shipments/status-transition";
 import { DeliveryProofView } from "@/features/shipments/proof-view";
+import { ShipmentCourierMap } from "@/features/maps/shipment-courier-map";
 import { ArchiveShipmentControl } from "@/features/shipments/archive-shipment";
 
 export function AdminShipmentDetailView({ id }: { id: string }) {
@@ -140,6 +141,7 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
             onSuccess={reload}
           />
 
+          <ShipmentCourierMap shipmentId={shipment.id} status={shipment.status} />
           {shipment.deliveryProof && <DeliveryProofView shipmentId={shipment.id} proof={shipment.deliveryProof} />}
 
           {/* Admin Soft-Delete Archival Card */}
