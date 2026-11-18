@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { gsap, useGSAP, whenMotionAllowed } from "@/lib/gsap";
 import { BadgeCheck, ImageOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "@/features/auth/provider";
@@ -47,10 +48,32 @@ function ProofImage({ shipmentId, kind, alt, enabled }: { shipmentId: string; ki
   return <img src={url} alt={alt} className="max-h-72 w-full rounded-lg border bg-white object-contain" />;
 }
 
-export function DeliveryProofView({ shipmentId, proof }: { shipmentId: string; proof: DeliveryProofSummary }) {
+export function DeliveryProofView({ shipmentId, proof, celebrate = false }: { shipmentId: string; proof: DeliveryProofSummary; celebrate?: boolean }) {
+  const scope = useRef<HTMLDivElement>(null);
+  useGSAP(() => {
+    if (!celebrate) return;
+    whenMotionAllowed(() => {
+      const check = scope.current?.querySelector<SVGPathElement>("[data-anim=check]");
+      const pop = gsap.timeline({ defaults: { ease: "power3.out" } });
+      pop.fromTo(scope.current, { opacity: 0, scale: 0.96, y: 12 }, { opacity: 1, scale: 1, y: 0, duration: 0.5, clearProps: "opacity,transform" });
+      if (check) {
+        const length = check.getTotalLength();
+        pop.fromTo(check, { strokeDasharray: length, strokeDashoffset: length }, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out", clearProps: "strokeDasharray,strokeDashoffset" }, 0.2);
+      }
+    });
+  }, { scope, dependencies: [celebrate] });
+
   return (
-    <Card>
+    <Card ref={scope}>
       <CardHeader>
+        {celebrate && (
+          <p className="mb-1 flex items-center gap-2 text-sm font-semibold text-emerald-700" role="status">
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path data-anim="check" d="M4.5 12.5l5 5L19.5 7" />
+            </svg>
+            Delivery confirmed
+          </p>
+        )}
         <CardTitle className="flex items-center gap-2">
           <BadgeCheck className="size-5 text-emerald-600" aria-hidden="true" /> Proof of delivery
         </CardTitle>

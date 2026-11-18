@@ -2,6 +2,7 @@
 import { ResourceSkeleton, ResourceRefresh } from "@/components/ui/skeleton";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { z } from "zod";
@@ -26,6 +27,8 @@ import { DeliveryProofView } from "@/features/shipments/proof-view";
 import { DeliveryProofCard } from "./proof-capture";
 
 export function CourierShipmentDetailView({ id }: { id: string }) {
+  // Set when this courier confirms the delivery here, so the proof card can celebrate it.
+  const [justDelivered, setJustDelivered] = useState(false);
   const valid = z.cuid().safeParse(id).success;
   const { data, loading, refreshing, error, reload } = useResource<{ shipment: ShipmentDetail }>(
     valid ? `/shipments/${encodeURIComponent(id)}` : null
@@ -131,7 +134,7 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
           </Card>
 
           {shipment.status === "OUT_FOR_DELIVERY" && (
-            <DeliveryProofCard shipment={shipment} onDelivered={reload} />
+            <DeliveryProofCard shipment={shipment} onDelivered={() => { setJustDelivered(true); reload(); }} />
           )}
 
           {/* Operational Action Stepper */}
@@ -142,7 +145,7 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
             hiddenTargets={["DELIVERED"]}
           />
 
-          {shipment.deliveryProof && <DeliveryProofView shipmentId={shipment.id} proof={shipment.deliveryProof} />}
+          {shipment.deliveryProof && <DeliveryProofView shipmentId={shipment.id} proof={shipment.deliveryProof} celebrate={justDelivered} />}
 
           {/* Route & Contact Cards */}
           <div className="shipment-detail-grid">
