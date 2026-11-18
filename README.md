@@ -28,6 +28,7 @@ and audit records.
 | Email notifications | Customers get an email when a shipment is booked, picked up, out for delivery, delivered or fails, sent reliably through a transactional outbox (see [Shipment email notifications](#shipment-email-notifications)) |
 | Admin analytics | Bookings, deliveries, net revenue, on-time rate, delivery times and courier performance by day or week, compared with the previous period, with CSV export (see [Admin analytics](#admin-analytics)) |
 | Proof of delivery | Couriers confirm delivery with a photo and/or the recipient's signature from an installable, offline-tolerant courier app (see [Proof of delivery](#proof-of-delivery-and-the-courier-app)) |
+| Help centre and AI help chat | Public help articles at `/help`, and a help chat that answers only from them with cited sources, measured by an evaluation suite (see [AI help chat](#ai-help-chat)) |
 
 The interface includes responsive navigation, URL-based filtering and pagination,
 accessible field errors, toast feedback, and loading skeletons for lists, details,
@@ -307,6 +308,58 @@ device's capture time is kept (within 7 days, and never in the future). Backgrou
 because the access token lives only in page memory, so uploads run from the open courier app.
 Queued items belong to the courier who captured them; another account on the same phone never sends them.
 
+## AI help chat
+
+Public pages show a **Help** button. Visitors ask a question and get a short answer built only
+from the help articles in `docs/help/`, with links to the exact sections it used. The same
+articles are published as the help centre at `/help`.
+
+```text
+question ──► Gemini embedding (768 d, RETRIEVAL_QUERY)
+          ├─► pgvector cosine search (HNSW index) ──┐
+          └─► Postgres full-text search (GIN) ──────┴─► reciprocal rank fusion ─► top 5 sources
+                                                                                    │
+            answer + cited sources ◄── citation check ◄── Claude or Gemini (strict JSON) ◄┘
+```
+
+- **Grounded:** the model receives the sources as data inside `<context>` and must return
+  `{answer, citations, confident}`. Citations are limited by the schema to the labels of the sources
+  actually sent and checked again in code. If no source is relevant (vector similarity below 0.6
+  and no keyword match), the model is not confident, or nothing valid is cited, the visitor gets a
+  fixed fallback pointing to the help centre instead of a guess.
+- **Private and cheap:** the chat cannot see shipments or accounts. Questions are limited to 500
+  characters, 10 per 15 minutes per visitor and 300 per day across all visitors. Each question is
+  audited as `AI_HELP_QUERY` with a 200-character excerpt, the chunks used and token usage, and no actor.
+- **Indexing:** `npm run help:index` splits each article into heading-aware chunks (about 400
+  tokens, short overlap), embeds new or changed chunks with `gemini-embedding-001` and removes chunks
+  of deleted articles. Run it after editing `docs/help/` and after deploying to a new database.
+- **Requirements:** `AI_ENABLED=true`, the provider key, and `GEMINI_API_KEY` even when
+  `AI_PROVIDER=anthropic`, because embeddings always use Gemini. The database needs the `vector`
+  extension (pgvector 0.5+; Neon, Supabase and most managed Postgres include it). The widget hides
+  itself until the articles are indexed.
+
+### Evaluating answer quality
+
+`npm run eval:help` runs `tests/evals/help.cases.json` against the live models: 25 in-scope
+questions (one in Bangla), 5 out-of-scope questions and 3 prompt-injection attempts. An LLM judge
+checks every answer against the sources it was given. The run fails below the thresholds.
+
+Baseline (18 Nov 2026, `gemini-3.1-flash-lite` for answers and judging, `gemini-embedding-001`):
+
+| Metric | What it measures | Score | Threshold |
+| --- | --- | --- | --- |
+| Retrieval hit@5 | In-scope questions whose top sources include an expected article | 1.00 | 0.90 |
+| Answer rate | In-scope questions answered rather than given the fallback | 1.00 | 0.80 |
+| Citation accuracy | Answers that cite an expected article | 1.00 | 0.85 |
+| Refusal accuracy | Out-of-scope and injection questions given the fallback | 1.00 | 0.90 |
+| Faithfulness | Answers whose every claim the judge found in the sources | 0.96 | 0.85 |
+
+The one answer marked unfaithful called the proof viewers "ExpressHub admins" where the source says
+"admins"; the judge is deliberately strict.
+
+It calls the AI provider, so it is run by hand rather than in CI. `npm run test:help` covers
+the same logic offline.
+
 ## Technology
 
 | Area | Implementation |
@@ -381,7 +434,7 @@ in your local environment or deployment secret settings.
 | `AI_ENABLED` | Set to `true` to turn on the AI shipment assistant; off by default |
 | `AI_PROVIDER` | `anthropic` (default) or `gemini` |
 | `ANTHROPIC_API_KEY` | Claude API key; required when the provider is `anthropic` |
-| `GEMINI_API_KEY` | Gemini API key from Google AI Studio (free tier available); required when the provider is `gemini` |
+| `GEMINI_API_KEY` | Gemini API key from Google AI Studio (free tier available); required when the provider is `gemini`, and for the help chat's embeddings with either provider |
 | `AI_MODEL` | Optional model override; defaults to `claude-opus-5-5` or `gemini-3.1-flash-lite` |
 | `APP_URL` | Public site URL used for tracking links in emails; falls back to `ALLOWED_ORIGIN` |
 | `RESEND_API_KEY`, `NOTIFICATIONS_FROM` | Resend API key and verified sender (for example `ExpressHub <no-reply@yourdomain.com>`); without both, emails are only logged |
@@ -490,6 +543,8 @@ the live stream: change detection, final status, heartbeats, timeouts and discon
 calculations, CSV formula escaping, the cache and admin-only access.
 `test:proof` covers image type detection, metadata stripping, size limits, the viewing rules,
 multipart limits and the courier upload queue (retry, permanent failure and already-delivered).
+`test:help` covers article chunking, rank fusion, the similarity threshold, citation checks,
+fallbacks, input limits, prompt-injection handling and incremental indexing, with no network calls.
 
 If the auth unit test picks up external Upstash settings, run it with an isolated
 local limiter (Bash):
@@ -535,7 +590,11 @@ npm run test:tracking:integration
 npm run test:notifications:integration
 npm run test:analytics:integration
 npm run test:proof:integration
+npm run test:help:integration
 ```
+
+The help integration suite needs the `vector` extension. It checks the HNSW and full-text
+indexes, cosine ordering and keyword search with fixture vectors, without calling Gemini.
 
 The analytics integration suite seeds shipments, events and payments in March 2031 (a
 window no other data uses) and asserts every figure exactly, including shipments booked
@@ -556,7 +615,8 @@ features/shipments/   Booking, lists, details, actions, and useResource
 features/payments/    Checkout initiation, return verification, and payment views
 features/admin/       Operations dashboard, users, shipments, and audit views
 features/courier/     Assigned delivery dashboard and workflows
-features/ai/          AI assistant panel
+features/ai/          AI assistant panel and public help widget
+features/help/        Help centre article rendering
 lib/auth/             Token helpers and shared route-access policy
 lib/client/           API client, query client, and action form schemas
 services/             Database-backed business operations
@@ -564,7 +624,7 @@ services/ai/          AI assistant loop, read-only tools, prompts, and configura
 validators/           Server request validation
 prisma/               Schema, migrations, admin seed, and pricing seed
 proxy.ts              Page-access checks and API CORS handling
-docs/                 OpenAPI specification and Postman collection
+docs/                 OpenAPI specification, Postman collection and help articles (docs/help)
 tests/                Unit, database integration, and Playwright tests
 .claude/              Claude Code project skills and agents
 .githooks/            Commit hooks that keep history free of tool attribution
