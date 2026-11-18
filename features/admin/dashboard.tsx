@@ -13,6 +13,8 @@ import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { statusLabel, money } from "@/features/shipments/contracts";
 import type { DashboardStats } from "./contracts";
 import { OpsBriefCard } from "@/features/ai/ops-brief";
+import { useCountUpOnce } from "@/lib/gsap";
+import { useRef } from "react";
 import { FailedNotificationsCard } from "./failed-notifications";
 import type { ShipmentStatus, PaymentStatus } from "@/types/api";
 
@@ -28,8 +30,11 @@ export function AdminDashboard() {
       ? Math.round((totalDelivered / stats.shipments.total) * 100)
       : 0;
 
+  const scope = useRef<HTMLDivElement>(null);
+  useCountUpOnce(scope, Boolean(stats));
+
   return (
-    <div className="page-stack">
+    <div className="page-stack" ref={scope}>
       <div className="page-heading">
         <div>
           <p className="eyebrow">Enterprise Operations</p>
@@ -120,7 +125,7 @@ export function AdminDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{stats.shipments.total}</div>
+                  <div className="text-3xl font-bold" data-count-up>{stats.shipments.total}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     <span className="font-semibold text-primary">{stats.shipments.active}</span> active in transit
                   </p>
@@ -137,7 +142,7 @@ export function AdminDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{stats.users.total}</div>
+                  <div className="text-3xl font-bold" data-count-up>{stats.users.total}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     <span className="font-semibold text-emerald-700">{stats.users.active}</span> active accounts
                   </p>
@@ -154,7 +159,7 @@ export function AdminDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{stats.payments.total}</div>
+                  <div className="text-3xl font-bold" data-count-up>{stats.payments.total}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     <span className="font-semibold text-blue-600">
                       {stats.payments.byStatus.PAID ?? 0}
@@ -174,7 +179,7 @@ export function AdminDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{deliveryRate}%</div>
+                  <div className="text-3xl font-bold" data-count-up>{`${deliveryRate}%`}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {totalDelivered} of {stats.shipments.total} completed
                   </p>

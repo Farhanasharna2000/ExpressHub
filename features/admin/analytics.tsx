@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useCountUpOnce } from "@/lib/gsap";
 import { Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,7 @@ function Kpi({ label, value, change, tone, hint }: { label: string; value: strin
   return (
     <div className="rounded-lg border bg-card p-4">
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-2xl font-bold">{value}</dd>
+      <dd className="mt-1 text-2xl font-bold" data-count-up>{value}</dd>
       <dd className={`mt-1 text-xs ${toneClass[tone]}`}>
         {change ? `${change} vs previous ${hint}` : `No previous ${hint} to compare`}
       </dd>
@@ -88,9 +89,11 @@ export function AdminAnalyticsView() {
 
   const period = report ? `${report.range.days} days` : "period";
   const hasActivity = Boolean(report && (report.summary.booked || report.summary.delivered || report.summary.failed || Number(report.summary.revenue)));
+  const scope = useRef<HTMLDivElement>(null);
+  useCountUpOnce(scope, Boolean(report));
 
   return (
-    <div className="page-stack">
+    <div className="page-stack" ref={scope}>
       <div className="page-heading">
         <div>
           <p className="eyebrow">Business insights</p>

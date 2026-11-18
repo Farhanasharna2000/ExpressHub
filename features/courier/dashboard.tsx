@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { useResource } from "@/features/shipments/use-resource";
 import type { CourierDashboardStats } from "./contracts";
 import { CourierShipmentListView } from "./list";
+import { useCountUpOnce } from "@/lib/gsap";
+import { useRef } from "react";
 
 export function CourierDashboard() {
   const { data: stats, loading, refreshing, error, reload } = useResource<CourierDashboardStats>("/courier/stats");
@@ -21,8 +23,11 @@ export function CourierDashboard() {
   const inRoute = stats?.inRoute ?? 0;
   const delivered = stats?.delivered ?? 0;
 
+  const scope = useRef<HTMLDivElement>(null);
+  useCountUpOnce(scope, Boolean(stats));
+
   return (
-    <div className="page-stack">
+    <div className="page-stack" ref={scope}>
       <div className="page-heading">
         <div>
           <p className="eyebrow">Courier Operations Workspace</p>
@@ -89,7 +94,7 @@ export function CourierDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{total}</div>
+              <div className="text-2xl font-bold" data-count-up>{total}</div>
               <p className="text-xs text-muted-foreground mt-1">Lifetime assigned deliveries</p>
             </CardContent>
           </Card>
@@ -104,7 +109,7 @@ export function CourierDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-amber-700">{readyPickup}</div>
+              <div className="text-2xl font-bold text-amber-700" data-count-up>{readyPickup}</div>
               <p className="text-xs text-muted-foreground mt-1">Awaiting courier pickup</p>
             </CardContent>
           </Card>
@@ -119,7 +124,7 @@ export function CourierDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-700">{inRoute}</div>
+              <div className="text-2xl font-bold text-blue-700" data-count-up>{inRoute}</div>
               <p className="text-xs text-muted-foreground mt-1">In transit or out for delivery</p>
             </CardContent>
           </Card>
@@ -134,7 +139,7 @@ export function CourierDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-emerald-700">{delivered}</div>
+              <div className="text-2xl font-bold text-emerald-700" data-count-up>{delivered}</div>
               <p className="text-xs text-muted-foreground mt-1">Successfully delivered</p>
             </CardContent>
           </Card>

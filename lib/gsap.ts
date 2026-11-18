@@ -4,6 +4,7 @@ import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
 import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useRef, type RefObject } from "react";
 import { formatCount, parseCountTarget } from "@/lib/count-up";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, MotionPathPlugin);
@@ -70,6 +71,21 @@ export function countUpAll(elements: Iterable<Element>, options: Parameters<type
   const restores = [...elements].map((element, index) =>
     countUp(element, { ...options, delay: (options.delay ?? 0) + index * 0.06 }));
   return () => restores.forEach((restore) => restore?.());
+}
+
+// Counts up every [data-count-up] figure in the scope the first time data is ready.
+// Later refreshes show new figures straight away; the cleanup resets on unmount (and
+// React Strict Mode's simulated one) so the count replays on the next mount.
+export function useCountUpOnce(scope: RefObject<HTMLElement | null>, ready: boolean) {
+  const counted = useRef(false);
+  useGSAP(() => {
+    if (!ready || counted.current) return;
+    const targets = scope.current?.querySelectorAll("[data-count-up]");
+    if (!targets?.length) return;
+    counted.current = true;
+    whenMotionAllowed(() => countUpAll(targets));
+    return () => { counted.current = false; };
+  }, { scope, dependencies: [ready] });
 }
 
 export { gsap, ScrollTrigger, useGSAP };
