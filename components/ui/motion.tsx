@@ -8,103 +8,6 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/ui/primitives";
 import type { ShipmentStatus } from "@/types/api";
 
-export function MotionContainer({
-  children,
-  className = "",
-  delay = 0,
-}: {
-  children: ReactNode;
-  className?: string;
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.6,
-        delay,
-        ease: [0.16, 1, 0.3, 1],
-      }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-export function MotionStaggerGroup({
-  children,
-  className = "",
-  staggerDelay = 0.08,
-}: {
-  children: ReactNode;
-  className?: string;
-  staggerDelay?: number;
-}) {
-  return (
-    <motion.div
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-40px" }}
-      variants={{
-        hidden: { opacity: 0 },
-        show: {
-          opacity: 1,
-          transition: {
-            staggerChildren: staggerDelay,
-          },
-        },
-      }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-export function MotionStaggerItem({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <motion.div
-      variants={{
-        hidden: { opacity: 0, y: 22 },
-        show: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-        },
-      }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-export function MotionCard({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <motion.div
-      whileHover={{ y: -6, transition: { duration: 0.22, ease: "easeOut" } }}
-      whileTap={{ scale: 0.99 }}
-      className={`card motion-card ${className}`}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
 export function MotionFloat({
   children,
   className = "",
@@ -355,14 +258,6 @@ export function FeatureCardWithImage({
 }) {
   return (
     <motion.div
-      variants={{
-        hidden: { opacity: 0, y: 30 },
-        show: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] },
-        },
-      }}
       whileHover={{ y: -8, transition: { duration: 0.25, ease: "easeOut" } }}
       className="feature-perspective-card"
     >
