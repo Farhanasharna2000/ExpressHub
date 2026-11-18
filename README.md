@@ -1,5 +1,7 @@
 # ExpressHub
 
+[![CI](https://github.com/Farhanasharna2000/ExpressHub/actions/workflows/ci.yml/badge.svg)](https://github.com/Farhanasharna2000/ExpressHub/actions/workflows/ci.yml)
+
 ExpressHub is a courier and logistics application built with Next.js 16, React 19,
 TypeScript, PostgreSQL, and Prisma. Customers book and track shipments, couriers
 manage assigned deliveries, and administrators oversee users, dispatch, payments,
@@ -501,6 +503,16 @@ actual addresses. Apply seeds deliberately against the intended database.
 
 ## Testing
 
+Tests are layered from fast and isolated to slow and realistic:
+
+| Layer | Command | What it covers | Runs in CI |
+| --- | --- | --- | --- |
+| Unit | `npm test` | Services, validators and UI contracts with mocked clients; no database or network | Yes |
+| Integration | `npm run test:<area>:integration` | API routes and services against a real PostgreSQL database | Yes |
+| Browser, mocked API | `npm run test:frontend:browser` | UI states and flows on desktop and mobile with a mocked API | Yes |
+| End-to-end | `npm run test:e2e` | Full user journeys against a production build and a real database, plus axe accessibility checks | Yes |
+| Load | `npm run test:load` | 50 virtual users against a deployment, with latency and error thresholds | Manual |
+
 ### Type checking and unit tests
 
 ```bash
@@ -603,6 +615,69 @@ either side of Bangladesh midnight and a refund in a later period.
 The payment integration suite uses PostgreSQL with an injected payment provider;
 it does not charge a card or contact Stripe. The error integration suite uses a
 production test server and an intentionally unreachable database.
+
+### End-to-end tests
+
+```bash
+npx playwright install --with-deps chromium
+npm run build
+npm run test:e2e
+```
+
+The suite (`tests/e2e/`, `playwright.e2e.config.ts`) starts a production server on port
+3200 against the database in `DATABASE_URL` and covers:
+
+- a new customer registering, booking a shipment and being sent to Stripe Checkout;
+- an admin assigning a paid shipment, the courier delivering it with photo proof, and the
+  customer and the public tracking page showing it as delivered;
+- role guards for customers, couriers and anonymous visitors;
+- axe accessibility checks (WCAG 2.1 A and AA) on public pages, the booking form and the
+  admin and courier workspaces. Serious and critical violations fail the run.
+
+Stripe is never contacted: the payment start call and the hosted Checkout page are
+intercepted in the browser. Production builds need Upstash for rate limiting, so global
+setup starts a small in-memory stand-in on port 3299 instead of contacting Upstash.
+
+`prisma/seed-e2e.mjs` creates users on the reserved `expresshub.test` domain, a hub and, only
+if no active rule already prices the test weight, a pricing rule. Global setup and teardown
+remove only those records. Tests sign in by creating their own refresh token rather than
+sharing a saved login, because refresh tokens rotate and a reused token revokes every
+session. Journeys run one at a time and pass three times in a row
+(`npm run test:e2e -- --repeat-each=3`) without retries.
+
+Browsers run with reduced motion, which also checks that the app honours that setting, so
+axe scans settled pages rather than colours caught mid-animation.
+
+### Load test
+
+```bash
+BASE_URL=https://<preview-deployment> npm run test:load
+```
+
+`tests/load/smoke.js` needs the [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/)
+binary. It ramps to 50 virtual users over about two minutes against health, public tracking
+and, when `ACCESS_TOKEN` is set, the shipment list. It fails if p95 latency reaches 500 ms
+or more than 1% of requests fail. Set `TRACKING_NUMBER` to a real tracking number to include
+a successful tracking lookup.
+
+The **Load test** workflow (`.github/workflows/load.yml`) runs it from GitHub Actions: open
+Actions, choose **Load test**, then **Run workflow**, and enter an `https://` URL. It never
+runs automatically. Point it at a preview deployment rather than production, since the
+rate limits will throttle the virtual users.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request to `main`:
+
+| Job | Steps |
+| --- | --- |
+| `verify` | Typecheck, lint, unit tests and production build |
+| `integration` | Migrates a `pgvector/pgvector:pg17` service database, builds, then runs every integration suite |
+| `e2e` | Migrates and seeds the same database image, builds, then runs the mocked browser suite and the end-to-end suite; Playwright reports and traces are uploaded when a test fails |
+
+Each job starts from an empty database, so tests never depend on local data. Secrets are
+placeholders, and AI, Stripe, Resend and Upstash are never contacted. Third-party actions
+are pinned to full commit SHAs and the workflows only have read access to the repository.
 
 ## Project structure
 
