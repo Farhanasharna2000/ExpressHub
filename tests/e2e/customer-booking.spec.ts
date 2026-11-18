@@ -11,7 +11,8 @@ test("a new customer registers, books a shipment and is sent to Stripe Checkout"
   const stored = await db.shipment.findUniqueOrThrow({ where: { id: shipment.id }, include: { customer: true } });
   expect(stored.customer.email).toBe(email);
   expect(stored.status).toBe("CREATED");
-  await expect(page.getByText(`BDT ${stored.price.toFixed(2)}`, { exact: true }).first()).toBeVisible();
+  // The API sends Prisma decimals in their JSON form, which drops trailing zeros (100.00 -> "100").
+  await expect(page.getByText(`BDT ${stored.price.toJSON()}`, { exact: true }).first()).toBeVisible();
 
   // The suite never contacts Stripe: the initiation call and the hosted page are stubbed in the browser.
   const checkoutUrl = "https://checkout.stripe.com/c/pay/cs_test_e2e";

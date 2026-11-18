@@ -5,7 +5,10 @@ import { expect, test } from "./support/fixtures";
 // Serious and critical WCAG 2.x A/AA violations fail the build; minor and moderate
 // ones are attached to the report for follow-up.
 async function audit(page: Page, name: string) {
-  await page.waitForLoadState("load");
+  // Scan the settled page: loading states and transitions are checked half-drawn otherwise,
+  // which hides real contrast failures behind partial opacity or reports transient ones.
+  await page.waitForLoadState("networkidle");
+  await page.waitForFunction(() => document.getAnimations().every((animation) => animation.playState !== "running"));
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   await test.info().attach(`axe-${name}`, { body: JSON.stringify(results.violations, null, 2), contentType: "application/json" });
   const blocking = results.violations

@@ -46,7 +46,8 @@ export class CustomerShipmentPage {
     await expect(this.page.getByRole("heading", { name: "Shipment details" })).toBeVisible();
   }
 
-  timelineTitles() {
-    return this.page.locator(".shipment-timeline h3");
+  // Each entry shows the event type as its heading and the new status as a badge.
+  timelineEntries() {
+    return this.page.locator(".shipment-timeline > li");
   }
 }

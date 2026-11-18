@@ -27,7 +27,7 @@ test("admin assigns a paid shipment, the courier delivers it with proof, custome
   const customer = await signedInPage("CUSTOMER");
   const customerShipment = new CustomerShipmentPage(customer);
   await customerShipment.open(shipment.id);
-  await expect(customerShipment.timelineTitles().last()).toHaveText(/Delivered/);
+  await expect(customerShipment.timelineEntries().last()).toContainText("Delivered");
   await expect(customer.getByText("Rahim Uddin").first()).toBeVisible();
 
   // Anyone with the tracking number sees the final status, without signing in.

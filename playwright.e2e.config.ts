@@ -38,6 +38,8 @@ export default defineConfig({
     baseURL: e2eBaseUrl,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    // Also exercises the app's reduced-motion support, and keeps axe off mid-animation colours.
+    contextOptions: { reducedMotion: "reduce" },
     launchOptions: launchEnv ? { env: launchEnv } : undefined,
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

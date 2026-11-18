@@ -50,7 +50,8 @@ export const test = base.extend<Fixtures>({
     const contexts: Awaited<ReturnType<Browser["newContext"]>>[] = [];
     await provide(async (role) => {
       const user = await seededUser(role);
-      const context = await browser.newContext({ baseURL });
+      // Reduced motion, like the default context: axe must scan settled pages, not fade-ins.
+      const context = await browser.newContext({ baseURL, reducedMotion: "reduce" });
       contexts.push(context);
       await context.addCookies(await sessionCookies(baseURL!, user.id, user.role));
       return context.newPage();
