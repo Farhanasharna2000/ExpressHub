@@ -155,9 +155,12 @@ export default function Home() {
               <path d={ROUTE_PATH} />
               <circle className="journey-route-stop" cx="24" cy="196" r="6" />
               <circle className="journey-route-dest" cx={ROUTE_END.x} cy={ROUTE_END.y} r="8" />
-              <g className="journey-route-chip" transform="translate(318 82)">
-                <rect x="-40" y="-12" width="80" height="24" rx="12" />
-                <text x="0" y="4" textAnchor="middle">Delivered</text>
+              {/* The outer group holds the position; the inner one is what animates. */}
+              <g transform="translate(318 82)">
+                <g className="journey-route-chip">
+                  <rect x="-40" y="-12" width="80" height="24" rx="12" />
+                  <text x="0" y="4" textAnchor="middle">Delivered</text>
+                </g>
               </g>
               <g className="journey-route-parcel-group" transform={`translate(${ROUTE_END.x} ${ROUTE_END.y})`}>
                 <rect className="journey-route-parcel" x="-7" y="-7" width="14" height="14" rx="3" />

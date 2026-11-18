@@ -2,6 +2,7 @@ import type { Browser, Page } from "@playwright/test";
 import { expect, test } from "./support/fixtures";
 
 const METRICS = ["99.98%", "<250ms", "100%", "29+"];
+const HEADLINE = /Big plans\.\s*Small parcels\.\s*All connected\./;
 
 async function motionPage(browser: Browser, baseURL: string | undefined) {
   const context = await browser.newContext({ baseURL, reducedMotion: "no-preference" });
@@ -13,6 +14,10 @@ async function expectHomeSettled(page: Page) {
   await expect(lines).toHaveCount(3);
   for (const line of await lines.all()) await expect(line).toHaveCSS("opacity", "1");
   await expect(page.locator(".journey-route-parcel-group")).toHaveAttribute("transform", "translate(396 34)");
+  await expect(page.locator(".journey-route-chip")).toHaveCSS("opacity", "1");
+  // The split headline is reverted after the intro: no leftover masks or hidden characters.
+  await expect(page.locator("[data-hero=title] [aria-hidden=true]")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveAccessibleName(HEADLINE);
   await page.locator(".metrics-grid").scrollIntoViewIfNeeded();
   await expect(page.locator(".metric-val")).toHaveText(METRICS);
   for (const card of await page.locator("[data-reveal=role]").all()) {
@@ -32,7 +37,20 @@ test("with reduced motion the home page renders in its final state straight away
 test("with motion the home page animations settle on the same final content", async ({ browser, baseURL }) => {
   const { page, close } = await motionPage(browser, baseURL);
   await page.goto("/");
+  // While the headline is split into characters, assistive tech still gets the whole sentence.
+  await expect(page.getByRole("heading", { level: 1 })).toHaveAccessibleName(HEADLINE);
   await expectHomeSettled(page);
+  await close();
+});
+
+test("the track form works while the hero intro is still playing", async ({ browser, baseURL }) => {
+  const { page, close } = await motionPage(browser, baseURL);
+  await page.goto("/");
+  // No waiting for the intro: decorative layers never block the form.
+  const trackingNumber = "EH-0123456789ABCDEF01234567";
+  await page.getByLabel("Tracking number").first().fill(trackingNumber);
+  await page.getByRole("button", { name: "Track" }).first().click();
+  await expect(page).toHaveURL(new RegExp(`/track/${trackingNumber}$`));
   await close();
 });
 
