@@ -18,6 +18,7 @@ import {
   type PaymentGateway,
 } from "@/lib/payments/stripe";
 import type { ListPaymentsInput } from "@/validators/payment";
+import { recordShipmentEvent } from "@/services/shipment-events";
 
 const safeSelect = {
   id: true,
@@ -591,34 +592,25 @@ async function cancelRefundedShipment(
     where: { id: shipmentId },
   });
   if (before.status !== "CREATED") return;
-  await tx.shipment.update({
+  const cancelled = await tx.shipment.update({
     where: { id: shipmentId },
     data: { status: "CANCELLED" },
   });
-  await tx.shipmentEvent.create({
-    data: {
-      shipmentId,
-      actorId: actor?.id,
-      type: actor?.role === "CUSTOMER" ? "CUSTOMER_CANCELLED" : "STATUS_CHANGED",
-      fromStatus: "CREATED",
-      toStatus: "CANCELLED",
-      internalNote: note.slice(0, 500),
+  // Same hook as every other status change, so emails and merchant webhooks follow it.
+  await recordShipmentEvent(
+    tx,
+    actor?.id ?? null,
+    cancelled,
+    actor?.role === "CUSTOMER" ? "CUSTOMER_CANCELLED" : "STATUS_CHANGED",
+    "SHIPMENT_STATUS_UPDATED",
+    {
+      before: { status: "CREATED" },
+      after: { status: "CANCELLED" },
+      reason: "Payment refunded",
     },
-  });
-  await tx.auditLog.create({
-    data: {
-      actorId: actor?.id,
-      entityType: "SHIPMENT",
-      entityId: shipmentId,
-      shipmentId,
-      action: "SHIPMENT_STATUS_UPDATED",
-      details: {
-        before: { status: "CREATED" },
-        after: { status: "CANCELLED" },
-        reason: "Payment refunded",
-      },
-    },
-  });
+    "CREATED",
+    note.slice(0, 500),
+  );
 }
 
 export interface RefundReservation {

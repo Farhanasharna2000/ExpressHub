@@ -7,9 +7,7 @@ import { AppError } from "@/lib/http/errors";
 import prisma from "@/lib/prisma";
 import { paginateTransaction } from "@/lib/db/pagination";
 import type { PaymentGateway } from "@/lib/payments/stripe";
-import { enqueueShipmentNotification } from "@/services/notifications/outbox";
-import { releaseCourierLocationIfIdle } from "@/services/courier-location-release";
-import { enqueueShipmentWebhooks } from "@/services/webhooks/outbox";
+import { recordShipmentEvent } from "@/services/shipment-events";
 import { applyRefund, reserveRefund, sendRefund } from "@/services/payment.service";
 import type {
   AssignCourierInput,
@@ -84,48 +82,7 @@ async function currentActor(
   return user;
 }
 
-async function record(
-  tx: Prisma.TransactionClient,
-  actorId: string,
-  shipment: Shipment,
-  type:
-    | "CREATED"
-    | "COURIER_ASSIGNED"
-    | "STATUS_CHANGED"
-    | "CUSTOMER_CANCELLED",
-  action: string,
-  details: Prisma.InputJsonObject,
-  fromStatus?: ShipmentStatus,
-  note?: string,
-) {
-  const event = await tx.shipmentEvent.create({
-    data: {
-      shipmentId: shipment.id,
-      actorId,
-      type,
-      fromStatus,
-      toStatus: shipment.status,
-      // Operator notes can contain recipient details; never expose them to customers.
-      internalNote: note,
-    },
-  });
-  await enqueueShipmentNotification(tx, shipment, event);
-  await enqueueShipmentWebhooks(tx, shipment, event, fromStatus ?? null);
-  await tx.auditLog.create({
-    data: {
-      actorId,
-      entityType: "SHIPMENT",
-      entityId: shipment.id,
-      shipmentId: shipment.id,
-      action,
-      details,
-    },
-  });
-  // A courier's live location is only kept while they still have a delivery out.
-  if (fromStatus === "OUT_FOR_DELIVERY" && shipment.courierId) {
-    await releaseCourierLocationIfIdle(tx, shipment.courierId);
-  }
-}
+const record = recordShipmentEvent;
 
 export async function createShipment(
   actor: AuthenticatedUser,

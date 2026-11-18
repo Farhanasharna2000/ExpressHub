@@ -414,6 +414,7 @@ model CourierLocation {
 
   @@index([updatedAt])
   @@map("courier_locations")
+}
 
 enum WebhookDeliveryStatus {
   PENDING

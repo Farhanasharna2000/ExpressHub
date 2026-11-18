@@ -18,12 +18,15 @@ const { verifyWebhookSignature } = await import("../lib/merchant/webhook-signatu
 const { decryptSecret, webhookEncryptionKey } = await import("../lib/merchant/secret-box.ts");
 const developer = await import("../services/developer.service.ts");
 const { updateShipmentStatus } = await import("../services/shipment.service.ts");
+const { initiateRefund, processStripeEvent } = await import("../services/payment.service.ts");
+const { recordShipmentEvent } = await import("../services/shipment-events.ts");
 const { enqueueShipmentWebhooks, webhookDeps } = await import("../services/webhooks/outbox.ts");
 const { dispatchWebhooks, MAX_WEBHOOK_ATTEMPTS } = await import("../services/webhooks/dispatch.ts");
 
 const tag = randomBytes(6).toString("hex");
 const users = [];
 const shipments = [];
+const stripeEventIds = [];
 const publicDns = async () => [{ address: "93.184.216.34", family: 4 }];
 const privateDns = async () => [{ address: "93.184.216.34", family: 4 }, { address: "10.1.2.3", family: 4 }];
 
@@ -223,10 +226,76 @@ try {
   await rejectsWith(developer.createWebhook(customer, { url: "https://hooks.example.com/z", events: ["shipment.created"] }, publicDns), 503, "WEBHOOKS_UNAVAILABLE");
   process.env.WEBHOOK_ENCRYPTION_KEY = saved;
 
-  console.info("Merchant integration passed: key hashing, allowlist and scopes, revocation and expiry, owner checks, key limit, URL vetting, encrypted secrets, transactional enqueue and rollback, fan-out, concurrent signed dispatch, dead letters, retry, rotation and deletion.");
+  // Refund-driven cancellations go through the same hook: one status_changed delivery each.
+  const refundHook = await developer.createWebhook(customer, { url: "https://hooks.example.com/refunds", events: ["shipment.status_changed"] }, publicDns);
+  const fakeStripe = new Map();
+  const stripe = {
+    async retrieve(id) { return structuredClone(fakeStripe.get(id).session); },
+    async intent(id) { return structuredClone([...fakeStripe.values()].find((entry) => entry.intent.id === id).intent); },
+    async refunds(id) { return structuredClone([...fakeStripe.values()].find((entry) => entry.intent.id === id).refunds); },
+    async createRefund(params) {
+      const entry = [...fakeStripe.values()].find((item) => item.intent.id === params.payment_intent);
+      const refund = { id: `re_${randomUUID()}`, payment_intent: params.payment_intent, amount: 10000, currency: "bdt", status: "succeeded" };
+      entry.refunds.push(refund);
+      return structuredClone(refund);
+    },
+  };
+  async function paidBooking() {
+    const booking = await shipment(customer, courier);
+    await prisma.shipment.update({ where: { id: booking.id }, data: { courierId: null } });
+    const sessionId = `cs_test_${randomUUID()}`;
+    const intentId = `pi_${randomUUID()}`;
+    const payment = await prisma.payment.create({
+      data: {
+        shipmentId: booking.id, payerId: customer.id, provider: "STRIPE", idempotencyKey: `merchant-${randomUUID()}`,
+        amount: "100.00", currency: "BDT", status: "PAID", paidAt: new Date(), providerReference: sessionId, providerIntentId: intentId,
+      },
+    });
+    const metadata = { paymentId: payment.id, shipmentId: booking.id, payerId: customer.id };
+    fakeStripe.set(sessionId, {
+      session: { id: sessionId, mode: "payment", livemode: false, client_reference_id: payment.id, metadata, amount_total: 10000,
+        currency: "bdt", status: "complete", payment_status: "paid", payment_intent: intentId },
+      intent: { id: intentId, status: "succeeded", amount: 10000, amount_received: 10000, currency: "bdt", metadata, livemode: false },
+      refunds: [],
+    });
+    return { booking, payment, intentId };
+  }
+  const refundDeliveries = (shipmentId) => prisma.webhookDelivery.findMany({ where: { endpointId: refundHook.endpoint.id, shipmentId } });
+
+  const customerRefund = await paidBooking();
+  await initiateRefund(customer, customerRefund.payment.id, "Changed my mind", stripe);
+  let refundRows = await refundDeliveries(customerRefund.booking.id);
+  assert.equal(refundRows.length, 1);
+  assert.equal(refundRows[0].eventType, "shipment.status_changed");
+  assert.equal(refundRows[0].payload.data.shipment.status, "CANCELLED");
+  assert.equal(refundRows[0].payload.data.shipment.previousStatus, "CREATED");
+
+  const stripeRefund = await paidBooking();
+  fakeStripe.get(stripeRefund.payment.providerReference).refunds.push({ id: `re_${randomUUID()}`, payment_intent: stripeRefund.intentId, amount: 10000, currency: "bdt", status: "succeeded" });
+  const refundEvent = { id: `evt_${randomUUID()}`, type: "charge.refunded", livemode: false, data: { object: { payment_intent: stripeRefund.intentId } } };
+  stripeEventIds.push(refundEvent.id);
+  await processStripeEvent(refundEvent, randomBytes(16).toString("hex"), stripe);
+  assert.equal((await prisma.shipment.findUniqueOrThrow({ where: { id: stripeRefund.booking.id } })).status, "CANCELLED");
+  refundRows = await refundDeliveries(stripeRefund.booking.id);
+  assert.equal(refundRows.length, 1);
+  assert.equal(refundRows[0].payload.data.shipment.status, "CANCELLED");
+
+  // If the cancellation's transaction rolls back, the hook leaves no delivery behind.
+  const rolledBackRefund = await shipment(customer, courier);
+  await assert.rejects(prisma.$transaction(async (tx) => {
+    const cancelled = await tx.shipment.update({ where: { id: rolledBackRefund.id }, data: { status: "CANCELLED" } });
+    await recordShipmentEvent(tx, null, cancelled, "STATUS_CHANGED", "SHIPMENT_STATUS_UPDATED", { reason: "Payment refunded" }, "CREATED", "Refund settled in Stripe");
+    assert.equal(await tx.webhookDelivery.count({ where: { shipmentId: rolledBackRefund.id } }), 1);
+    throw new Error("rollback");
+  }), /rollback/);
+  assert.equal(await prisma.webhookDelivery.count({ where: { shipmentId: rolledBackRefund.id } }), 0);
+
+  console.info("Merchant integration passed: key hashing, allowlist and scopes, revocation and expiry, owner checks, key limit, URL vetting, encrypted secrets, transactional enqueue and rollback, fan-out, refund-driven cancellations, concurrent signed dispatch, dead letters, retry, rotation and deletion.");
 } finally {
+  if (stripeEventIds.length) await prisma.paymentWebhookEvent.deleteMany({ where: { providerEventId: { in: stripeEventIds } } });
   if (shipments.length) {
     await prisma.webhookDelivery.deleteMany({ where: { shipmentId: { in: shipments } } });
+    await prisma.payment.deleteMany({ where: { shipmentId: { in: shipments } } });
     await prisma.notificationOutbox.deleteMany({ where: { shipmentId: { in: shipments } } });
     await prisma.auditLog.deleteMany({ where: { shipmentId: { in: shipments } } });
     await prisma.shipmentEvent.deleteMany({ where: { shipmentId: { in: shipments } } });
