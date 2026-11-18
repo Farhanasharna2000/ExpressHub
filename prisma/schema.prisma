@@ -375,3 +375,23 @@ model StoredFile {
 
   @@map("stored_files")
 }
+
+// One retrievable piece of a help article in docs/help. The embedding column and its
+// HNSW and full-text indexes are created in SQL; Prisma reads and writes the text fields.
+model HelpChunk {
+  id           String                     @id @default(cuid())
+  articleSlug  String                     @db.VarChar(80)
+  articleTitle String                     @db.VarChar(160)
+  heading      String                     @db.VarChar(200)
+  anchor       String                     @db.VarChar(200)
+  position     Int
+  content      String                     @db.Text
+  contentHash  String                     @db.VarChar(64)
+  model        String                     @db.VarChar(80)
+  embedding    Unsupported("vector(768)")
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+
+  @@unique([articleSlug, position])
+  @@map("help_chunks")
+}
