@@ -216,6 +216,38 @@ Code: `services/tracking.service.ts`, `services/tracking-stream.ts`, `app/api/v1
 `app/(public)/track/` and `features/tracking/`. Tests: `npm run test:tracking` and
 `npm run test:tracking:integration`.
 
+## Live courier map
+
+While a shipment is out for delivery, the customer and anyone with its tracking link can see
+where the courier is, and admins see every active courier on one map.
+
+- **Opt-in sharing:** on the courier delivery screen and dashboard, **Share my live location**
+  appears only while the courier has a delivery out for delivery. The app watches the phone's
+  position and sends it at most every 15 seconds, or sooner after moving more than 50 m.
+  Sharing keeps running across courier pages, shows a "Sharing live location" banner with a
+  stop button, and stops when the courier turns it off, leaves the courier app, refuses the
+  permission or has no delivery out.
+- **Stored briefly:** `POST /api/v1/courier/location` is accepted only while the courier has an
+  `OUT_FOR_DELIVERY` shipment (otherwise `409 LOCATION_SHARING_NOT_ALLOWED`). One row per courier
+  in `courier_locations` holds the latest position only, with no history. It is deleted when the
+  courier's last delivery leaves `OUT_FOR_DELIVERY` or they stop sharing, and ignored everywhere
+  after 10 minutes.
+- **Public precision:** the tracking page and customers get coordinates rounded to 3 decimals
+  (about 110 m), drawn with a circle, and only while that shipment is out for delivery. The strict
+  public schema rejects anything more precise, and never carries the courier's identity, accuracy
+  or heading. The live stream pushes position changes.
+- **Admin view:** shipment detail shows the exact position and accuracy, and **Live couriers**
+  (`/admin/couriers/live`) maps every courier with a fresh position, refreshing every 15 seconds.
+- **Map:** Leaflet with OpenStreetMap raster tiles, loaded only on pages with a map. The page CSP
+  allows `https://tile.openstreetmap.org` for images and nothing else, and the map shows
+  OpenStreetMap attribution. A text line beside each map says when the position was updated, so
+  the map is never the only source of information. Marker movement is smoothed, and jumps
+  straight to the new position with reduced motion.
+
+Code: `lib/courier-location.ts`, `services/courier-location.service.ts`,
+`app/api/v1/courier/location/`, `features/courier/live-location.tsx` and `features/maps/`.
+Tests: `npm run test:tracking` and `npm run test:location:integration`.
+
 ## Daily operations brief
 
 On the admin dashboard, **Daily operations brief** turns today's figures into a short summary
@@ -580,7 +612,8 @@ cache behavior. `test:security` includes proxy redirects and cookie validation.
 `test:ai` covers the assistant (both providers), booking drafts and the operations brief with mocked clients: request validation, tool
 authorization, the tool loop limits, refusals and audit records. It needs no API key.
 `test:tracking` checks that the public tracking shape cannot carry private fields and covers
-the live stream: change detection, final status, heartbeats, timeouts and disconnects.
+the live stream: change detection, final status, heartbeats, timeouts and disconnects. It also
+covers live courier locations: validation, rounding, freshness, send throttling and the CSP.
 `test:analytics` covers range validation, Bangladesh day and week buckets, rate and change
 calculations, CSV formula escaping, the cache and admin-only access.
 `test:proof` covers image type detection, metadata stripping, size limits, the viewing rules,
@@ -629,6 +662,7 @@ npm run test:lists:integration
 npm run test:soft-delete:integration
 npm run test:errors:integration
 npm run test:tracking:integration
+npm run test:location:integration
 npm run test:notifications:integration
 npm run test:analytics:integration
 npm run test:proof:integration

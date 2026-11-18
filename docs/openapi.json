@@ -9861,6 +9861,915 @@
         }
       }
     },
+    "/api/v1/courier/location": {
+      "post": {
+        "operationId": "post__api_v1_courier_location",
+        "tags": [
+          "courier"
+        ],
+        "summary": "Share live courier location",
+        "description": "COURIER only, opt-in from the courier app. Accepted only while the courier has at least one OUT_FOR_DELIVERY shipment; otherwise 409 LOCATION_SHARING_NOT_ALLOWED and any stored position is deleted. Stores only the latest position (one row per courier, no history); it is deleted when the courier's last delivery leaves OUT_FOR_DELIVERY and ignored everywhere after 10 minutes. Rate limit: 240 per 15 minutes per courier.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "activeDeliveries": {
+                          "type": "integer"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "activeDeliveries",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Location updated",
+                  "data": {
+                    "activeDeliveries": 2,
+                    "updatedAt": "2026-10-10T06:00:00.000Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business state conflict or exhausted concurrency retries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Business state conflict or exhausted concurrency retries.",
+                  "errors": [
+                    {
+                      "code": "CONFLICT"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON request exceeds 16 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Expected application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "lng": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "accuracy": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000,
+                    "description": "Metres. Fixes worse than 1000 m are rejected."
+                  },
+                  "heading": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 360,
+                    "nullable": true
+                  },
+                  "speed": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "nullable": true,
+                    "description": "Metres per second."
+                  }
+                },
+                "required": [
+                  "lat",
+                  "lng",
+                  "accuracy"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "lat": 23.7806,
+                "lng": 90.2792,
+                "accuracy": 12,
+                "heading": 90,
+                "speed": 6
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete__api_v1_courier_location",
+        "tags": [
+          "courier"
+        ],
+        "summary": "Stop sharing live courier location",
+        "description": "COURIER only. Deletes the courier's stored position.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "sharing": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "sharing"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Location sharing stopped",
+                  "data": {
+                    "sharing": false
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shipments/{id}/courier-location": {
+      "get": {
+        "operationId": "get__api_v1_shipments_id_courier_location",
+        "tags": [
+          "shipments"
+        ],
+        "summary": "Read the courier's location for a shipment",
+        "description": "Same access rules as GET /shipments/{id}. location is null unless the shipment is OUT_FOR_DELIVERY with an assigned courier and a position under 10 minutes old. ADMIN and the assigned COURIER get the exact position with accuracy (exact: true); the CUSTOMER gets the public, rounded position (exact: false).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^c[a-z0-9]{24}$",
+              "example": "cm123456789012345678901234"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "location": {
+                          "type": "object",
+                          "properties": {
+                            "lat": {
+                              "type": "integer"
+                            },
+                            "lng": {
+                              "type": "integer"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            },
+                            "exact": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "lat",
+                            "lng",
+                            "updatedAt",
+                            "exact"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "location"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Courier location fetched",
+                  "data": {
+                    "location": {
+                      "lat": 23.781,
+                      "lng": 90.279,
+                      "updatedAt": "2026-10-10T06:00:00.000Z",
+                      "exact": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/couriers/live": {
+      "get": {
+        "operationId": "get__api_v1_admin_couriers_live",
+        "tags": [
+          "admin"
+        ],
+        "summary": "List live courier locations",
+        "description": "ADMIN only. Active couriers with a position under 10 minutes old, newest first (up to 200), each with up to 20 OUT_FOR_DELIVERY shipments.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "couriers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "courierId": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "lat": {
+                                "type": "integer"
+                              },
+                              "lng": {
+                                "type": "integer"
+                              },
+                              "accuracy": {
+                                "type": "integer"
+                              },
+                              "updatedAt": {
+                                "type": "string"
+                              },
+                              "shipments": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "trackingNumber": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "trackingNumber"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "courierId",
+                              "name",
+                              "lat",
+                              "lng",
+                              "accuracy",
+                              "updatedAt",
+                              "shipments"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "couriers"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Live couriers fetched",
+                  "data": {
+                    "couriers": [
+                      {
+                        "courierId": "cm123456789012345678901234",
+                        "name": "Example Courier",
+                        "lat": 23.7806,
+                        "lng": 90.2792,
+                        "accuracy": 12,
+                        "updatedAt": "2026-10-10T06:00:00.000Z",
+                        "shipments": [
+                          {
+                            "id": "cm123456789012345678901234",
+                            "trackingNumber": "EH-0123456789ABCDEF01234567"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/track/{trackingNumber}": {
       "get": {
         "operationId": "get__api_v1_track_trackingNumber_",
@@ -9868,7 +10777,7 @@
           "track"
         ],
         "summary": "Track a shipment publicly",
-        "description": "No authentication. Returns only tracking number, status, booking and delivery dates, and public timeline events (booked, status changes, hub transfers with hub name, delivery attempts, cancellation). Never returns names, phones, addresses, price, notes or internal IDs; courier assignment and admin corrections are omitted. Soft-deleted or unknown numbers return 404. Rate limit: 60 per 15 minutes per client.",
+        "description": "No authentication. Returns only tracking number, status, booking and delivery dates, and public timeline events (booked, status changes, hub transfers with hub name, delivery attempts, cancellation). Never returns names, phones, addresses, price, notes or internal IDs; courier assignment and admin corrections are omitted. courierLocation is {lat, lng, updatedAt} only while the shipment is OUT_FOR_DELIVERY with an assigned courier who shared a position in the last 10 minutes, rounded to 3 decimals (about 110 m); otherwise null. It never includes the courier's identity, accuracy or heading. Soft-deleted or unknown numbers return 404. Rate limit: 60 per 15 minutes per client.",
         "parameters": [
           {
             "name": "trackingNumber",
@@ -9952,6 +10861,10 @@
                                   "hub"
                                 ]
                               }
+                            },
+                            "courierLocation": {
+                              "type": "string",
+                              "nullable": true
                             }
                           },
                           "required": [
@@ -9959,7 +10872,8 @@
                             "status",
                             "createdAt",
                             "deliveredAt",
-                            "events"
+                            "events",
+                            "courierLocation"
                           ]
                         }
                       },
@@ -9996,7 +10910,8 @@
                           "occurredAt": "2026-10-10T06:00:00.000Z",
                           "hub": "Chattogram Hub"
                         }
-                      ]
+                      ],
+                      "courierLocation": null
                     }
                   }
                 }
@@ -10118,7 +11033,7 @@
           "track"
         ],
         "summary": "Stream live tracking updates",
-        "description": "No authentication. Server-Sent Events (text/event-stream). Sends retry, then `event: tracking` with the same public shape as GET /track/{trackingNumber}, then a new tracking event only when the timeline changes (server checks every 5 seconds). `: heartbeat` comments every 25 seconds. Ends with `event: end` and data {reason}: final (DELIVERED, RETURNED or CANCELLED), gone (shipment removed), error (repeated lookup failures) or timeout (after 270 seconds; reconnect). Rate limit: 30 connections per 15 minutes per client.",
+        "description": "No authentication. Server-Sent Events (text/event-stream). Sends retry, then `event: tracking` with the same public shape as GET /track/{trackingNumber}, then a new tracking event only when the timeline or the courier's public position changes (server checks every 5 seconds). `: heartbeat` comments every 25 seconds. Ends with `event: end` and data {reason}: final (DELIVERED, RETURNED or CANCELLED), gone (shipment removed), error (repeated lookup failures) or timeout (after 270 seconds; reconnect). Rate limit: 30 connections per 15 minutes per client.",
         "parameters": [
           {
             "name": "trackingNumber",
@@ -10148,7 +11063,7 @@
                 "schema": {
                   "type": "string"
                 },
-                "example": "retry: 3000\n\nevent: tracking\ndata: {\"trackingNumber\":\"EH-0123456789ABCDEF01234567\",\"status\":\"IN_TRANSIT\",\"createdAt\":\"2026-10-10T06:00:00.000Z\",\"deliveredAt\":null,\"events\":[{\"type\":\"CREATED\",\"status\":\"CREATED\",\"occurredAt\":\"2026-10-10T06:00:00.000Z\",\"hub\":null},{\"type\":\"HUB_TRANSFER\",\"status\":null,\"occurredAt\":\"2026-10-10T06:00:00.000Z\",\"hub\":\"Chattogram Hub\"}]}\n\nevent: end\ndata: {\"reason\":\"final\"}\n\n"
+                "example": "retry: 3000\n\nevent: tracking\ndata: {\"trackingNumber\":\"EH-0123456789ABCDEF01234567\",\"status\":\"IN_TRANSIT\",\"createdAt\":\"2026-10-10T06:00:00.000Z\",\"deliveredAt\":null,\"events\":[{\"type\":\"CREATED\",\"status\":\"CREATED\",\"occurredAt\":\"2026-10-10T06:00:00.000Z\",\"hub\":null},{\"type\":\"HUB_TRANSFER\",\"status\":null,\"occurredAt\":\"2026-10-10T06:00:00.000Z\",\"hub\":\"Chattogram Hub\"}],\"courierLocation\":null}\n\nevent: end\ndata: {\"reason\":\"final\"}\n\n"
               }
             }
           },

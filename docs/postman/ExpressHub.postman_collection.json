@@ -2264,6 +2264,64 @@
             }
           ],
           "event": []
+        },
+        {
+          "name": "Read the courier's location for a shipment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/courier-location",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "{{shipmentId}}",
+                "courier-location"
+              ]
+            },
+            "description": "Same access rules as GET /shipments/{id}. location is null unless the shipment is OUT_FOR_DELIVERY with an assigned courier and a position under 10 minutes old. ADMIN and the assigned COURIER get the exact position with accuracy (exact: true); the CUSTOMER gets the public, rounded position (exact: false)."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/courier-location",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "{{shipmentId}}",
+                    "courier-location"
+                  ]
+                },
+                "description": "Same access rules as GET /shipments/{id}. location is null unless the shipment is OUT_FOR_DELIVERY with an assigned courier and a position under 10 minutes old. ADMIN and the assigned COURIER get the exact position with accuracy (exact: true); the CUSTOMER gets the public, rounded position (exact: false)."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Courier location fetched\",\n  \"data\": {\n    \"location\": {\n      \"lat\": 23.781,\n      \"lng\": 90.279,\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"exact\": false\n    }\n  }\n}"
+            }
+          ],
+          "event": []
         }
       ]
     },
@@ -2722,6 +2780,64 @@
                 }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Read dashboard statistics\",\n  \"data\": {\n    \"users\": {\n      \"total\": 0,\n      \"active\": 0,\n      \"inactive\": 0,\n      \"byRole\": {\n        \"CUSTOMER\": 0,\n        \"COURIER\": 0,\n        \"ADMIN\": 0\n      }\n    },\n    \"shipments\": {\n      \"total\": 0,\n      \"active\": 0,\n      \"byStatus\": {\n        \"CREATED\": 0,\n        \"PICKED_UP\": 0,\n        \"IN_TRANSIT\": 0,\n        \"OUT_FOR_DELIVERY\": 0,\n        \"DELIVERED\": 0,\n        \"FAILED\": 0,\n        \"RETURNED\": 0,\n        \"CANCELLED\": 0\n      }\n    },\n    \"payments\": {\n      \"total\": 0,\n      \"byStatus\": {\n        \"PENDING\": 0,\n        \"PAID\": 0,\n        \"FAILED\": 0,\n        \"REFUND_PENDING\": 0,\n        \"REFUNDED\": 0\n      },\n      \"amounts\": [\n        {\n          \"currency\": \"BDT\",\n          \"status\": \"PAID\",\n          \"count\": 1,\n          \"amount\": \"100.00\"\n        }\n      ]\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "List live courier locations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/couriers/live",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "couriers",
+                "live"
+              ]
+            },
+            "description": "ADMIN only. Active couriers with a position under 10 minutes old, newest first (up to 200), each with up to 20 OUT_FOR_DELIVERY shipments."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/couriers/live",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "couriers",
+                    "live"
+                  ]
+                },
+                "description": "ADMIN only. Active couriers with a position under 10 minutes old, newest first (up to 200), each with up to 20 OUT_FOR_DELIVERY shipments."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Live couriers fetched\",\n  \"data\": {\n    \"couriers\": [\n      {\n        \"courierId\": \"cm123456789012345678901234\",\n        \"name\": \"Example Courier\",\n        \"lat\": 23.7806,\n        \"lng\": 90.2792,\n        \"accuracy\": 12,\n        \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n        \"shipments\": [\n          {\n            \"id\": \"cm123456789012345678901234\",\n            \"trackingNumber\": \"EH-0123456789ABCDEF01234567\"\n          }\n        ]\n      }\n    ]\n  }\n}"
             }
           ],
           "event": []
@@ -3328,6 +3444,146 @@
             }
           ],
           "event": []
+        },
+        {
+          "name": "Share live courier location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courier/location",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courier",
+                "location"
+              ]
+            },
+            "description": "COURIER only, opt-in from the courier app. Accepted only while the courier has at least one OUT_FOR_DELIVERY shipment; otherwise 409 LOCATION_SHARING_NOT_ALLOWED and any stored position is deleted. Stores only the latest position (one row per courier, no history); it is deleted when the courier's last delivery leaves OUT_FOR_DELIVERY and ignored everywhere after 10 minutes. Rate limit: 240 per 15 minutes per courier.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 23.7806,\n  \"lng\": 90.2792,\n  \"accuracy\": 12,\n  \"heading\": 90,\n  \"speed\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/courier/location",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "courier",
+                    "location"
+                  ]
+                },
+                "description": "COURIER only, opt-in from the courier app. Accepted only while the courier has at least one OUT_FOR_DELIVERY shipment; otherwise 409 LOCATION_SHARING_NOT_ALLOWED and any stored position is deleted. Stores only the latest position (one row per courier, no history); it is deleted when the courier's last delivery leaves OUT_FOR_DELIVERY and ignored everywhere after 10 minutes. Rate limit: 240 per 15 minutes per courier.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"lat\": 23.7806,\n  \"lng\": 90.2792,\n  \"accuracy\": 12,\n  \"heading\": 90,\n  \"speed\": 6\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Location updated\",\n  \"data\": {\n    \"activeDeliveries\": 2,\n    \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Stop sharing live courier location",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courier/location",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courier",
+                "location"
+              ]
+            },
+            "description": "COURIER only. Deletes the courier's stored position."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/courier/location",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "courier",
+                    "location"
+                  ]
+                },
+                "description": "COURIER only. Deletes the courier's stored position."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Location sharing stopped\",\n  \"data\": {\n    \"sharing\": false\n  }\n}"
+            }
+          ],
+          "event": []
         }
       ]
     },
@@ -3351,7 +3607,7 @@
                 "{{trackingNumber}}"
               ]
             },
-            "description": "No authentication. Returns only tracking number, status, booking and delivery dates, and public timeline events (booked, status changes, hub transfers with hub name, delivery attempts, cancellation). Never returns names, phones, addresses, price, notes or internal IDs; courier assignment and admin corrections are omitted. Soft-deleted or unknown numbers return 404. Rate limit: 60 per 15 minutes per client.",
+            "description": "No authentication. Returns only tracking number, status, booking and delivery dates, and public timeline events (booked, status changes, hub transfers with hub name, delivery attempts, cancellation). Never returns names, phones, addresses, price, notes or internal IDs; courier assignment and admin corrections are omitted. courierLocation is {lat, lng, updatedAt} only while the shipment is OUT_FOR_DELIVERY with an assigned courier who shared a position in the last 10 minutes, rounded to 3 decimals (about 110 m); otherwise null. It never includes the courier's identity, accuracy or heading. Soft-deleted or unknown numbers return 404. Rate limit: 60 per 15 minutes per client.",
             "auth": {
               "type": "noauth"
             }
@@ -3374,7 +3630,7 @@
                     "{{trackingNumber}}"
                   ]
                 },
-                "description": "No authentication. Returns only tracking number, status, booking and delivery dates, and public timeline events (booked, status changes, hub transfers with hub name, delivery attempts, cancellation). Never returns names, phones, addresses, price, notes or internal IDs; courier assignment and admin corrections are omitted. Soft-deleted or unknown numbers return 404. Rate limit: 60 per 15 minutes per client.",
+                "description": "No authentication. Returns only tracking number, status, booking and delivery dates, and public timeline events (booked, status changes, hub transfers with hub name, delivery attempts, cancellation). Never returns names, phones, addresses, price, notes or internal IDs; courier assignment and admin corrections are omitted. courierLocation is {lat, lng, updatedAt} only while the shipment is OUT_FOR_DELIVERY with an assigned courier who shared a position in the last 10 minutes, rounded to 3 decimals (about 110 m); otherwise null. It never includes the courier's identity, accuracy or heading. Soft-deleted or unknown numbers return 404. Rate limit: 60 per 15 minutes per client.",
                 "auth": {
                   "type": "noauth"
                 }
@@ -3391,7 +3647,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Tracking fetched successfully\",\n  \"data\": {\n    \"tracking\": {\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"status\": \"IN_TRANSIT\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deliveredAt\": null,\n      \"events\": [\n        {\n          \"type\": \"CREATED\",\n          \"status\": \"CREATED\",\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": null\n        },\n        {\n          \"type\": \"HUB_TRANSFER\",\n          \"status\": null,\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": \"Chattogram Hub\"\n        }\n      ]\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Tracking fetched successfully\",\n  \"data\": {\n    \"tracking\": {\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"status\": \"IN_TRANSIT\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deliveredAt\": null,\n      \"events\": [\n        {\n          \"type\": \"CREATED\",\n          \"status\": \"CREATED\",\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": null\n        },\n        {\n          \"type\": \"HUB_TRANSFER\",\n          \"status\": null,\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": \"Chattogram Hub\"\n        }\n      ],\n      \"courierLocation\": null\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -3414,7 +3670,7 @@
                 "stream"
               ]
             },
-            "description": "No authentication. Server-Sent Events (text/event-stream). Sends retry, then `event: tracking` with the same public shape as GET /track/{trackingNumber}, then a new tracking event only when the timeline changes (server checks every 5 seconds). `: heartbeat` comments every 25 seconds. Ends with `event: end` and data {reason}: final (DELIVERED, RETURNED or CANCELLED), gone (shipment removed), error (repeated lookup failures) or timeout (after 270 seconds; reconnect). Rate limit: 30 connections per 15 minutes per client.",
+            "description": "No authentication. Server-Sent Events (text/event-stream). Sends retry, then `event: tracking` with the same public shape as GET /track/{trackingNumber}, then a new tracking event only when the timeline or the courier's public position changes (server checks every 5 seconds). `: heartbeat` comments every 25 seconds. Ends with `event: end` and data {reason}: final (DELIVERED, RETURNED or CANCELLED), gone (shipment removed), error (repeated lookup failures) or timeout (after 270 seconds; reconnect). Rate limit: 30 connections per 15 minutes per client.",
             "auth": {
               "type": "noauth"
             }
@@ -3438,7 +3694,7 @@
                     "stream"
                   ]
                 },
-                "description": "No authentication. Server-Sent Events (text/event-stream). Sends retry, then `event: tracking` with the same public shape as GET /track/{trackingNumber}, then a new tracking event only when the timeline changes (server checks every 5 seconds). `: heartbeat` comments every 25 seconds. Ends with `event: end` and data {reason}: final (DELIVERED, RETURNED or CANCELLED), gone (shipment removed), error (repeated lookup failures) or timeout (after 270 seconds; reconnect). Rate limit: 30 connections per 15 minutes per client.",
+                "description": "No authentication. Server-Sent Events (text/event-stream). Sends retry, then `event: tracking` with the same public shape as GET /track/{trackingNumber}, then a new tracking event only when the timeline or the courier's public position changes (server checks every 5 seconds). `: heartbeat` comments every 25 seconds. Ends with `event: end` and data {reason}: final (DELIVERED, RETURNED or CANCELLED), gone (shipment removed), error (repeated lookup failures) or timeout (after 270 seconds; reconnect). Rate limit: 30 connections per 15 minutes per client.",
                 "auth": {
                   "type": "noauth"
                 }
@@ -3455,7 +3711,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Server-Sent Events stream\",\n  \"data\": {\n    \"tracking\": {\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"status\": \"IN_TRANSIT\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deliveredAt\": null,\n      \"events\": [\n        {\n          \"type\": \"CREATED\",\n          \"status\": \"CREATED\",\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": null\n        },\n        {\n          \"type\": \"HUB_TRANSFER\",\n          \"status\": null,\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": \"Chattogram Hub\"\n        }\n      ]\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Server-Sent Events stream\",\n  \"data\": {\n    \"tracking\": {\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"status\": \"IN_TRANSIT\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"deliveredAt\": null,\n      \"events\": [\n        {\n          \"type\": \"CREATED\",\n          \"status\": \"CREATED\",\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": null\n        },\n        {\n          \"type\": \"HUB_TRANSFER\",\n          \"status\": null,\n          \"occurredAt\": \"2026-10-10T06:00:00.000Z\",\n          \"hub\": \"Chattogram Hub\"\n        }\n      ],\n      \"courierLocation\": null\n    }\n  }\n}"
             }
           ],
           "event": []
