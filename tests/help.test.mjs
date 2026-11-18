@@ -151,18 +151,19 @@ test("unreadable output and provider errors are audited and passed on", async ()
   const failing = harness({ throws: busy });
   await assert.rejects(help.answerHelpQuestion("How do refunds work?", failing.deps), busy);
   assert.equal(failing.calls.audits[0].outcome, "ERROR");
-  assert.equal(failing.calls.audits[0].question, "How do refunds work?");
+  assert.equal(failing.calls.audits[0].question, undefined);
 
   const { deps } = harness();
   deps.audit = async () => { throw new Error("db down"); };
   assert.equal((await help.answerHelpQuestion("How do refunds work?", deps)).fallback, false);
 });
 
-test("long questions are audited only as a 200-character excerpt", async () => {
+test("audit records keep the question length but never its text", async () => {
   const { deps, calls } = harness();
-  await help.answerHelpQuestion(`Refunds ${"x".repeat(400)}`, deps);
-  assert.equal(calls.audits[0].question.length, 200);
-  assert.equal(calls.audits[0].questionLength, 408);
+  await help.answerHelpQuestion(`Refunds for 01712345678 ${"x".repeat(400)}`, deps);
+  assert.equal(calls.audits[0].question, undefined);
+  assert.equal(JSON.stringify(calls.audits[0]).includes("01712345678"), false);
+  assert.equal(typeof calls.audits[0].questionLength, "number");
 });
 
 test("keyword queries keep only words and vectors are validated", () => {

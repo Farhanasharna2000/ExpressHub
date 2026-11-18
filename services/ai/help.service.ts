@@ -126,8 +126,7 @@ export async function answerHelpQuestion(rawQuestion: string, deps: HelpDeps): P
   const record: Record<string, unknown> = {
     model: deps.model,
     promptVersion: HELP_PROMPT_VERSION,
-    // A public help question; kept short for quality review, never linked to an account.
-    question: question.slice(0, 200),
+    // Visitors type phone numbers and addresses into help boxes, so the text is never stored.
     questionLength: question.length,
   };
   const audit = (details: Record<string, unknown>) =>

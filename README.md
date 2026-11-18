@@ -329,7 +329,7 @@ question ──► Gemini embedding (768 d, RETRIEVAL_QUERY)
   fixed fallback pointing to the help centre instead of a guess.
 - **Private and cheap:** the chat cannot see shipments or accounts. Questions are limited to 500
   characters, 10 per 15 minutes per visitor and 300 per day across all visitors. Each question is
-  audited as `AI_HELP_QUERY` with a 200-character excerpt, the chunks used and token usage, and no actor.
+  audited as `AI_HELP_QUERY` with the question length (never its text), the chunks used and token usage, and no actor.
 - **Indexing:** `npm run help:index` splits each article into heading-aware chunks (about 400
   tokens, short overlap), embeds new or changed chunks with `gemini-embedding-001` and removes chunks
   of deleted articles. Run it after editing `docs/help/` and after deploying to a new database.
