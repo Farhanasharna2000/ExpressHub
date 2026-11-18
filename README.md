@@ -50,6 +50,22 @@ and framer-motion follows the same setting through `MotionConfig`. With reduced 
 or without JavaScript, content renders in its final state. Count-ups write to the existing
 text node, give way to fresh data, and always finish on the exact rendered figure.
 
+The home hero (`features/home/hero-showpiece.ts`) goes further:
+
+- **Headline:** SplitText raises the headline letter by letter from behind masks, and a
+  colour wave runs once through the key phrase. Screen readers get one label with the lines
+  joined by spaces, and the split is reverted when the intro ends.
+- **Delivery route:** DrawSVG draws the route while MotionPath carries the parcel along it,
+  then the destination pin and a "Delivered" chip pop in. Each run takes under five seconds
+  (so it needs no pause control under WCAG 2.2.2) and replays when the hero scrolls back
+  into view.
+- **Depth and tilt:** on wider screens with a mouse or trackpad, decorative layers drift
+  at different speeds as the page scrolls, the illustration tilts toward the cursor (up to
+  6°), and the hero buttons lean toward it (up to 8px). Phones get the headline and route only.
+
+SplitText, MotionPath and DrawSVG are registered in `lib/gsap-hero.ts`, which only the
+home page imports, so no other page loads them.
+
 ### Forms and validation
 
 React Hook Form manages authentication, profile, shipment booking, and admin and
