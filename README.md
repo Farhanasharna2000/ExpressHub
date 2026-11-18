@@ -31,6 +31,7 @@ and audit records.
 | Admin analytics | Bookings, deliveries, net revenue, on-time rate, delivery times and courier performance by day or week, compared with the previous period, with CSV export (see [Admin analytics](#admin-analytics)) |
 | Proof of delivery | Couriers confirm delivery with a photo and/or the recipient's signature from an installable, offline-tolerant courier app (see [Proof of delivery](#proof-of-delivery-and-the-courier-app)) |
 | Help centre and AI help chat | Public help articles at `/help`, and a help chat that answers only from them with cited sources, measured by an evaluation suite (see [AI help chat](#ai-help-chat)) |
+| Merchant API and webhooks | Customers create scoped API keys to book and track shipments from their own systems, and receive signed webhooks with retries and a delivery log (see [Merchant API and webhooks](#merchant-api-and-webhooks)) |
 
 The interface includes responsive navigation, URL-based filtering and pagination,
 accessible field errors, toast feedback, and loading skeletons for lists, details,
@@ -424,6 +425,69 @@ The one answer marked unfaithful called the proof viewers "ExpressHub admins" wh
 It calls the AI provider, so it is run by hand rather than in CI. `npm run test:help` covers
 the same logic offline.
 
+## Merchant API and webhooks
+
+Businesses can connect their own systems at **Developer** (`/customer/developer`).
+
+### API keys
+
+- A key looks like `eh_live_<8-character prefix>_<secret>`. It is shown once when created and
+  stored only as a SHA-256 hash; lists show the prefix and last use.
+- Send it as `Authorization: Bearer <key>`. It acts as its customer owner, with customer rights only.
+- Scopes: `shipments:read` (list and view), `shipments:write` (book and cancel) and
+  `webhooks:manage` (manage endpoints). Each operation that accepts keys names its scope in the
+  OpenAPI document (`merchantApiKey` security scheme).
+- Every route not on the allowlist in `lib/merchant/api-keys.ts` rejects keys with
+  `403 API_KEY_NOT_ALLOWED`, including auth, profile, payments, AI, admin and courier routes.
+  Keys are managed from a signed-in session only, so a key can never create or revoke keys.
+- Revoked or expired keys, and keys whose owner is deactivated or no longer a customer, get
+  `401 INVALID_API_KEY`. Each key is limited to 120 requests a minute; up to 10 active keys.
+
+```bash
+curl https://<your-domain>/api/v1/shipments -H "Authorization: Bearer $EXPRESSHUB_API_KEY"
+```
+
+### Webhooks
+
+- Events: `shipment.created`, `shipment.status_changed` and `shipment.delivered` (a delivery
+  sends both of the last two). Up to 5 endpoints, each with its own signing secret, encrypted at
+  rest with AES-256-GCM (`WEBHOOK_ENCRYPTION_KEY`) and shown once; it can be rotated.
+- A delivery row is written in the same transaction as the shipment change, then sent right after
+  the response and by the scheduled sweeper. Retries back off from about 1 minute to 6 hours; after
+  8 attempts the delivery is marked dead and can be retried from the delivery log.
+- Payload: `{ id, type, createdAt, data: { shipment } }` with only the shipment id, tracking number,
+  statuses, payment status, price and timestamps; no contact names, phones or addresses.
+- Headers: `ExpressHub-Signature: t=<unix seconds>,v1=<hex>`, where the hex is
+  HMAC-SHA256 of `<t>.<raw body>` with the endpoint secret, plus `ExpressHub-Event-Id` (use it to
+  drop duplicates) and `ExpressHub-Event-Type`. Reply with any 2xx within 5 seconds.
+- URLs must use https on port 443. The host is resolved and every address must be public:
+  private, loopback, link-local, CGNAT, multicast, documentation and cloud metadata ranges, IPv6
+  equivalents and IPv4-mapped forms are rejected. The connection goes to the vetted address, so
+  the name cannot be re-resolved to an internal one; redirects are not followed and at most 64 KB
+  of the response is read. The same checks run again on every delivery.
+
+Verifying a delivery in Node.js:
+
+```js
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+export function verifyExpressHubWebhook(rawBody, signatureHeader, secret) {
+  const parts = Object.fromEntries(signatureHeader.split(",").map((part) => part.split("=")));
+  const timestamp = Number(parts.t);
+  if (!timestamp || Math.abs(Date.now() / 1000 - timestamp) > 300) return false;
+  const expected = createHmac("sha256", secret).update(`${timestamp}.${rawBody}`).digest();
+  const received = Buffer.from(parts.v1 ?? "", "hex");
+  return received.length === expected.length && timingSafeEqual(received, expected);
+}
+```
+
+Test vector: secret `whsec_test_secret`, timestamp `1700000000` and body
+`{"id":"evt_1","type":"webhook.test"}` give
+`300fe9a62e4c5c166d1ecf49f67cd28c64436b147d91784ac110bd597486ec23`.
+
+Without `WEBHOOK_ENCRYPTION_KEY`, endpoint creation returns `503 WEBHOOKS_UNAVAILABLE`; API keys
+still work. Generate a key with `openssl rand -base64 32`.
+
 ## Technology
 
 | Area | Implementation |
@@ -503,6 +567,7 @@ in your local environment or deployment secret settings.
 | `APP_URL` | Public site URL used for tracking links in emails; falls back to `ALLOWED_ORIGIN` |
 | `RESEND_API_KEY`, `NOTIFICATIONS_FROM` | Resend API key and verified sender (for example `ExpressHub <no-reply@yourdomain.com>`); without both, emails are only logged |
 | `CRON_SECRET` | At least 16 random characters; Vercel Cron sends it as a bearer token to the notification sweeper |
+| `WEBHOOK_ENCRYPTION_KEY` | 32 random bytes, base64 (`openssl rand -base64 32`); encrypts webhook signing secrets. Without it, webhook endpoints are unavailable |
 
 Production rate limiting fails closed if Upstash is unavailable or unconfigured.
 There is no process-local production fallback.
@@ -597,6 +662,8 @@ npm run test:tracking
 npm run test:notifications
 npm run test:analytics
 npm run test:proof
+npm run test:help
+npm run test:merchant
 npm run test:misc
 ```
 
@@ -620,6 +687,8 @@ calculations, CSV formula escaping, the cache and admin-only access.
 multipart limits and the courier upload queue (retry, permanent failure and already-delivered).
 `test:help` covers article chunking, rank fusion, the similarity threshold, citation checks,
 fallbacks, input limits, prompt-injection handling and incremental indexing, with no network calls.
+`test:merchant` covers API key format, hashing and the route allowlist, the webhook signature test
+vector, secret encryption, IPv4 and IPv6 address classification and webhook retry rules.
 
 If the auth unit test picks up external Upstash settings, run it with an isolated
 local limiter (Bash):
@@ -667,6 +736,7 @@ npm run test:notifications:integration
 npm run test:analytics:integration
 npm run test:proof:integration
 npm run test:help:integration
+npm run test:merchant:integration
 ```
 
 The help integration suite needs the `vector` extension. It checks the HNSW and full-text

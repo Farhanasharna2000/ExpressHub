@@ -25,6 +25,8 @@ env:
   ALLOWED_ORIGIN: http://localhost:3000
   APP_URL: http://localhost:3000
   CRON_SECRET: ci-placeholder-cron-secret
+  # base64 of the 32-byte string "ci-placeholder-webhook-key-32byt"; never used outside CI.
+  WEBHOOK_ENCRYPTION_KEY: Y2ktcGxhY2Vob2xkZXItd2ViaG9vay1rZXktMzJieXQ=
   AI_ENABLED: "false"
 
 jobs:
@@ -85,7 +87,7 @@ jobs:
       - run: npm run build
       - name: Integration suites
         run: |
-          for suite in auth users shipments payments admin lists soft-delete errors notifications proof help tracking location analytics; do
+          for suite in auth users shipments payments admin lists soft-delete errors notifications proof help tracking location analytics merchant; do
             echo "::group::$suite"
             npm run "test:$suite:integration"
             echo "::endgroup::"
