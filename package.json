@@ -29,7 +29,7 @@
     "test:proof": "node --test tests/proof.test.mjs",
     "test:proof:integration": "node tests/proof.integration.mjs",
     "test:misc": "node --test tests/postman.test.mjs tests/profile-photo.test.mjs tests/rate-limit-diagnostics.test.mjs tests/count-up.test.mjs",
-    "test": "npm run test:auth && npm run test:payments && npm run test:ai && npm run test:checkout-return && npm run test:pagination && npm run test:errors && npm run test:security && npm run test:frontend && npm run test:tracking && npm run test:notifications && npm run test:analytics && npm run test:proof && npm run test:help && npm run test:misc",
+    "test": "npm run test:auth && npm run test:payments && npm run test:ai && npm run test:checkout-return && npm run test:pagination && npm run test:errors && npm run test:security && npm run test:frontend && npm run test:tracking && npm run test:notifications && npm run test:analytics && npm run test:proof && npm run test:help && npm run test:merchant && npm run test:misc",
     "test:help": "node --test tests/help.test.mjs",
     "test:help:integration": "node --env-file-if-exists=.env tests/help.integration.mjs",
     "help:index": "node --env-file-if-exists=.env scripts/index-help.mjs",
@@ -51,7 +51,9 @@
     "test:tracking:integration": "node tests/tracking.integration.mjs",
     "test:location:integration": "node tests/courier-location.integration.mjs",
     "test:analytics": "node --test tests/analytics.test.mjs",
-    "test:analytics:integration": "node tests/analytics.integration.mjs"
+    "test:analytics:integration": "node tests/analytics.integration.mjs",
+    "test:merchant": "node --test tests/merchant.test.mjs",
+    "test:merchant:integration": "node tests/merchant.integration.mjs"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

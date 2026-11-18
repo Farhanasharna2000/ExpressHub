@@ -94,6 +94,7 @@ function classifyV6(groups: number[]): Classification {
   if (g0 === 0x2002) return classifyV4(embeddedV4(g1, g2));
   if (g0 === 0x2001 && g1 === 0) return blocked("IPv6 Teredo address");
   if (g0 === 0x2001 && g1 === 0xdb8) return blocked("IPv6 documentation address");
+  if (g0 === 0x3fff && (g1 & 0xf000) === 0) return blocked("IPv6 documentation address");
   if (g0 === 0x2001 && (g1 & 0xfff0) === 0x10) return blocked("IPv6 ORCHID address");
   if (g0 === 0x2001 && (g1 & 0xfff0) === 0x20) return blocked("IPv6 ORCHIDv2 address");
   if (g0 === 0x100 && g1 === 0 && g2 === 0 && g3 === 0) return blocked("IPv6 discard address");
