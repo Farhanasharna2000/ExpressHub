@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, Check } from "lucide-react";
+import { ArrowUpRight, Check, Package } from "lucide-react";
 import Image from "next/image";
 import { useRef } from "react";
 import { ButtonLink, StatusBadge } from "@/components/ui/primitives";
@@ -14,11 +14,7 @@ import { countUpAll, gsap, ScrollTrigger, useGSAP, whenMotionAllowed } from "@/l
 import { useSession } from "@/features/auth/provider";
 import { roleHome } from "@/features/auth/session";
 import { TrackForm } from "@/features/tracking/track-form";
-
-// The delivery route drawn behind the courier. The parcel marker's resting position is
-// the path's end point, so without JavaScript or with reduced motion it sits at the destination.
-const ROUTE_PATH = "M 24 196 C 96 128, 150 214, 226 132 S 352 70, 396 34";
-const ROUTE_END = { x: 396, y: 34 };
+import { ROUTE_END, ROUTE_PATH, useHeroShowpiece } from "@/features/home/hero-showpiece";
 
 // Entrances always state their end values. A from() tween reads the end from computed
 // styles, which is wrong mid CSS transition (buttons animate opacity) or when the setup
@@ -30,41 +26,16 @@ function enter(timeline: gsap.core.Timeline, targets: string, offset: gsap.Tween
 function useHomeAnimations(scope: React.RefObject<HTMLDivElement | null>, signedIn: boolean) {
   useGSAP(() => {
     whenMotionAllowed(() => {
+      // The headline and the delivery route belong to useHeroShowpiece; these entrances
+      // use fixed positions so they line up with its headline reveal.
       const intro = gsap.timeline({ defaults: { duration: 0.7, ease: "power3.out" } });
       enter(intro, "[data-hero=badge]", { y: 14 }, 0, { duration: 0.5 });
-      enter(intro, "[data-hero=title] .hero-line", { y: 36 }, "-=0.25", { stagger: 0.1 });
-      enter(intro, "[data-hero=text]", { y: 18 }, "-=0.45");
-      enter(intro, "[data-hero=actions] > *", { y: 14 }, "-=0.45", { stagger: 0.08, duration: 0.5 });
-      enter(intro, "[data-hero=checks] > *", { y: 10 }, "-=0.3", { stagger: 0.06, duration: 0.4 });
-      enter(intro, "[data-hero=track]", { y: 16 }, "-=0.35");
+      enter(intro, "[data-hero=text]", { y: 18 }, 0.75);
+      enter(intro, "[data-hero=actions] > *", { y: 14 }, 0.9, { stagger: 0.08, duration: 0.5 });
+      enter(intro, "[data-hero=checks] > *", { y: 10 }, 1.1, { stagger: 0.06, duration: 0.4 });
+      enter(intro, "[data-hero=track]", { y: 16 }, 1.15);
       enter(intro, "[data-hero=journey]", { y: 28 }, 0.15, { duration: 0.8 });
       enter(intro, "[data-hero=journey] .journey li", { x: -14 }, 0.55, { stagger: 0.08, duration: 0.45 });
-
-      const route = scope.current?.querySelector<SVGPathElement>(".journey-route path");
-      const parcel = scope.current?.querySelector<SVGGElement>(".journey-route-parcel-group");
-      if (route && parcel) {
-        const length = route.getTotalLength();
-        const draw = { progress: 0 };
-        const place = () => {
-          const point = route.getPointAtLength(length * draw.progress);
-          parcel.setAttribute("transform", `translate(${point.x} ${point.y})`);
-        };
-        gsap.set(route, { strokeDasharray: length, strokeDashoffset: length });
-        place();
-        intro.to(draw, {
-          progress: 1,
-          duration: 1.6,
-          ease: "power2.inOut",
-          onUpdate() {
-            route.style.strokeDashoffset = String(length * (1 - draw.progress));
-            place();
-          },
-          onComplete() {
-            gsap.set(route, { clearProps: "strokeDasharray,strokeDashoffset" });
-            parcel.setAttribute("transform", `translate(${ROUTE_END.x} ${ROUTE_END.y})`);
-          },
-        }, 0.6);
-      }
 
       const reveal = (selector: string, vars: gsap.TweenVars) => {
         const targets = gsap.utils.toArray<HTMLElement>(selector, scope.current);
@@ -93,6 +64,7 @@ export default function Home() {
   const isAuthenticated = status === "authenticated" && Boolean(user);
   const scope = useRef<HTMLDivElement>(null);
   useHomeAnimations(scope, isAuthenticated);
+  useHeroShowpiece(scope, isAuthenticated);
 
   return (
     <div className="page-stack" ref={scope}>
@@ -178,13 +150,25 @@ export default function Home() {
           <p className="eyebrow">The delivery journey</p>
           <div className="journey-hero-stage">
             <div className="journey-hero-ambient" aria-hidden="true" />
+            <div className="journey-hero-grid" aria-hidden="true" />
             <svg className="journey-route" viewBox="0 0 420 230" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
               <path d={ROUTE_PATH} />
               <circle className="journey-route-stop" cx="24" cy="196" r="6" />
+              <circle className="journey-route-dest" cx={ROUTE_END.x} cy={ROUTE_END.y} r="8" />
+              <g className="journey-route-chip" transform="translate(318 82)">
+                <rect x="-40" y="-12" width="80" height="24" rx="12" />
+                <text x="0" y="4" textAnchor="middle">Delivered</text>
+              </g>
               <g className="journey-route-parcel-group" transform={`translate(${ROUTE_END.x} ${ROUTE_END.y})`}>
                 <rect className="journey-route-parcel" x="-7" y="-7" width="14" height="14" rx="3" />
               </g>
             </svg>
+            <div className="journey-float-parcel journey-float-parcel-a" data-depth="1.4" aria-hidden="true">
+              <Package className="size-4" />
+            </div>
+            <div className="journey-float-parcel journey-float-parcel-b" data-depth="0.8" aria-hidden="true">
+              <Package className="size-3.5" />
+            </div>
             <Image
               src="/delivery-hero.png"
               alt="ExpressHub courier holding a package and clipboard"

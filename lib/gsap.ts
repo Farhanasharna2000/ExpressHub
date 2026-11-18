@@ -2,12 +2,12 @@
 
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
-import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useRef, type RefObject } from "react";
 import { formatCount, parseCountTarget } from "@/lib/count-up";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger, MotionPathPlugin);
+// Hero-only plugins (SplitText, MotionPath, DrawSVG) live in lib/gsap-hero.ts so other pages never load them.
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 gsap.defaults({ ease: "power3.out", duration: 0.6 });
 
 export const MOTION_OK = "(prefers-reduced-motion: no-preference)";
