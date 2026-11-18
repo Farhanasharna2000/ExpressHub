@@ -30,3 +30,12 @@ export const opsBriefRequestSchema = z.object({
 }).strict();
 
 export type OpsBriefRequestInput = z.infer<typeof opsBriefRequestSchema>;
+
+export const HELP_QUESTION_MAX = 500;
+
+// A single public help question. No conversation history, so nothing to forge.
+export const helpRequestSchema = z.object({
+  question: z.string().trim().min(3, "Ask a question of at least 3 characters").max(HELP_QUESTION_MAX),
+}).strict();
+
+export type HelpRequestInput = z.infer<typeof helpRequestSchema>;

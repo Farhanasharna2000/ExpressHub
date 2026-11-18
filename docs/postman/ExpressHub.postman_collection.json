@@ -3482,7 +3482,7 @@
                 "status"
               ]
             },
-            "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN."
+            "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN; help when AI is enabled, GEMINI_API_KEY is set and help articles are indexed."
           },
           "response": [
             {
@@ -3502,7 +3502,7 @@
                     "status"
                   ]
                 },
-                "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN."
+                "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN; help when AI is enabled, GEMINI_API_KEY is set and help articles are indexed."
               },
               "status": "OK",
               "code": 200,
@@ -3516,7 +3516,159 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"AI status fetched successfully\",\n  \"data\": {\n    \"assistant\": true,\n    \"bookingDraft\": true,\n    \"opsBrief\": false\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"AI status fetched successfully\",\n  \"data\": {\n    \"assistant\": true,\n    \"bookingDraft\": true,\n    \"opsBrief\": false,\n    \"help\": true\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Check help chat availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/help",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "help"
+              ]
+            },
+            "description": "No authentication. available is true when AI is enabled, GEMINI_API_KEY is set (embeddings always use Gemini) and the help articles have been indexed with npm run help:index. Never calls the AI provider.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/ai/help",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "help"
+                  ]
+                },
+                "description": "No authentication. available is true when AI is enabled, GEMINI_API_KEY is set (embeddings always use Gemini) and the help articles have been indexed with npm run help:index. Never calls the AI provider.",
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Help status fetched\",\n  \"data\": {\n    \"available\": true\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Ask the help chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/help",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai",
+                "help"
+              ]
+            },
+            "description": "No authentication. Answers one question using only the ExpressHub help articles (docs/help): the question is embedded with Gemini, matched by pgvector similarity and Postgres full-text search, fused with reciprocal rank fusion, and the top 5 sources are sent to the configured provider. Every answer cites the help sections it used (sources link to /help pages); citations must point to sources that were retrieved. When nothing relevant is found or the model is not confident, fallback is true with a fixed message and no sources. Cannot see shipments or accounts. Rate limits: 10 per 15 minutes per client and 300 per day across all visitors (429). 503 AI_UNAVAILABLE when help is off. Audited as AI_HELP_QUERY with a 200-character question excerpt and no actor.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"How is the price of a shipment calculated?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/ai/help",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "ai",
+                    "help"
+                  ]
+                },
+                "description": "No authentication. Answers one question using only the ExpressHub help articles (docs/help): the question is embedded with Gemini, matched by pgvector similarity and Postgres full-text search, fused with reciprocal rank fusion, and the top 5 sources are sent to the configured provider. Every answer cites the help sections it used (sources link to /help pages); citations must point to sources that were retrieved. When nothing relevant is found or the model is not confident, fallback is true with a fixed message and no sources. Cannot see shipments or accounts. Rate limits: 10 per 15 minutes per client and 300 per day across all visitors (429). 503 AI_UNAVAILABLE when help is off. Audited as AI_HELP_QUERY with a 200-character question excerpt and no actor.",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"question\": \"How is the price of a shipment calculated?\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Help answer prepared\",\n  \"data\": {\n    \"help\": {\n      \"answer\": \"The price is the base fee plus a fee for each extra kilogram above the weight band's minimum, rounded up to whole kilograms.\",\n      \"sources\": [\n        {\n          \"title\": \"How prices are calculated\",\n          \"section\": \"The formula\",\n          \"href\": \"/help/pricing#the-formula\"\n        }\n      ],\n      \"fallback\": false\n    }\n  }\n}"
             }
           ],
           "event": []

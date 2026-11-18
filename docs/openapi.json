@@ -10267,7 +10267,7 @@
           "ai"
         ],
         "summary": "Read AI feature availability",
-        "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN.",
+        "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN; help when AI is enabled, GEMINI_API_KEY is set and help articles are indexed.",
         "parameters": [],
         "responses": {
           "200": {
@@ -10305,12 +10305,16 @@
                         },
                         "opsBrief": {
                           "type": "boolean"
+                        },
+                        "help": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
                         "assistant",
                         "bookingDraft",
-                        "opsBrief"
+                        "opsBrief",
+                        "help"
                       ]
                     }
                   },
@@ -10326,7 +10330,8 @@
                   "data": {
                     "assistant": true,
                     "bookingDraft": true,
-                    "opsBrief": false
+                    "opsBrief": false,
+                    "help": true
                   }
                 }
               }
@@ -10490,6 +10495,329 @@
                     }
                   ]
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/help": {
+      "get": {
+        "operationId": "get__api_v1_ai_help",
+        "tags": [
+          "ai"
+        ],
+        "summary": "Check help chat availability",
+        "description": "No authentication. available is true when AI is enabled, GEMINI_API_KEY is set (embeddings always use Gemini) and the help articles have been indexed with npm run help:index. Never calls the AI provider.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "available": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "available"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Help status fetched",
+                  "data": {
+                    "available": true
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "operationId": "post__api_v1_ai_help",
+        "tags": [
+          "ai"
+        ],
+        "summary": "Ask the help chat",
+        "description": "No authentication. Answers one question using only the ExpressHub help articles (docs/help): the question is embedded with Gemini, matched by pgvector similarity and Postgres full-text search, fused with reciprocal rank fusion, and the top 5 sources are sent to the configured provider. Every answer cites the help sections it used (sources link to /help pages); citations must point to sources that were retrieved. When nothing relevant is found or the model is not confident, fallback is true with a fixed message and no sources. Cannot see shipments or accounts. Rate limits: 10 per 15 minutes per client and 300 per day across all visitors (429). 503 AI_UNAVAILABLE when help is off. Audited as AI_HELP_QUERY with a 200-character question excerpt and no actor.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "help": {
+                          "type": "object",
+                          "properties": {
+                            "answer": {
+                              "type": "string"
+                            },
+                            "sources": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "title": {
+                                    "type": "string"
+                                  },
+                                  "section": {
+                                    "type": "string"
+                                  },
+                                  "href": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "title",
+                                  "section",
+                                  "href"
+                                ]
+                              }
+                            },
+                            "fallback": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "answer",
+                            "sources",
+                            "fallback"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "help"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Help answer prepared",
+                  "data": {
+                    "help": {
+                      "answer": "The price is the base fee plus a fee for each extra kilogram above the weight band's minimum, rounded up to whole kilograms.",
+                      "sources": [
+                        {
+                          "title": "How prices are calculated",
+                          "section": "The formula",
+                          "href": "/help/pricing#the-formula"
+                        }
+                      ],
+                      "fallback": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON request exceeds 16 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Expected application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The AI provider returned an error or unreadable output; try again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "The AI provider returned an error or unreadable output; try again.",
+                  "errors": [
+                    {
+                      "code": "AI_UPSTREAM_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "AI is disabled, busy, out of daily quota, or the rate limiter is unavailable.",
+                  "errors": [
+                    {
+                      "code": "AI_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "question"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "question": "How is the price of a shipment calculated?"
               }
             }
           }

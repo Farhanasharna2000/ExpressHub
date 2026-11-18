@@ -129,7 +129,15 @@ add("get", `${prefix}/track/{trackingNumber}/stream`, "Stream live tracking upda
   stream.content = { "text/event-stream": { schema: { type: "string" }, example: `retry: 3000\n\nevent: tracking\ndata: ${JSON.stringify(publicTracking)}\n\nevent: end\ndata: {"reason":"final"}\n\n` } };
 }
 const assistantMessage = { type: "object", properties: { role: enumeration("user", "assistant"), content: { ...str(1, 8000), description: "User messages up to 2000 characters, assistant messages up to 8000." } }, required: ["role", "content"], additionalProperties: false };
-add("get", `${prefix}/ai/status`, "Read AI feature availability", { assistant: true, bookingDraft: true, opsBrief: false }, { tag: "ai", message: "AI status fetched successfully", description: "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN." });
+add("get", `${prefix}/ai/status`, "Read AI feature availability", { assistant: true, bookingDraft: true, opsBrief: false, help: true }, { tag: "ai", message: "AI status fetched successfully", description: "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN; help when AI is enabled, GEMINI_API_KEY is set and help articles are indexed." });
+add("get", `${prefix}/ai/help`, "Check help chat availability", { available: true }, { public: true, tag: "ai", message: "Help status fetched", errors: [500], description: "No authentication. available is true when AI is enabled, GEMINI_API_KEY is set (embeddings always use Gemini) and the help articles have been indexed with npm run help:index. Never calls the AI provider." });
+add("post", `${prefix}/ai/help`, "Ask the help chat", { help: { answer: "The price is the base fee plus a fee for each extra kilogram above the weight band's minimum, rounded up to whole kilograms.", sources: [{ title: "How prices are calculated", section: "The formula", href: "/help/pricing#the-formula" }], fallback: false } }, {
+  public: true, tag: "ai", message: "Help answer prepared",
+  body: object({ question: str(3, 500) }),
+  example: { question: "How is the price of a shipment calculated?" },
+  errors: [400, 413, 429, 502, 503],
+  description: "No authentication. Answers one question using only the ExpressHub help articles (docs/help): the question is embedded with Gemini, matched by pgvector similarity and Postgres full-text search, fused with reciprocal rank fusion, and the top 5 sources are sent to the configured provider. Every answer cites the help sections it used (sources link to /help pages); citations must point to sources that were retrieved. When nothing relevant is found or the model is not confident, fallback is true with a fixed message and no sources. Cannot see shipments or accounts. Rate limits: 10 per 15 minutes per client and 300 per day across all visitors (429). 503 AI_UNAVAILABLE when help is off. Audited as AI_HELP_QUERY with a 200-character question excerpt and no actor."
+});
 const briefShipment = { id: id.example, trackingNumber: "EH-0123456789ABCDEF01234567", status: "CREATED", hoursSinceUpdate: 30 };
 const opsBrief = {
   day: "2026-11-16", model: "gemini-3.1-flash-lite", generatedAt: timestamp, cached: false,

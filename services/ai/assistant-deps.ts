@@ -15,6 +15,9 @@ import { DELAY_THRESHOLD_HOURS, generateOpsBrief, getCachedBrief, type OpsBriefD
 import { getOperationsFacts } from "@/services/admin.service";
 import { aiBusy as busy, aiUnavailable as unavailable, aiUpstream as upstream, geminiStatusError } from "@/services/ai/provider-errors";
 import { runGeminiAssistant } from "@/services/ai/gemini-assistant.service";
+import { answerHelpQuestion, type HelpDeps } from "@/services/ai/help.service";
+import { embedTexts } from "@/services/ai/help-embeddings";
+import { countHelpChunks, searchHelpByText, searchHelpByVector } from "@/services/ai/help-search";
 import type { AssistantRequestInput, BookingDraftRequestInput } from "@/validators/ai";
 import { listMyPayments } from "@/services/payment.service";
 import { getShipment, listShipments } from "@/services/shipment.service";
@@ -171,7 +174,7 @@ async function geminiJson(model: string, request: JsonRequest): Promise<JsonGene
   };
 }
 
-function configuredJson(config: AiConfig) {
+export function configuredJson(config: AiConfig) {
   return (request: JsonRequest) => (config.provider === "gemini" ? geminiJson : claudeJson)(config.model, request);
 }
 
@@ -221,4 +224,74 @@ export function readConfiguredOpsBrief(actor: AuthenticatedUser, config: AiConfi
 
 export function runConfiguredOpsBrief(actor: AuthenticatedUser, options: { refresh: boolean }, config: AiConfig) {
   return generateOpsBrief(actor, options, opsBriefDeps(config));
+}
+
+// Public help questions across every visitor, so one abuser cannot run up the AI bill.
+const HELP_DAILY_CAP = 300;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export async function enforceHelpDailyCap() {
+  let result;
+  try {
+    result = await limitApiRequests("global", "ai-help:daily", HELP_DAILY_CAP, DAY_MS);
+  } catch (error) {
+    console.error("Help rate limit check failed", rateLimitDiagnostics(error));
+    throw new AppError(503, "The help assistant is temporarily unavailable", "RATE_LIMIT_UNAVAILABLE");
+  }
+  if (!result.success) throw new RateLimitError(result.reset);
+}
+
+// Embeddings always come from Gemini, whichever provider writes the answers.
+async function embedQuery(text: string) {
+  try {
+    const [embedding] = await embedTexts(geminiClient(), [text], "RETRIEVAL_QUERY");
+    return embedding;
+  } catch (error) {
+    if (error instanceof GeminiApiError) {
+      logProviderError("gemini-embedding", error.status, error);
+      throw geminiStatusError(error.status, error.message);
+    }
+    if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
+      logProviderError("gemini-embedding", "timeout", error);
+      throw upstream();
+    }
+    throw error;
+  }
+}
+
+let helpChunkCount: { value: number; at: number } | null = null;
+const HELP_COUNT_TTL_MS = 60_000;
+
+// Help is offered only when AI is on, embeddings can be made and the articles are indexed.
+export async function helpAvailable(config: AiConfig) {
+  if (!config.enabled || !process.env.GEMINI_API_KEY?.trim()) return false;
+  if (!helpChunkCount || Date.now() - helpChunkCount.at > HELP_COUNT_TTL_MS) {
+    try {
+      helpChunkCount = { value: await countHelpChunks(prisma), at: Date.now() };
+    } catch (error) {
+      console.error("Help chunk count failed", error instanceof Error ? error.message : error);
+      return false;
+    }
+  }
+  return helpChunkCount.value > 0;
+}
+
+export function helpDeps(config: AiConfig): HelpDeps {
+  return {
+    model: config.model,
+    embedQuery,
+    searchVector: (embedding, limit) => searchHelpByVector(prisma, embedding, limit),
+    searchText: (question, limit) => searchHelpByText(prisma, question, limit),
+    generateJson: (request) => configuredJson(config)(request),
+    // Help questions come from anonymous visitors, so the record has no actor.
+    audit: async (details) => {
+      await prisma.auditLog.create({
+        data: { actorId: null, entityType: "USER", entityId: "help-chat", action: "AI_HELP_QUERY", details: JSON.parse(JSON.stringify(details)) },
+      });
+    },
+  };
+}
+
+export function runConfiguredHelp(question: string, config: AiConfig) {
+  return answerHelpQuestion(question, helpDeps(config));
 }
