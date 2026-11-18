@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { BookOpen, HelpCircle, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useSession } from "@/features/auth/provider";
 import { isCancelled } from "@/lib/client/api";
 import { aiErrorMessage } from "./ai-error";
@@ -24,11 +24,24 @@ export default function HelpWidget() {
   useEffect(() => {
     if (status === "loading") return;
     let active = true;
-    store.api
-      .request<{ available: boolean }>("/ai/help")
-      .then((result) => { if (active) setShown(result.available === true); })
-      .catch((cause) => { if (!isCancelled(cause) && active) setShown(false); });
-    return () => { active = false; };
+    let timer: number | undefined;
+    // Settling an anonymous session can cancel this request without changing the
+    // status, so a cancelled check is retried a few times instead of hiding help.
+    const check = (attempt: number) => {
+      store.api
+        .request<{ available: boolean }>("/ai/help")
+        .then((result) => { if (active) setShown(result.available === true); })
+        .catch((cause) => {
+          if (!active) return;
+          if (isCancelled(cause) && attempt < 3) timer = window.setTimeout(() => check(attempt + 1), 300);
+          else setShown(false);
+        });
+    };
+    check(0);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
   }, [store, status]);
 
   if (!shown) return null;
@@ -80,10 +93,13 @@ function HelpPanel() {
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)} className="fixed right-4 bottom-4 z-40 h-12 rounded-full px-5 shadow-lg" aria-haspopup="dialog">
-        <HelpCircle aria-hidden="true" /> Help
-      </Button>
       <Dialog open={open} onOpenChange={setOpen}>
+        {/* A real trigger, so closing the dialog returns focus to this button. */}
+        <DialogTrigger asChild>
+          <Button type="button" className="fixed right-4 bottom-4 z-40 h-12 rounded-full px-5 shadow-lg">
+            <HelpCircle aria-hidden="true" /> Help
+          </Button>
+        </DialogTrigger>
         <DialogContent className="flex max-h-[85vh] flex-col gap-3 sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
