@@ -103,6 +103,8 @@ model User {
   notifications     NotificationOutbox[]
   deliveryProofs    DeliveryProof[]      @relation("DeliveryProofCourier")
   courierLocation   CourierLocation?
+  apiKeys           ApiKey[]
+  webhookEndpoints  WebhookEndpoint[]
 
   @@index([role, isActive, deletedAt])
   @@index([createdAt])
@@ -412,4 +414,75 @@ model CourierLocation {
 
   @@index([updatedAt])
   @@map("courier_locations")
+
+enum WebhookDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  DEAD
+}
+
+// Merchant API key. Only the SHA-256 hash of the full key is stored; the prefix
+// identifies the key in lists and is used to look it up.
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  prefix     String    @unique
+  keyHash    String    @unique
+  scopes     String[]
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@map("api_keys")
+}
+
+// The signing secret is needed to sign each delivery, so it is encrypted at rest
+// (AES-256-GCM with WEBHOOK_ENCRYPTION_KEY) instead of hashed.
+model WebhookEndpoint {
+  id              String   @id @default(cuid())
+  userId          String
+  url             String
+  description     String?
+  events          String[]
+  active          Boolean  @default(true)
+  encryptedSecret String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([userId, createdAt])
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id             String                @id @default(cuid())
+  endpointId     String
+  // Stable id sent as ExpressHub-Event-Id; receivers use it to drop duplicates.
+  eventId        String
+  eventType      String
+  shipmentId     String?
+  payload        Json
+  status         WebhookDeliveryStatus @default(PENDING)
+  attempts       Int                   @default(0)
+  nextAttemptAt  DateTime              @default(now())
+  lastStatusCode Int?
+  lastError      String?
+  deliveredAt    DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@unique([endpointId, eventId])
+  @@index([status, nextAttemptAt])
+  @@index([endpointId, createdAt])
+  @@map("webhook_deliveries")
 }
