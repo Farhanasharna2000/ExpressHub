@@ -102,6 +102,7 @@ model User {
   pricingRules      PricingRule[]        @relation("PricingRuleCreator")
   notifications     NotificationOutbox[]
   deliveryProofs    DeliveryProof[]      @relation("DeliveryProofCourier")
+  courierLocation   CourierLocation?
 
   @@index([role, isActive, deletedAt])
   @@index([createdAt])
@@ -394,4 +395,21 @@ model HelpChunk {
 
   @@unique([articleSlug, position])
   @@map("help_chunks")
+}
+
+// A courier's latest shared position while out for delivery. One row per courier and
+// no history: each update overwrites it, and a row older than 10 minutes counts as stale.
+model CourierLocation {
+  courierId String   @id
+  latitude  Float
+  longitude Float
+  accuracy  Float
+  heading   Float?
+  speed     Float?
+  updatedAt DateTime
+
+  courier User @relation(fields: [courierId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
+  @@map("courier_locations")
 }
