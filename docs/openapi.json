@@ -7921,6 +7921,430 @@
         }
       }
     },
+    "/api/v1/shipments/{id}/label": {
+      "get": {
+        "operationId": "get__api_v1_shipments_id_label",
+        "tags": [
+          "shipments"
+        ],
+        "summary": "Download shipping label",
+        "description": "Returns a 4 x 6 inch PDF shipping label (application/pdf, Content-Disposition inline with filename expresshub-label-{trackingNumber}.pdf, Cache-Control: private, no-store). It shows the tracking number, sender and recipient name, phone and address, weight, booking date and hubs, and a QR code holding the public tracking link. Owner CUSTOMER, assigned COURIER or ADMIN; everyone else, and archived shipments, receive 404. Cancelled shipments return 409 LABEL_UNAVAILABLE. Characters the standard PDF fonts cannot draw (for example Bangla script) print as '?'. Rate limit: 60 per 15 minutes per user.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^c[a-z0-9]{24}$",
+              "example": "cm123456789012345678901234"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF bytes.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "private, no-store"
+                }
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business state conflict or exhausted concurrency retries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Business state conflict or exhausted concurrency retries.",
+                  "errors": [
+                    {
+                      "code": "CONFLICT"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/courier/shipments/by-tracking/{trackingNumber}": {
+      "get": {
+        "operationId": "get__api_v1_courier_shipments_by_tracking_trackingNumber_",
+        "tags": [
+          "courier"
+        ],
+        "summary": "Find an assigned shipment by tracking number",
+        "description": "COURIER only. Resolves a scanned or typed tracking number (any letter case) to the courier's own non-archived delivery. Shipments assigned to someone else, or unknown numbers, return 404 so parcels cannot be probed. Rate limit: 120 per 15 minutes per courier.",
+        "parameters": [
+          {
+            "name": "trackingNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^EH-[0-9A-F]{24}$",
+              "example": "EH-0123456789ABCDEF01234567",
+              "description": "Case-insensitive; normalised to upper case."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "shipment": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "trackingNumber": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "trackingNumber",
+                            "status"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "shipment"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Shipment found",
+                  "data": {
+                    "shipment": {
+                      "id": "cm123456789012345678901234",
+                      "trackingNumber": "EH-0123456789ABCDEF01234567",
+                      "status": "OUT_FOR_DELIVERY"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/users": {
       "get": {
         "operationId": "get__api_v1_admin_users",

@@ -2182,6 +2182,64 @@
           "event": []
         },
         {
+          "name": "Download shipping label",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/label",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "{{shipmentId}}",
+                "label"
+              ]
+            },
+            "description": "Returns a 4 x 6 inch PDF shipping label (application/pdf, Content-Disposition inline with filename expresshub-label-{trackingNumber}.pdf, Cache-Control: private, no-store). It shows the tracking number, sender and recipient name, phone and address, weight, booking date and hubs, and a QR code holding the public tracking link. Owner CUSTOMER, assigned COURIER or ADMIN; everyone else, and archived shipments, receive 404. Cancelled shipments return 409 LABEL_UNAVAILABLE. Characters the standard PDF fonts cannot draw (for example Bangla script) print as '?'. Rate limit: 60 per 15 minutes per user."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/{{shipmentId}}/label",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "{{shipmentId}}",
+                    "label"
+                  ]
+                },
+                "description": "Returns a 4 x 6 inch PDF shipping label (application/pdf, Content-Disposition inline with filename expresshub-label-{trackingNumber}.pdf, Cache-Control: private, no-store). It shows the tracking number, sender and recipient name, phone and address, weight, booking date and hubs, and a QR code holding the public tracking link. Owner CUSTOMER, assigned COURIER or ADMIN; everyone else, and archived shipments, receive 404. Cancelled shipments return 409 LABEL_UNAVAILABLE. Characters the standard PDF fonts cannot draw (for example Bangla script) print as '?'. Rate limit: 60 per 15 minutes per user."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipping label PDF\",\n  \"data\": null\n}"
+            }
+          ],
+          "event": []
+        },
+        {
           "name": "Archive shipment",
           "request": {
             "method": "DELETE",
@@ -2319,6 +2377,267 @@
                 }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Courier location fetched\",\n  \"data\": {\n    \"location\": {\n      \"lat\": 23.781,\n      \"lng\": 90.279,\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"exact\": false\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        }
+      ]
+    },
+    {
+      "name": "courier",
+      "item": [
+        {
+          "name": "Find an assigned shipment by tracking number",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courier/shipments/by-tracking/{{trackingNumber}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courier",
+                "shipments",
+                "by-tracking",
+                "{{trackingNumber}}"
+              ]
+            },
+            "description": "COURIER only. Resolves a scanned or typed tracking number (any letter case) to the courier's own non-archived delivery. Shipments assigned to someone else, or unknown numbers, return 404 so parcels cannot be probed. Rate limit: 120 per 15 minutes per courier."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/courier/shipments/by-tracking/{{trackingNumber}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "courier",
+                    "shipments",
+                    "by-tracking",
+                    "{{trackingNumber}}"
+                  ]
+                },
+                "description": "COURIER only. Resolves a scanned or typed tracking number (any letter case) to the courier's own non-archived delivery. Shipments assigned to someone else, or unknown numbers, return 404 so parcels cannot be probed. Rate limit: 120 per 15 minutes per courier."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Shipment found\",\n  \"data\": {\n    \"shipment\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"trackingNumber\": \"EH-0123456789ABCDEF01234567\",\n      \"status\": \"OUT_FOR_DELIVERY\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Read courier statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courier/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courier",
+                "stats"
+              ]
+            },
+            "description": "COURIER or ADMIN only. Aggregates all assigned non-deleted shipments by status."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/courier/stats",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "courier",
+                    "stats"
+                  ]
+                },
+                "description": "COURIER or ADMIN only. Aggregates all assigned non-deleted shipments by status."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Courier statistics fetched successfully\",\n  \"data\": {\n    \"total\": 10,\n    \"readyPickup\": 2,\n    \"inRoute\": 3,\n    \"delivered\": 5,\n    \"byStatus\": {\n      \"CREATED\": 2,\n      \"PICKED_UP\": 0,\n      \"IN_TRANSIT\": 3,\n      \"OUT_FOR_DELIVERY\": 0,\n      \"DELIVERED\": 5,\n      \"FAILED\": 0,\n      \"RETURNED\": 0,\n      \"CANCELLED\": 0\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Share live courier location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courier/location",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courier",
+                "location"
+              ]
+            },
+            "description": "COURIER only, opt-in from the courier app. Accepted only while the courier has at least one OUT_FOR_DELIVERY shipment; otherwise 409 LOCATION_SHARING_NOT_ALLOWED and any stored position is deleted. Stores only the latest position (one row per courier, no history); it is deleted when the courier's last delivery leaves OUT_FOR_DELIVERY and ignored everywhere after 10 minutes. Rate limit: 240 per 15 minutes per courier.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 23.7806,\n  \"lng\": 90.2792,\n  \"accuracy\": 12,\n  \"heading\": 90,\n  \"speed\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/courier/location",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "courier",
+                    "location"
+                  ]
+                },
+                "description": "COURIER only, opt-in from the courier app. Accepted only while the courier has at least one OUT_FOR_DELIVERY shipment; otherwise 409 LOCATION_SHARING_NOT_ALLOWED and any stored position is deleted. Stores only the latest position (one row per courier, no history); it is deleted when the courier's last delivery leaves OUT_FOR_DELIVERY and ignored everywhere after 10 minutes. Rate limit: 240 per 15 minutes per courier.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"lat\": 23.7806,\n  \"lng\": 90.2792,\n  \"accuracy\": 12,\n  \"heading\": 90,\n  \"speed\": 6\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Location updated\",\n  \"data\": {\n    \"activeDeliveries\": 2,\n    \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Stop sharing live courier location",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/courier/location",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courier",
+                "location"
+              ]
+            },
+            "description": "COURIER only. Deletes the courier's stored position."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/courier/location",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "courier",
+                    "location"
+                  ]
+                },
+                "description": "COURIER only. Deletes the courier's stored position."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Location sharing stopped\",\n  \"data\": {\n    \"sharing\": false\n  }\n}"
             }
           ],
           "event": []
@@ -3524,207 +3843,6 @@
                 }
               ],
               "body": "{\n  \"success\": true,\n  \"message\": \"Analytics export prepared\",\n  \"data\": {\n    \"export\": {\n      \"filename\": \"expresshub-analytics-2026-11-01-to-2026-11-30.csv\",\n      \"contentType\": \"text/csv; charset=utf-8\",\n      \"content\": \"Period starting,Shipments booked,Shipments delivered,Net revenue (BDT)\\r\\n2026-11-01,2,1,450.00\\r\\n\"\n    }\n  }\n}"
-            }
-          ],
-          "event": []
-        }
-      ]
-    },
-    {
-      "name": "courier",
-      "item": [
-        {
-          "name": "Read courier statistics",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/courier/stats",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "courier",
-                "stats"
-              ]
-            },
-            "description": "COURIER or ADMIN only. Aggregates all assigned non-deleted shipments by status."
-          },
-          "response": [
-            {
-              "name": "Success example",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/courier/stats",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "v1",
-                    "courier",
-                    "stats"
-                  ]
-                },
-                "description": "COURIER or ADMIN only. Aggregates all assigned non-deleted shipments by status."
-              },
-              "status": "OK",
-              "code": 200,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "Cache-Control",
-                  "value": "no-store"
-                }
-              ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Courier statistics fetched successfully\",\n  \"data\": {\n    \"total\": 10,\n    \"readyPickup\": 2,\n    \"inRoute\": 3,\n    \"delivered\": 5,\n    \"byStatus\": {\n      \"CREATED\": 2,\n      \"PICKED_UP\": 0,\n      \"IN_TRANSIT\": 3,\n      \"OUT_FOR_DELIVERY\": 0,\n      \"DELIVERED\": 5,\n      \"FAILED\": 0,\n      \"RETURNED\": 0,\n      \"CANCELLED\": 0\n    }\n  }\n}"
-            }
-          ],
-          "event": []
-        },
-        {
-          "name": "Share live courier location",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/courier/location",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "courier",
-                "location"
-              ]
-            },
-            "description": "COURIER only, opt-in from the courier app. Accepted only while the courier has at least one OUT_FOR_DELIVERY shipment; otherwise 409 LOCATION_SHARING_NOT_ALLOWED and any stored position is deleted. Stores only the latest position (one row per courier, no history); it is deleted when the courier's last delivery leaves OUT_FOR_DELIVERY and ignored everywhere after 10 minutes. Rate limit: 240 per 15 minutes per courier.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"lat\": 23.7806,\n  \"lng\": 90.2792,\n  \"accuracy\": 12,\n  \"heading\": 90,\n  \"speed\": 6\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [
-            {
-              "name": "Success example",
-              "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/courier/location",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "v1",
-                    "courier",
-                    "location"
-                  ]
-                },
-                "description": "COURIER only, opt-in from the courier app. Accepted only while the courier has at least one OUT_FOR_DELIVERY shipment; otherwise 409 LOCATION_SHARING_NOT_ALLOWED and any stored position is deleted. Stores only the latest position (one row per courier, no history); it is deleted when the courier's last delivery leaves OUT_FOR_DELIVERY and ignored everywhere after 10 minutes. Rate limit: 240 per 15 minutes per courier.",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"lat\": 23.7806,\n  \"lng\": 90.2792,\n  \"accuracy\": 12,\n  \"heading\": 90,\n  \"speed\": 6\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "Cache-Control",
-                  "value": "no-store"
-                }
-              ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Location updated\",\n  \"data\": {\n    \"activeDeliveries\": 2,\n    \"updatedAt\": \"2026-10-10T06:00:00.000Z\"\n  }\n}"
-            }
-          ],
-          "event": []
-        },
-        {
-          "name": "Stop sharing live courier location",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/courier/location",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "courier",
-                "location"
-              ]
-            },
-            "description": "COURIER only. Deletes the courier's stored position."
-          },
-          "response": [
-            {
-              "name": "Success example",
-              "originalRequest": {
-                "method": "DELETE",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/courier/location",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "v1",
-                    "courier",
-                    "location"
-                  ]
-                },
-                "description": "COURIER only. Deletes the courier's stored position."
-              },
-              "status": "OK",
-              "code": 200,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "Cache-Control",
-                  "value": "no-store"
-                }
-              ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Location sharing stopped\",\n  \"data\": {\n    \"sharing\": false\n  }\n}"
             }
           ],
           "event": []

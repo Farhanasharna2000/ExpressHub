@@ -112,6 +112,17 @@ for (const kind of ["photo", "signature"]) {
   response.headers["Cache-Control"].schema.example = "private, max-age=300";
   response.content = Object.fromEntries(["image/jpeg", "image/png", "image/webp"].map((type) => [type, { schema: { type: "string", format: "binary" } }]));
 }
+add("get", `${prefix}/shipments/{id}/label`, "Download shipping label", null, {
+  message: "Shipping label PDF", errors: [400, 401, 404, 409, 429, 500, 503],
+  description: "Returns a 4 x 6 inch PDF shipping label (application/pdf, Content-Disposition inline with filename expresshub-label-{trackingNumber}.pdf, Cache-Control: private, no-store). It shows the tracking number, sender and recipient name, phone and address, weight, booking date and hubs, and a QR code holding the public tracking link. Owner CUSTOMER, assigned COURIER or ADMIN; everyone else, and archived shipments, receive 404. Cancelled shipments return 409 LABEL_UNAVAILABLE. Characters the standard PDF fonts cannot draw (for example Bangla script) print as '?'. Rate limit: 60 per 15 minutes per user.",
+});
+{
+  const response = spec.paths[`${prefix}/shipments/{id}/label`].get.responses[200];
+  response.description = "PDF bytes.";
+  response.headers["Cache-Control"].schema.example = "private, no-store";
+  response.content = { "application/pdf": { schema: { type: "string", format: "binary" } } };
+}
+add("get", `${prefix}/courier/shipments/by-tracking/{trackingNumber}`, "Find an assigned shipment by tracking number", { shipment: { id: id.example, trackingNumber: trackingNumber.example, status: "OUT_FOR_DELIVERY" } }, { tag: "courier", message: "Shipment found", errors: [400, 401, 403, 404, 429, 500, 503], description: "COURIER only. Resolves a scanned or typed tracking number (any letter case) to the courier's own non-archived delivery. Shipments assigned to someone else, or unknown numbers, return 404 so parcels cannot be probed. Rate limit: 120 per 15 minutes per courier." });
 add("delete", `${prefix}/shipments/{id}`, "Archive shipment", {shipment:{id:id.example,deletedAt:timestamp}}, {message:"Shipment deleted successfully",body:reason,example:{reason:"Archive resolved shipment"},description:"ADMIN only. DELIVERED, RETURNED or CANCELLED only; unresolved payment/refund attempts block archival. Preserves events, payments and audits. Repeat returns 404."});
 for (const [method, source, target] of [["get","users","users"],["patch","users/{id}/role","users/{id}/role"],["get","shipments","shipments"]]) {
   const original = operations.find((o)=>o.path===`${prefix}/${source}` && o.method===method);

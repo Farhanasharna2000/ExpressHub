@@ -31,6 +31,7 @@ and audit records.
 | Email notifications | Customers get an email when a shipment is booked, picked up, out for delivery, delivered or fails, sent reliably through a transactional outbox (see [Shipment email notifications](#shipment-email-notifications)) |
 | Admin analytics | Bookings, deliveries, net revenue, on-time rate, delivery times and courier performance by day or week, compared with the previous period, with CSV export (see [Admin analytics](#admin-analytics)) |
 | Proof of delivery | Couriers confirm delivery with a photo and/or the recipient's signature from an installable, offline-tolerant courier app (see [Proof of delivery](#proof-of-delivery-and-the-courier-app)) |
+| Shipping labels | Printable 4 x 6 inch PDF labels with a tracking QR code, scanned by couriers with the phone camera (see [Shipping labels and scanning](#shipping-labels-and-scanning)) |
 | Help centre and AI help chat | Public help articles at `/help`, and a help chat that answers only from them with cited sources, measured by an evaluation suite (see [AI help chat](#ai-help-chat)) |
 | Merchant API and webhooks | Customers create scoped API keys to book and track shipments from their own systems, and receive signed webhooks with retries and a delivery log (see [Merchant API and webhooks](#merchant-api-and-webhooks)) |
 
@@ -414,6 +415,23 @@ device's capture time is kept (within 7 days, and never in the future). Backgrou
 because the access token lives only in page memory, so uploads run from the open courier app.
 Queued items belong to the courier who captured them; another account on the same phone never sends them.
 
+## Shipping labels and scanning
+
+Customers and admins open a **Print label** button on shipment detail (hidden for cancelled
+shipments). It downloads a 4 x 6 inch PDF from `GET /api/v1/shipments/{id}/label`, drawn with
+`pdf-lib`, showing the tracking number, sender and recipient details, weight, booking date, hubs and
+a QR code. The QR code holds the **public tracking link**, so a recipient who scans it lands on the
+tracking page, and it is drawn as vector squares so it stays sharp on any printer. Only the owning
+customer, the assigned courier and admins can download a label; anyone else gets 404. Characters the
+standard PDF fonts cannot draw, such as Bangla script, print as `?`.
+
+Couriers open **Scan parcel** (`/courier/scan`). The camera reads the label's QR code with the
+browser's own `BarcodeDetector` where available, otherwise with `jsQR` loaded on demand, at about 8
+attempts a second. Frames never leave the phone; only the tracking number is looked up with
+`GET /api/v1/courier/shipments/by-tracking/{trackingNumber}`, which resolves to the courier's own
+delivery or returns 404. The camera stops when the page is left or hidden, and a typed tracking
+number works when there is no camera. `Permissions-Policy` allows the camera for this site only.
+
 ## AI help chat
 
 Public pages show a **Help** button. Visitors ask a question and get a short answer built only
@@ -703,6 +721,7 @@ npm run test:tracking
 npm run test:notifications
 npm run test:analytics
 npm run test:proof
+npm run test:labels
 npm run test:help
 npm run test:merchant
 npm run test:misc
@@ -726,6 +745,8 @@ covers live courier locations: validation, rounding, freshness, send throttling 
 calculations, CSV formula escaping, the cache and admin-only access.
 `test:proof` covers image type detection, metadata stripping, size limits, the viewing rules,
 multipart limits and the courier upload queue (retry, permanent failure and already-delivered).
+`test:labels` renders a label (including text the PDF fonts cannot draw), checks text wrapping,
+decodes the label's QR code back to the public tracking link with `jsQR`, and checks scan parsing.
 `test:help` covers article chunking, rank fusion, the similarity threshold, citation checks,
 fallbacks, input limits, prompt-injection handling and incremental indexing, with no network calls.
 `test:merchant` covers API key format, hashing and the route allowlist, the webhook signature test
@@ -776,6 +797,7 @@ npm run test:location:integration
 npm run test:notifications:integration
 npm run test:analytics:integration
 npm run test:proof:integration
+npm run test:labels:integration
 npm run test:help:integration
 npm run test:merchant:integration
 ```
