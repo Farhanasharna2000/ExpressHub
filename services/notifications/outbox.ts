@@ -145,6 +145,52 @@ export async function listDeadNotifications(actor: AuthenticatedUser, input: Lis
   return { notifications: result.items, pagination: result.pagination };
 }
 
+// Removes a DEAD email from the admin list without sending it. DISMISSED rows are never
+// claimed by the dispatcher, and the audit log keeps who dismissed what.
+export async function dismissNotification(actor: AuthenticatedUser, id: string) {
+  const admin = await requireAdmin(actor);
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.notificationOutbox.updateMany({ where: { id, status: "DEAD" }, data: { status: "DISMISSED" } });
+    if (updated.count !== 1) {
+      const exists = await tx.notificationOutbox.findUnique({ where: { id }, select: { id: true } });
+      if (!exists) throw new AppError(404, "Notification not found", "NOTIFICATION_NOT_FOUND");
+      throw new AppError(409, "Only failed notifications can be dismissed", "NOTIFICATION_CONFLICT");
+    }
+    const notification = await tx.notificationOutbox.findUniqueOrThrow({ where: { id }, select: deadSelect });
+    await tx.auditLog.create({
+      data: {
+        actorId: admin.id,
+        entityType: "SHIPMENT",
+        entityId: notification.shipment.id,
+        shipmentId: notification.shipment.id,
+        action: "NOTIFICATION_DISMISSED",
+        details: { notificationId: id, type: notification.type },
+      },
+    });
+    return notification;
+  });
+}
+
+export async function dismissAllDeadNotifications(actor: AuthenticatedUser) {
+  const admin = await requireAdmin(actor);
+  return prisma.$transaction(async (tx) => {
+    const dead = await tx.notificationOutbox.findMany({ where: { status: "DEAD" }, select: { id: true } });
+    if (dead.length === 0) return { dismissed: 0 };
+    const ids = dead.map((row) => row.id);
+    const updated = await tx.notificationOutbox.updateMany({ where: { id: { in: ids }, status: "DEAD" }, data: { status: "DISMISSED" } });
+    await tx.auditLog.create({
+      data: {
+        actorId: admin.id,
+        entityType: "USER",
+        entityId: admin.id,
+        action: "NOTIFICATIONS_DISMISSED",
+        details: { count: updated.count, notificationIds: ids.slice(0, 200) },
+      },
+    });
+    return { dismissed: updated.count };
+  });
+}
+
 export async function retryNotification(actor: AuthenticatedUser, id: string) {
   const admin = await requireAdmin(actor);
   return prisma.$transaction(async (tx) => {

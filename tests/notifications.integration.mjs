@@ -12,7 +12,7 @@ process.env.BREVO_API_KEY = "";
 const { default: prisma } = await import("../lib/prisma.ts");
 const { updateShipmentStatus } = await import("../services/shipment.service.ts");
 const { dispatchNotifications, MAX_NOTIFICATION_ATTEMPTS } = await import("../services/notifications/dispatch.ts");
-const { enqueueShipmentNotification, notificationDeps, listDeadNotifications, retryNotification } = await import("../services/notifications/outbox.ts");
+const { dismissAllDeadNotifications, dismissNotification, enqueueShipmentNotification, notificationDeps, listDeadNotifications, retryNotification } = await import("../services/notifications/outbox.ts");
 
 const tag = randomBytes(6).toString("hex");
 const users = [];
@@ -162,7 +162,33 @@ try {
   assert.equal(skipped.skipped, 1);
   assert.equal((await rows(parcel.id))[0].status, "SKIPPED");
 
-  console.info("Notification integration passed: transactional enqueue, rollback, opt-out, idempotency, SKIP LOCKED concurrency, backoff, DEAD after max attempts and admin retry.");
+  // Admins can dismiss a DEAD email instead of retrying it; it is never sent afterwards.
+  await prisma.user.update({ where: { id: customer.id }, data: { emailNotifications: true } });
+  await prisma.notificationOutbox.update({ where: { id: outbox[0].id }, data: { status: "DEAD", nextAttemptAt: new Date(Date.now() - 1000) } });
+  await assert.rejects(dismissNotification(customer, outbox[0].id), (error) => error.status === 403);
+  const dismissed = await dismissNotification(admin, outbox[0].id);
+  assert.equal(dismissed.id, outbox[0].id);
+  assert.equal((await rows(parcel.id))[0].status, "DISMISSED");
+  await assert.rejects(dismissNotification(admin, outbox[0].id), (error) => error.status === 409);
+  await assert.rejects(retryNotification(admin, outbox[0].id), (error) => error.status === 409);
+  assert.equal((await dispatchNotifications(ownRows(notificationDeps({ sender: recordingSender([]), appUrl: "https://expresshub.example" }), [parcel.id]))).claimed, 0);
+  assert.equal(await prisma.auditLog.count({ where: { action: "NOTIFICATION_DISMISSED", shipmentId: parcel.id } }), 1);
+  assert.equal((await listDeadNotifications(admin, { page: 1, limit: 100 })).notifications.some((item) => item.id === outbox[0].id), false);
+
+  // Dismiss all touches every DEAD row in the database, so it only runs when this suite's
+  // rows are the only DEAD ones (as on CI's fresh database), never on someone's real data.
+  await prisma.notificationOutbox.update({ where: { id: outbox[0].id }, data: { status: "DEAD" } });
+  const foreignDead = await prisma.notificationOutbox.count({ where: { status: "DEAD", shipmentId: { notIn: shipments } } });
+  if (foreignDead === 0) {
+    const all = await dismissAllDeadNotifications(admin);
+    assert.ok(all.dismissed >= 1);
+    assert.equal(await prisma.notificationOutbox.count({ where: { status: "DEAD" } }), 0);
+    assert.equal(await prisma.auditLog.count({ where: { action: "NOTIFICATIONS_DISMISSED", actorId: admin.id } }), 1);
+  } else {
+    console.info(`Skipped dismiss-all check: ${foreignDead} other DEAD notifications exist in this database.`);
+  }
+
+  console.info("Notification integration passed: transactional enqueue, rollback, opt-out, idempotency, SKIP LOCKED concurrency, backoff, DEAD after max attempts, admin retry and dismissal.");
 } finally {
   if (shipments.length) {
     await prisma.notificationOutbox.deleteMany({ where: { shipmentId: { in: shipments } } });

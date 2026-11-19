@@ -70,6 +70,8 @@ enum NotificationStatus {
   FAILED
   DEAD
   SKIPPED
+  // An admin chose not to send a DEAD email (for example an old one); never retried.
+  DISMISSED
 }
 
 enum WebhookProcessingStatus {

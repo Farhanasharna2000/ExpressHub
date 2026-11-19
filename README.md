@@ -317,7 +317,7 @@ disagree:
    outside any transaction, with the row id as the provider's `Idempotency-Key`.
 4. Failures are retried with exponential backoff and jitter (about 1, 2, 4 and 8 minutes). After
    5 attempts, or a permanent provider rejection, the row is marked `DEAD` and appears on the admin
-   dashboard with a **Retry** button.
+   dashboard with **Retry** and **Dismiss** buttons (and **Dismiss all**). Dismissed emails are never sent and leave an audit record.
 5. `GET /api/v1/internal/notifications/dispatch` is the retry sweeper, protected by `CRON_SECRET`.
    `vercel.json` schedules it once a day, the most the Vercel Hobby plan allows. On Vercel Pro,
    change the schedule to every few minutes (for example `*/5 * * * *`) for faster retries.

@@ -3654,6 +3654,124 @@
           "event": []
         },
         {
+          "name": "Dismiss a failed notification email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/notifications/{{shipmentId}}/dismiss",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "notifications",
+                "{{shipmentId}}",
+                "dismiss"
+              ]
+            },
+            "description": "ADMIN only. Moves a DEAD notification to DISMISSED so it leaves the failed list and is never sent. 409 NOTIFICATION_CONFLICT if it is not DEAD. Writes a NOTIFICATION_DISMISSED audit record."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/notifications/{{shipmentId}}/dismiss",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "notifications",
+                    "{{shipmentId}}",
+                    "dismiss"
+                  ]
+                },
+                "description": "ADMIN only. Moves a DEAD notification to DISMISSED so it leaves the failed list and is never sent. 409 NOTIFICATION_CONFLICT if it is not DEAD. Writes a NOTIFICATION_DISMISSED audit record."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Notification dismissed\",\n  \"data\": {\n    \"notification\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"type\": \"SHIPMENT_DELIVERED\",\n      \"attempts\": 5,\n      \"lastError\": \"Brevo 503: unavailable\",\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"updatedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"shipment\": {\n        \"id\": \"cm123456789012345678901234\",\n        \"trackingNumber\": \"EH-0123456789ABCDEF01234567\"\n      },\n      \"recipient\": {\n        \"id\": \"cm123456789012345678901234\",\n        \"name\": \"Example Customer\",\n        \"email\": \"customer@example.com\"\n      }\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Dismiss every failed notification email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/notifications/dismiss-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "notifications",
+                "dismiss-all"
+              ]
+            },
+            "description": "ADMIN only. Moves every DEAD notification to DISMISSED without sending it and returns how many were dismissed. Writes one NOTIFICATIONS_DISMISSED audit record."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/notifications/dismiss-all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "notifications",
+                    "dismiss-all"
+                  ]
+                },
+                "description": "ADMIN only. Moves every DEAD notification to DISMISSED without sending it and returns how many were dismissed. Writes one NOTIFICATIONS_DISMISSED audit record."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Failed notifications dismissed\",\n  \"data\": {\n    \"dismissed\": 5\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
           "name": "Read business analytics",
           "request": {
             "method": "GET",
