@@ -56,6 +56,7 @@ export default defineConfig({
       UPSTASH_REDIS_REST_URL: `http://127.0.0.1:${upstashPort}`,
       UPSTASH_REDIS_REST_TOKEN: e2eUpstashToken,
       RESEND_API_KEY: "",
+      BREVO_API_KEY: "",
       AI_ENABLED: "false",
     },
   },

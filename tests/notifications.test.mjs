@@ -6,7 +6,7 @@ const {
   dispatchNotifications, MAX_NOTIFICATION_ATTEMPTS, notificationTypeFor, retryDelayMs, trackingUrl, CLAIM_LEASE_MS,
 } = await import("../services/notifications/dispatch.ts");
 const { escapeHtml, renderNotification } = await import("../services/notifications/templates.ts");
-const { PermanentSendError, consoleSender, configuredSender, resendSender } = await import("../services/notifications/sender.ts");
+const { PermanentSendError, brevoSender, consoleSender, configuredSender, isUndeliverableTestAddress, parseSender, resendSender } = await import("../services/notifications/sender.ts");
 const { appUrl, enqueueShipmentNotification } = await import("../services/notifications/outbox.ts");
 const { hasCronSecret } = await import("../lib/http/cron-auth.ts");
 const { listDeadNotificationsSchema, notificationIdSchema } = await import("../validators/notification.ts");
@@ -159,15 +159,68 @@ test("the cron secret check is exact, constant-length and rejects weak secrets",
 test("the Resend sender posts JSON with an idempotency key and classifies errors", async () => {
   const requests = [];
   const fakeFetch = (status) => async (url, init) => { requests.push({ url, init }); return new Response(status === 200 ? "{}" : "nope", { status }); };
-  const email = { to: "rina@example.com", subject: "S", html: "<p>h</p>", text: "t", idempotencyKey: "k1" };
-  await resendSender("key", "ExpressHub <no-reply@example.com>", fakeFetch(200)).send(email);
+  const email = { to: "rina@mail.co", subject: "S", html: "<p>h</p>", text: "t", idempotencyKey: "k1" };
+  await resendSender("key", "ExpressHub <no-reply@mail.co>", fakeFetch(200)).send(email);
   assert.equal(requests[0].url, "https://api.resend.com/emails");
   assert.equal(requests[0].init.headers["idempotency-key"], "k1");
   assert.equal(requests[0].init.headers.authorization, "Bearer key");
-  assert.deepEqual(JSON.parse(requests[0].init.body).to, ["rina@example.com"]);
+  assert.deepEqual(JSON.parse(requests[0].init.body).to, ["rina@mail.co"]);
   await assert.rejects(resendSender("key", "from", fakeFetch(422)).send(email), PermanentSendError);
   await assert.rejects(resendSender("key", "from", fakeFetch(429)).send(email), (error) => !(error instanceof PermanentSendError));
   await assert.rejects(resendSender("key", "from", fakeFetch(503)).send(email), (error) => !(error instanceof PermanentSendError));
+});
+
+test("the Brevo sender posts a verified single sender and classifies errors", async () => {
+  const requests = [];
+  const fakeFetch = (status) => async (url, init) => { requests.push({ url, init }); return new Response(status < 300 ? '{"messageId":"m"}' : '{"code":"x"}', { status }); };
+  const email = { to: "rina@mail.co", subject: "Booked", html: "<p>h</p>", text: "t", idempotencyKey: "n1" };
+  await brevoSender("xkeysib-1", "ExpressHub <owner@gmail.com>", fakeFetch(201)).send(email);
+  assert.equal(requests[0].url, "https://api.brevo.com/v3/smtp/email");
+  assert.equal(requests[0].init.headers["api-key"], "xkeysib-1");
+  const body = JSON.parse(requests[0].init.body);
+  assert.deepEqual(body.sender, { name: "ExpressHub", email: "owner@gmail.com" });
+  assert.deepEqual(body.to, [{ email: "rina@mail.co" }]);
+  assert.equal(body.subject, "Booked");
+  assert.equal(body.htmlContent, "<p>h</p>");
+  assert.equal(body.textContent, "t");
+  assert.equal(body.headers["X-ExpressHub-Notification"], "n1");
+  // Bad sender, bad address or a wrong key will not fix themselves; rate limits and outages might.
+  for (const status of [400, 401]) await assert.rejects(brevoSender("k", "a@b.co", fakeFetch(status)).send(email), PermanentSendError, String(status));
+  for (const status of [429, 500, 503]) await assert.rejects(brevoSender("k", "a@b.co", fakeFetch(status)).send(email), (error) => !(error instanceof PermanentSendError), String(status));
+});
+
+test("reserved test addresses are never sent to a real provider", async () => {
+  for (const address of ["a@example.com", "a@example.org", "e2e-admin@expresshub.test", "x@foo.invalid", "x@mail.example", "x@localhost"]) {
+    assert.equal(isUndeliverableTestAddress(address), true, address);
+  }
+  for (const address of ["a@gmail.com", "a@examples.com", "a@example.com.bd", "a@testing.io"]) {
+    assert.equal(isUndeliverableTestAddress(address), false, address);
+  }
+  let calls = 0;
+  const counting = async () => { calls += 1; return new Response("{}", { status: 201 }); };
+  const email = { to: "rina@example.com", subject: "S", html: "", text: "", idempotencyKey: "k" };
+  await brevoSender("k", "a@b.co", counting).send(email);
+  await resendSender("k", "a@b.co", counting).send(email);
+  assert.equal(calls, 0);
+});
+
+test("the sender address may include a display name", () => {
+  assert.deepEqual(parseSender("ExpressHub <owner@gmail.com>"), { name: "ExpressHub", email: "owner@gmail.com" });
+  assert.deepEqual(parseSender('"Express Hub" <owner@gmail.com>'), { name: "Express Hub", email: "owner@gmail.com" });
+  assert.deepEqual(parseSender("owner@gmail.com"), { name: undefined, email: "owner@gmail.com" });
+});
+
+test("the email provider is chosen from the environment", () => {
+  const from = { NOTIFICATIONS_FROM: "ExpressHub <owner@gmail.com>" };
+  assert.equal(configuredSender({ ...from, BREVO_API_KEY: "b" }).name, "brevo");
+  assert.equal(configuredSender({ ...from, RESEND_API_KEY: "r" }).name, "resend");
+  // Brevo wins when both keys are present, unless EMAIL_PROVIDER says otherwise.
+  assert.equal(configuredSender({ ...from, BREVO_API_KEY: "b", RESEND_API_KEY: "r" }).name, "brevo");
+  assert.equal(configuredSender({ ...from, BREVO_API_KEY: "b", RESEND_API_KEY: "r", EMAIL_PROVIDER: "resend" }).name, "resend");
+  // Missing pieces or an unknown provider fall back to logging instead of failing every send.
+  assert.equal(configuredSender({ ...from, EMAIL_PROVIDER: "brevo" }).name, "console");
+  assert.equal(configuredSender({ BREVO_API_KEY: "b" }).name, "console");
+  assert.equal(configuredSender({ ...from, BREVO_API_KEY: "b", EMAIL_PROVIDER: "mailgun" }).name, "console");
 });
 
 test("without a provider, emails are only logged with a masked address", async () => {

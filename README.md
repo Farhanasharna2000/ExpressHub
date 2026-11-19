@@ -289,8 +289,21 @@ disagree:
    `vercel.json` schedules it once a day, the most the Vercel Hobby plan allows. On Vercel Pro,
    change the schedule to every few minutes (for example `*/5 * * * *`) for faster retries.
 
-Without `RESEND_API_KEY`, emails are only logged with a masked address, so local development
-needs no email account.
+Emails go through **Brevo** or **Resend**. Without a provider key, emails are only logged with a
+masked address, so local development needs no email account. Addresses on reserved test domains
+(`example.com`, `.test`, `.invalid`, `.example`, `localhost`) are never sent to a real provider, so
+running the test suites with a real key in `.env` spends no quota.
+
+| Provider | Needs a domain? | Free tier | Set |
+| --- | --- | --- | --- |
+| Brevo | No: verify a single sender address (for example your Gmail) | 300 emails a day | `BREVO_API_KEY`, `NOTIFICATIONS_FROM` |
+| Resend | Yes, to email anyone other than yourself | 3,000 emails a month | `RESEND_API_KEY`, `NOTIFICATIONS_FROM` |
+
+To set up Brevo: in **Senders, Domains & Dedicated IPs → Senders**, add your address and click the
+confirmation link, then create a key under **SMTP & API → API Keys**. Set
+`NOTIFICATIONS_FROM="ExpressHub <you@gmail.com>"` to that verified address. Brevo is used whenever its
+key is set; set `EMAIL_PROVIDER` to `brevo` or `resend` to choose explicitly. Mail sent through Brevo
+from a free Gmail address can land in spam for some recipients; a verified domain avoids that.
 
 ```
 status change ──▶ [ shipment + event + outbox row ]  (one transaction)
@@ -565,7 +578,9 @@ in your local environment or deployment secret settings.
 | `GEMINI_API_KEY` | Gemini API key from Google AI Studio (free tier available); required when the provider is `gemini`, and for the help chat's embeddings with either provider |
 | `AI_MODEL` | Optional model override; defaults to `claude-opus-5-5` or `gemini-3.1-flash-lite` |
 | `APP_URL` | Public site URL used for tracking links in emails; falls back to `ALLOWED_ORIGIN` |
-| `RESEND_API_KEY`, `NOTIFICATIONS_FROM` | Resend API key and verified sender (for example `ExpressHub <no-reply@yourdomain.com>`); without both, emails are only logged |
+| `BREVO_API_KEY`, `NOTIFICATIONS_FROM` | Brevo API key and a verified sender address (for example `ExpressHub <you@gmail.com>`); no domain needed |
+| `RESEND_API_KEY` | Resend API key, used with a sender on a domain verified in Resend |
+| `EMAIL_PROVIDER` | Optional: `brevo` or `resend`. Without it, Brevo is used when its key is set, then Resend; with neither, emails are only logged |
 | `CRON_SECRET` | At least 16 random characters; Vercel Cron sends it as a bearer token to the notification sweeper |
 | `WEBHOOK_ENCRYPTION_KEY` | 32 random bytes, base64 (`openssl rand -base64 32`); encrypts webhook signing secrets. Without it, webhook endpoints are unavailable |
 
@@ -810,7 +825,7 @@ rate limits will throttle the virtual users.
 | `e2e` | Migrates and seeds the same database image, builds, then runs the mocked browser suite and the end-to-end suite; Playwright reports and traces are uploaded when a test fails |
 
 Each job starts from an empty database, so tests never depend on local data. Secrets are
-placeholders, and AI, Stripe, Resend and Upstash are never contacted. Third-party actions
+placeholders, and AI, Stripe, Brevo, Resend and Upstash are never contacted. Third-party actions
 are pinned to full commit SHAs and the workflows only have read access to the repository.
 
 ## Project structure
