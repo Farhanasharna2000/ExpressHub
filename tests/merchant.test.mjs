@@ -20,7 +20,10 @@ test("API keys have the documented format, are stored only as a hash and compare
   assert.match(hash, /^[a-f0-9]{64}$/);
   assert.equal(hash.includes(key), false);
   assert.equal(keys.apiKeyHashMatches(key, hash), true);
-  assert.equal(keys.apiKeyHashMatches(`${key.slice(0, -1)}A`, hash), false);
+  // Always change the last character. It only carries 4 bits of the secret, so a fixed
+  // replacement would equal it 1 time in 16 and the assertion would fail at random.
+  const tampered = `${key.slice(0, -1)}${key.endsWith("A") ? "B" : "A"}`;
+  assert.equal(keys.apiKeyHashMatches(tampered, hash), false);
   assert.equal(keys.apiKeyHashMatches(key, "abcd"), false);
   assert.notEqual(keys.generateApiKey().key, key);
   for (const bad of ["eh_live_short", "eh_live_ABCDEFGH_" + "a".repeat(43), "eh_test_abcdefgh_" + "a".repeat(43), `${key}x`]) {
