@@ -59,13 +59,14 @@ export function ShipmentDetails({ id }: { id: string }) {
     {shipment && <>
       <Card>
         <CardHeader className="border-b pb-5">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Package className="size-5" aria-hidden="true" /></span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1 basis-48">
               <p className="text-xs font-medium text-muted-foreground">Tracking number</p>
               <p className="mt-1 break-all font-mono text-sm font-semibold tracking-wide text-foreground select-all">{shipment.trackingNumber}</p>
             </div>
-            <div className="ml-auto flex shrink-0 flex-wrap gap-2">
+            {/* Wraps under the tracking number on narrow screens instead of squeezing it. */}
+            <div className="flex flex-wrap gap-2 sm:ml-auto">
               {shipment.status !== "CANCELLED" && <PrintLabelButton shipmentId={shipment.id} trackingNumber={shipment.trackingNumber} />}
               <CopyTrackingLink trackingNumber={shipment.trackingNumber} />
             </div>
