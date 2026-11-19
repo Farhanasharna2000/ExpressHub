@@ -217,6 +217,18 @@ test("app URL, request validation and the profile preference", () => {
   assert.equal(appUrl({ APP_URL: "https://app.example" }), "https://app.example");
   assert.equal(appUrl({ ALLOWED_ORIGIN: "https://origin.example" }), "https://origin.example");
   assert.equal(appUrl({}), "http://localhost:3000");
+  // Trailing slashes and paths are dropped so links never double up.
+  assert.equal(appUrl({ APP_URL: "https://app.example/" }), "https://app.example");
+  // Locally the configured value is used as is, even localhost.
+  assert.equal(appUrl({ APP_URL: "http://localhost:3000" }), "http://localhost:3000");
+  // On Vercel a local or private address never reaches a QR code or email: Vercel's
+  // production domain (given without a scheme) or the allowed origin is used instead.
+  const vercel = { VERCEL: "1", VERCEL_PROJECT_PRODUCTION_URL: "express-hub.vercel.app" };
+  assert.equal(appUrl({ ...vercel, APP_URL: "http://localhost:3000" }), "https://express-hub.vercel.app");
+  assert.equal(appUrl({ ...vercel, APP_URL: "http://192.168.1.20:3000" }), "https://express-hub.vercel.app");
+  assert.equal(appUrl({ ...vercel }), "https://express-hub.vercel.app");
+  assert.equal(appUrl({ VERCEL: "1", APP_URL: "http://127.0.0.1:3000", ALLOWED_ORIGIN: "https://shop.example" }), "https://shop.example");
+  assert.equal(appUrl({ ...vercel, APP_URL: "https://express-hub-sepia.vercel.app" }), "https://express-hub-sepia.vercel.app");
   assert.equal(notificationIdSchema.safeParse("not-an-id").success, false);
   assert.deepEqual(listDeadNotificationsSchema.parse({}), { page: 1, limit: 10 });
   assert.equal(listDeadNotificationsSchema.safeParse({ status: "SENT" }).success, false);

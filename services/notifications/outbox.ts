@@ -14,8 +14,31 @@ import {
 import { configuredSender } from "@/services/notifications/sender";
 import type { ListDeadNotificationsInput } from "@/validators/notification";
 
+const LOCAL_HOST = /^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|\[::1\]|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/i;
+
+function cleanUrl(value: string | undefined) {
+  const trimmed = value?.trim().replace(/\/+$/, "");
+  if (!trimmed) return null;
+  try {
+    const url = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`);
+    return url.protocol === "https:" || url.protocol === "http:" ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+// The site address put in emails and label QR codes, which open on customers' phones.
+// On Vercel a localhost or private-network value can never be used (a copied local .env
+// would otherwise print QR codes that open the phone itself); Vercel's production domain
+// is the fallback there. Locally the configured value is used as is.
 export function appUrl(env: Record<string, string | undefined> = process.env) {
-  return env.APP_URL?.trim() || env.ALLOWED_ORIGIN?.trim() || "http://localhost:3000";
+  const onVercel = Boolean(env.VERCEL);
+  const candidates = [env.APP_URL, onVercel ? env.VERCEL_PROJECT_PRODUCTION_URL : undefined, env.ALLOWED_ORIGIN];
+  for (const candidate of candidates) {
+    const url = cleanUrl(candidate);
+    if (url && !(onVercel && LOCAL_HOST.test(url.hostname))) return url.origin;
+  }
+  return "http://localhost:3000";
 }
 
 // Called inside the transaction that wrote the event, so the email exists only if
