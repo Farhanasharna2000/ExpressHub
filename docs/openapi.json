@@ -11230,7 +11230,7 @@
           "ai"
         ],
         "summary": "Read AI feature availability",
-        "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief only for an ADMIN; help when AI is enabled, GEMINI_API_KEY is set and help articles are indexed.",
+        "description": "Any signed-in user. assistant is true only when AI is enabled on the server and the caller is a CUSTOMER or COURIER; bookingDraft only for a CUSTOMER; opsBrief and dispatch only for an ADMIN; help when AI is enabled, GEMINI_API_KEY is set and help articles are indexed.",
         "parameters": [],
         "responses": {
           "200": {
@@ -11269,6 +11269,9 @@
                         "opsBrief": {
                           "type": "boolean"
                         },
+                        "dispatch": {
+                          "type": "boolean"
+                        },
                         "help": {
                           "type": "boolean"
                         }
@@ -11277,6 +11280,7 @@
                         "assistant",
                         "bookingDraft",
                         "opsBrief",
+                        "dispatch",
                         "help"
                       ]
                     }
@@ -11294,6 +11298,7 @@
                     "assistant": true,
                     "bookingDraft": true,
                     "opsBrief": false,
+                    "dispatch": false,
                     "help": true
                   }
                 }
@@ -12892,6 +12897,551 @@
               },
               "example": {
                 "refresh": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/dispatch/suggestions": {
+      "post": {
+        "operationId": "post__api_v1_admin_dispatch_suggestions",
+        "tags": [
+          "admin"
+        ],
+        "summary": "Suggest couriers for a waiting shipment",
+        "description": "ADMIN only. For a PAID shipment with no courier in CREATED or FAILED status, ranks active couriers by rules (capacity 40, origin hub 30 / destination hub 20 / same zone 15, fresh live location 15, 30-day delivery record 15) and, when AI is enabled, lets the provider pick and explain up to three of the top eight. The model sees courier labels (C1..C8) and figures only, never names, emails or phones. Any AI problem, the AI rate limit (20 per 15 minutes per admin) or AI being off returns the rule-based top three with source: rules and notice AI_FAILED, AI_RATE_LIMITED or AI_DISABLED. Never assigns: use PATCH /shipments/{id}/assign-courier. Audited as AI_DISPATCH_SUGGESTION / AI_DISPATCH_SUGGESTION_FAILED with labels, not names. 409 when the shipment already has a courier, is unpaid or can no longer be assigned.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "shipment": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "trackingNumber": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "trackingNumber"
+                          ]
+                        },
+                        "source": {
+                          "type": "string"
+                        },
+                        "model": {
+                          "type": "string"
+                        },
+                        "notice": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "suggestions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "courierId": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "score": {
+                                "type": "integer"
+                              },
+                              "reason": {
+                                "type": "string"
+                              },
+                              "factors": {
+                                "type": "object",
+                                "properties": {
+                                  "openShipments": {
+                                    "type": "integer"
+                                  },
+                                  "outForDelivery": {
+                                    "type": "integer"
+                                  },
+                                  "load": {
+                                    "type": "integer"
+                                  },
+                                  "hubMatch": {
+                                    "type": "string"
+                                  },
+                                  "liveLocation": {
+                                    "type": "boolean"
+                                  },
+                                  "successRate": {
+                                    "type": "integer"
+                                  },
+                                  "recentDeliveries": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "openShipments",
+                                  "outForDelivery",
+                                  "load",
+                                  "hubMatch",
+                                  "liveLocation",
+                                  "successRate",
+                                  "recentDeliveries"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "courierId",
+                              "name",
+                              "score",
+                              "reason",
+                              "factors"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "shipment",
+                        "source",
+                        "model",
+                        "notice",
+                        "suggestions"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Dispatch suggestions prepared",
+                  "data": {
+                    "shipment": {
+                      "id": "cm123456789012345678901234",
+                      "trackingNumber": "EH-0123456789ABCDEF01234567"
+                    },
+                    "source": "ai",
+                    "model": "gemini-3.1-flash-lite",
+                    "notice": null,
+                    "suggestions": [
+                      {
+                        "courierId": "cm123456789012345678901234",
+                        "name": "Example Courier",
+                        "score": 85,
+                        "reason": "No open shipments · works the Dhaka Central hub · 100% delivered in 30 days",
+                        "factors": {
+                          "openShipments": 0,
+                          "outForDelivery": 0,
+                          "load": 0,
+                          "hubMatch": "origin",
+                          "liveLocation": false,
+                          "successRate": 1,
+                          "recentDeliveries": 2
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business state conflict or exhausted concurrency retries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Business state conflict or exhausted concurrency retries.",
+                  "errors": [
+                    {
+                      "code": "CONFLICT"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON request exceeds 16 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Expected application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "shipmentId": {
+                    "type": "string",
+                    "pattern": "^c[a-z0-9]{24}$",
+                    "example": "cm123456789012345678901234"
+                  }
+                },
+                "required": [
+                  "shipmentId"
+                ],
+                "additionalProperties": false
+              },
+              "example": {
+                "shipmentId": "cm123456789012345678901234"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/dispatch/queue": {
+      "get": {
+        "operationId": "get__api_v1_admin_dispatch_queue",
+        "tags": [
+          "admin"
+        ],
+        "summary": "List shipments waiting for a courier",
+        "description": "ADMIN only. The 10 oldest PAID shipments with no courier in CREATED or FAILED status, each with its rule-based top suggestion (null when no courier is active). Never calls the AI provider. total counts every waiting shipment.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "shipments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "trackingNumber": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "weightKg": {
+                                "type": "integer"
+                              },
+                              "waitingHours": {
+                                "type": "integer"
+                              },
+                              "originHub": {
+                                "type": "string"
+                              },
+                              "destinationHub": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "suggestion": {
+                                "type": "object",
+                                "properties": {
+                                  "courierId": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "score": {
+                                    "type": "integer"
+                                  },
+                                  "reason": {
+                                    "type": "string"
+                                  },
+                                  "factors": {
+                                    "type": "object",
+                                    "properties": {
+                                      "openShipments": {
+                                        "type": "integer"
+                                      },
+                                      "outForDelivery": {
+                                        "type": "integer"
+                                      },
+                                      "load": {
+                                        "type": "integer"
+                                      },
+                                      "hubMatch": {
+                                        "type": "string"
+                                      },
+                                      "liveLocation": {
+                                        "type": "boolean"
+                                      },
+                                      "successRate": {
+                                        "type": "integer"
+                                      },
+                                      "recentDeliveries": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "openShipments",
+                                      "outForDelivery",
+                                      "load",
+                                      "hubMatch",
+                                      "liveLocation",
+                                      "successRate",
+                                      "recentDeliveries"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "courierId",
+                                  "name",
+                                  "score",
+                                  "reason",
+                                  "factors"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "trackingNumber",
+                              "status",
+                              "weightKg",
+                              "waitingHours",
+                              "originHub",
+                              "destinationHub",
+                              "suggestion"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "shipments"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Dispatch queue fetched",
+                  "data": {
+                    "total": 4,
+                    "shipments": [
+                      {
+                        "id": "cm123456789012345678901234",
+                        "trackingNumber": "EH-0123456789ABCDEF01234567",
+                        "status": "CREATED",
+                        "weightKg": 2.5,
+                        "waitingHours": 5,
+                        "originHub": "Dhaka Central",
+                        "destinationHub": null,
+                        "suggestion": {
+                          "courierId": "cm123456789012345678901234",
+                          "name": "Example Courier",
+                          "score": 85,
+                          "reason": "No open shipments · works the Dhaka Central hub · 100% delivered in 30 days",
+                          "factors": {
+                            "openShipments": 0,
+                            "outForDelivery": 0,
+                            "load": 0,
+                            "hubMatch": "origin",
+                            "liveLocation": false,
+                            "successRate": 1,
+                            "recentDeliveries": 2
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
               }
             }
           }

@@ -27,6 +27,7 @@ and audit records.
 | AI assistant | Customers and couriers ask about their shipments and payments in plain English or Bangla (see [AI shipment assistant](#ai-shipment-assistant)) |
 | AI booking | Customers describe a parcel in their own words and the booking form fills itself for review (see [AI booking from a description](#ai-booking-from-a-description)) |
 | AI operations brief | Admins get a daily AI summary of failed, delayed and unassigned shipments with next steps, shown beside the figures it used (see [Daily operations brief](#daily-operations-brief)) |
+| Dispatch suggestions | Admins see the best courier for each paid shipment waiting for one, ranked by workload, area, live location and delivery record (with AI reasons when enabled), and assign with one click (see [Dispatch suggestions](#dispatch-suggestions)) |
 | Email notifications | Customers get an email when a shipment is booked, picked up, out for delivery, delivered or fails, sent reliably through a transactional outbox (see [Shipment email notifications](#shipment-email-notifications)) |
 | Admin analytics | Bookings, deliveries, net revenue, on-time rate, delivery times and courier performance by day or week, compared with the previous period, with CSV export (see [Admin analytics](#admin-analytics)) |
 | Proof of delivery | Couriers confirm delivery with a photo and/or the recipient's signature from an installable, offline-tolerant courier app (see [Proof of delivery](#proof-of-delivery-and-the-courier-app)) |
@@ -265,6 +266,37 @@ and up to four suggested next steps, for example "4 paid shipments are waiting f
 - One brief per admin per Bangladesh day, saved in an `AI_OPS_BRIEF` audit record that doubles as the
   cache. Opening the dashboard again costs nothing; **Refresh brief** prepares a new one (3 per 15
   minutes). `GET /api/v1/ai/ops-brief` reads the saved brief and never calls the provider.
+
+## Dispatch suggestions
+
+Admins see which courier should collect each paid shipment that is still waiting for one.
+Nothing is assigned automatically: the admin confirms with **Assign**, which uses the existing
+`PATCH /api/v1/shipments/{id}/assign-courier`.
+
+- **Dashboard:** the **Dispatch suggestions** card lists the 10 oldest waiting shipments (paid, no
+  courier, `CREATED` or `FAILED`) with the rule-based best match and a one-click **Assign**
+  (`GET /api/v1/admin/dispatch/queue`). It never calls an AI provider.
+- **Shipment page:** **Suggest couriers** shows up to three couriers with a reason each
+  (`POST /api/v1/admin/dispatch/suggestions`).
+
+Every active courier is scored out of 100 by fixed rules (`lib/dispatch/scoring.ts`):
+
+| Factor | Points |
+| --- | --- |
+| Capacity | 40 with no open work, falling to 0 at a load of 8 (shipments out for delivery count 1.5×) |
+| Area | 30 if the courier worked the shipment's origin hub in the last 30 days, 20 for its destination hub, 15 for the same zone |
+| Live location | 15 when sharing a location updated in the last 10 minutes |
+| Delivery record | 15 × delivered ÷ (delivered + failed or returned) over 30 days; 7.5 with no history |
+
+Ties go to the lighter load, then more deliveries. Pickup addresses are not geocoded, so area is based
+on hubs and zones rather than distance.
+
+When AI is enabled, the top eight candidates go to the configured provider, which picks up to three
+and explains each in one sentence. The model sees only labels (`C1`…`C8`) and figures, never courier
+names, emails or phones, and no customer data. The server rejects unknown labels, keeps at most three,
+replaces labels in the reasons with courier names, and audits `AI_DISPATCH_SUGGESTION` with labels
+only. If AI is off, fails, or the admin passes 20 requests in 15 minutes, the rule-based top three are
+shown with a note saying so.
 
 ## Shipment email notifications
 
