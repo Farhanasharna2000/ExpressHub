@@ -22,6 +22,7 @@ const navigation: Record<UserRole, Item[]> = {
   COURIER: [
     { href: "/courier", label: "Overview" },
     { href: "/courier/shipments", label: "Assigned shipments" },
+    { href: "/courier/scan", label: "Scan parcel" },
   ],
   ADMIN: [
     { href: "/admin", label: "Overview" },
@@ -84,7 +85,10 @@ export function Navigation({ role }: { role?: UserRole }) {
             { href: "/customer/developer", label: "Developer" },
           ]
         : user.role === "COURIER"
-        ? [{ href: "/courier/shipments", label: "Assigned shipments" }]
+        ? [
+            { href: "/courier/shipments", label: "Assigned shipments" },
+            { href: "/courier/scan", label: "Scan parcel" },
+          ]
         : [
             { href: "/admin/shipments", label: "Shipments" },
             { href: "/admin/users", label: "Users" },

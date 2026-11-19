@@ -27,6 +27,7 @@ import { StatusTransitionControl } from "@/features/shipments/status-transition"
 import { DeliveryProofView } from "@/features/shipments/proof-view";
 import { ShipmentCourierMap } from "@/features/maps/shipment-courier-map";
 import { ArchiveShipmentControl } from "@/features/shipments/archive-shipment";
+import { PrintLabelButton } from "@/features/shipments/print-label-button";
 
 export function AdminShipmentDetailView({ id }: { id: string }) {
   const valid = z.cuid().safeParse(id).success;
@@ -60,14 +61,19 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
           </p>
         </div>
         {valid && (
-          <Button
-            variant="outline"
-            disabled={loading || refreshing || delay > 0}
-            onClick={reload}
-          >
-            <RefreshCw className={`size-4 mr-2 ${loading || refreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {shipment && shipment.status !== "CANCELLED" && (
+              <PrintLabelButton shipmentId={shipment.id} trackingNumber={shipment.trackingNumber} />
+            )}
+            <Button
+              variant="outline"
+              disabled={loading || refreshing || delay > 0}
+              onClick={reload}
+            >
+              <RefreshCw className={`size-4 mr-2 ${loading || refreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         )}
       </div>
 
