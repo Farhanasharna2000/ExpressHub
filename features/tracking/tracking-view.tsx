@@ -2,11 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { gsap, useGSAP, whenMotionAllowed } from "@/lib/gsap";
-import { CheckCircle2, Circle, Clock3, MapPin, Package, Radio, TriangleAlert } from "lucide-react";
+import { CheckCircle2, ChevronDown, Circle, Clock3, MapPin, Package, Radio, TriangleAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/primitives";
-import type { ShipmentStatus } from "@/types/api";
-import { FINAL_STATUSES, eventTitle, journeyProgress, reconnectDelay, timeZoneLabel, trackingStatusLabel, trackingTime, type PublicTracking } from "./contracts";
+import { FINAL_STATUSES, eventTitle, journeyProgress, journeyStepTimes, reconnectDelay, timeZoneLabel, trackingShortTime, trackingStatusLabel, trackingStatusMessage, trackingTime, type PublicTracking } from "./contracts";
 import { useViewerTimeZone } from "./use-time-zone";
 import { TrackForm } from "./track-form";
 import { CourierLocationCard } from "@/features/maps/courier-location-card";
@@ -86,86 +84,105 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
   const scope = useRef<HTMLDivElement>(null);
   useTrackingAnimations(scope, journeyIndex, tracking.events.length);
 
+  const stepTimes = journeyStepTimes(tracking, JOURNEY);
+  const lastUpdate = events[0]?.occurredAt ?? tracking.createdAt;
+
   return (
     <div className="page-stack" ref={scope}>
       <div className="page-heading">
         <div>
           <p className="eyebrow">Public tracking</p>
           <h1>Track your parcel</h1>
-          <p className="break-all font-mono text-sm">{tracking.trackingNumber}</p>
+          <p className="text-sm text-muted-foreground">
+            Tracking number <span className="break-all font-mono text-foreground">{tracking.trackingNumber}</span>
+          </p>
         </div>
-        <ConnectionBadge connection={connection} />
       </div>
 
       <p className="sr-only" aria-live="polite" role="status">{announcement}</p>
 
       <Card>
         <CardHeader className="border-b pb-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Package className="size-5" aria-hidden="true" /></span>
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Current status</p>
-                <p className="text-xl font-semibold">{trackingStatusLabel(tracking.status)}</p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Package className="size-5" aria-hidden="true" /></span>
+              <div className="space-y-1">
+                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Current status</p>
+                <h2 data-anim="status" className="origin-left font-semibold">{trackingStatusLabel(tracking.status)}</h2>
+                {!offPath && <p className="text-sm text-muted-foreground">{trackingStatusMessage(tracking.status)}</p>}
+                <p className="text-xs text-muted-foreground">
+                  Last updated <time dateTime={lastUpdate}>{trackingTime(lastUpdate, timeZone)}</time>
+                </p>
               </div>
             </div>
-            <span data-anim="status" className="inline-flex"><StatusBadge status={tracking.status as ShipmentStatus} /></span>
+            <ConnectionBadge connection={connection} />
           </div>
         </CardHeader>
-        <CardContent className="space-y-5 pt-5">
+        <CardContent>
           {offPath ? (
             <p className="flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
               <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              {tracking.status === "FAILED"
-                ? "The last delivery attempt did not succeed. The courier team will arrange the next step."
-                : `This shipment is ${trackingStatusLabel(tracking.status).toLowerCase()}.`}
+              {trackingStatusMessage(tracking.status) || `This shipment is ${trackingStatusLabel(tracking.status).toLowerCase()}.`}
             </p>
           ) : (
             <div className="relative">
-            <div className="tracking-progress" aria-hidden="true">
-              <div className="tracking-progress-fill" style={{ transform: `scaleX(${progress})` }} />
-            </div>
-            <ol className="relative grid grid-cols-5 gap-2" aria-label="Delivery progress">
-              {JOURNEY.map((step, index) => {
-                const done = index <= journeyIndex;
-                return (
-                  <li key={step} data-anim="step" className="flex flex-col items-center gap-1 text-center text-xs" aria-current={index === journeyIndex ? "step" : undefined}>
-                    {done ? <CheckCircle2 className="size-5 rounded-full bg-card text-primary" aria-hidden="true" /> : <Circle className="size-5 rounded-full bg-card text-muted-foreground" aria-hidden="true" />}
-                    <span className={done ? "font-medium" : "text-muted-foreground"}>{trackingStatusLabel(step)}</span>
-                    <span className="sr-only">{done ? "completed" : "not yet"}</span>
-                  </li>
-                );
-              })}
-            </ol>
+              <div className="tracking-progress" aria-hidden="true">
+                <div className="tracking-progress-fill" style={{ transform: `scaleX(${progress})` }} />
+              </div>
+              <ol className="relative grid grid-cols-5 gap-2" aria-label="Delivery progress">
+                {JOURNEY.map((step, index) => {
+                  const done = index <= journeyIndex;
+                  const current = index === journeyIndex;
+                  const reachedAt = done ? stepTimes[step] : undefined;
+                  return (
+                    <li key={step} data-anim="step" className="flex flex-col items-center gap-1 text-center text-xs" aria-current={current ? "step" : undefined}>
+                      {done ? <CheckCircle2 className="size-5 rounded-full bg-card text-primary" aria-hidden="true" /> : <Circle className="size-5 rounded-full bg-card text-muted-foreground" aria-hidden="true" />}
+                      <span className={current ? "font-semibold text-ink" : done ? "font-medium" : "text-muted-foreground"}>{trackingStatusLabel(step)}</span>
+                      {reachedAt ? (
+                        <time className="text-[11px] leading-tight text-muted-foreground" dateTime={reachedAt} title={trackingTime(reachedAt, timeZone)}>{trackingShortTime(reachedAt, timeZone)}</time>
+                      ) : (
+                        <span className="sr-only">not yet</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           )}
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            {tracking.deliveredAt && <div><dt className="text-xs text-muted-foreground">Delivered</dt><dd><time dateTime={tracking.deliveredAt}>{trackingTime(tracking.deliveredAt, timeZone)}</time></dd></div>}
-          </dl>
         </CardContent>
       </Card>
 
       {tracking.courierLocation && <CourierLocationCard location={tracking.courierLocation} />}
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-5" aria-hidden="true" />Tracking history</CardTitle></CardHeader>
         <CardContent>
-          {events.length ? (
-            <ol className="shipment-timeline">
-              {events.map((event, index) => (
-                <li key={`${event.occurredAt}-${event.type}-${index}`} aria-current={index === 0 ? "step" : undefined}>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-base font-semibold">{eventTitle(event)}</h2>
-                    {index === 0 && <span className="text-xs font-medium text-primary">Latest</span>}
-                  </div>
-                  <time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{trackingTime(event.occurredAt, timeZone)}</time>
-                  {event.hub && <p className="flex items-center gap-1 text-sm"><MapPin className="size-3.5" aria-hidden="true" />{event.hub}</p>}
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="text-sm text-muted-foreground">Updates will appear here as your parcel moves.</p>
-          )}
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-md font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-2"><Clock3 className="size-5" aria-hidden="true" />Full tracking history</span>
+              <span className="flex items-center gap-1 text-sm font-normal text-muted-foreground">
+                {events.length} {events.length === 1 ? "update" : "updates"}
+                <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+              </span>
+            </summary>
+            <div className="mt-5">
+              {events.length ? (
+                <ol className="shipment-timeline">
+                  {events.map((event, index) => (
+                    <li key={`${event.occurredAt}-${event.type}-${index}`} aria-current={index === 0 ? "step" : undefined}>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h2 className="text-base font-semibold">{eventTitle(event)}</h2>
+                        {index === 0 && <span className="text-xs font-medium text-primary">Latest</span>}
+                      </div>
+                      <time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{trackingTime(event.occurredAt, timeZone)}</time>
+                      {event.hub && <p className="flex items-center gap-1 text-sm"><MapPin className="size-3.5" aria-hidden="true" />{event.hub}</p>}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-sm text-muted-foreground">Updates will appear here as your parcel moves.</p>
+              )}
+            </div>
+          </details>
           <p className="mt-4 text-xs text-muted-foreground">Times are shown in your time zone ({timeZoneLabel(timeZone)}).</p>
         </CardContent>
       </Card>

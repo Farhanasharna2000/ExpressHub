@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 const { trackingNumberSchema, publicTrackingSchema } = await import("../validators/track.ts");
 const { createTrackingStream, toPublicTracking, trackingSignature } = await import("../services/tracking-stream.ts");
-const { eventTitle, journeyProgress, parseTrackingInput, reconnectDelay, timeZoneLabel, trackingPath, trackingTime } = await import("../features/tracking/contracts.ts");
+const { eventTitle, journeyProgress, journeyStepTimes, parseTrackingInput, reconnectDelay, timeZoneLabel, trackingPath, trackingShortTime, trackingStatusMessage, trackingTime } = await import("../features/tracking/contracts.ts");
 
 test("the progress line fills between the first and last journey steps", () => {
   assert.equal(journeyProgress(-1, 5), 0);
@@ -149,5 +149,34 @@ test("tracking helpers parse input, label events and format Dhaka time", () => {
   assert.equal(timeZoneLabel("Asia/Dhaka"), "Asia/Dhaka, GMT+6");
   assert.equal(timeZoneLabel("Europe/London", new Date("2026-07-01T12:00:00Z")), "Europe/London, GMT+1");
   assert.equal(timeZoneLabel("Not/AZone"), "Asia/Dhaka, GMT+6");
+  assert.equal(trackingShortTime("2026-11-16T18:30:00Z"), "17 Nov, 00:30");
+  assert.equal(trackingShortTime("2026-11-16T18:30:00Z", "Europe/London"), "16 Nov, 18:30");
   assert.deepEqual([0, 1, 2, 10].map(reconnectDelay), [1_000, 2_000, 4_000, 30_000]);
+});
+
+test("each journey step shows when it was last reached, and statuses are explained once", () => {
+  const steps = ["CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
+  const tracking = {
+    createdAt: "2026-11-10T04:00:00.000Z",
+    events: [
+      { type: "CREATED", status: "CREATED", occurredAt: "2026-11-10T04:00:01.000Z", hub: null },
+      { type: "STATUS_CHANGED", status: "PICKED_UP", occurredAt: "2026-11-11T05:00:00.000Z", hub: null },
+      { type: "STATUS_CHANGED", status: "IN_TRANSIT", occurredAt: "2026-11-11T09:00:00.000Z", hub: null },
+      { type: "STATUS_CHANGED", status: "FAILED", occurredAt: "2026-11-12T09:00:00.000Z", hub: null },
+      { type: "STATUS_CHANGED", status: "IN_TRANSIT", occurredAt: "2026-11-13T09:00:00.000Z", hub: null },
+    ],
+  };
+  assert.deepEqual(journeyStepTimes(tracking, steps), {
+    CREATED: "2026-11-10T04:00:00.000Z",
+    PICKED_UP: "2026-11-11T05:00:00.000Z",
+    // Back in transit after a failed attempt: the latest time wins.
+    IN_TRANSIT: "2026-11-13T09:00:00.000Z",
+  });
+  for (const status of [...steps, "FAILED", "RETURNED", "CANCELLED"]) {
+    const message = trackingStatusMessage(status);
+    assert.ok(message.length > 0, status);
+    // The sentence explains the status rather than repeating its label.
+    assert.notEqual(message.toLowerCase(), status.toLowerCase().replaceAll("_", " "));
+  }
+  assert.equal(trackingStatusMessage("UNKNOWN"), "");
 });

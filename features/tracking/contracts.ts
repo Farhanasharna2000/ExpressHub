@@ -17,6 +17,36 @@ const statusText: Record<string, string> = {
 
 export const trackingStatusLabel = (status: string) => statusText[status] ?? status;
 
+// One plain sentence under the status heading, so the card explains rather than repeats it.
+const statusMessages: Record<string, string> = {
+  CREATED: "Booked and waiting for the courier to collect it.",
+  PICKED_UP: "The courier has collected the parcel.",
+  IN_TRANSIT: "The parcel is moving through our delivery network.",
+  OUT_FOR_DELIVERY: "The courier is on the way to the delivery address.",
+  DELIVERED: "The parcel has been delivered.",
+  FAILED: "The last delivery attempt did not succeed. The courier team will arrange the next step.",
+  RETURNED: "The parcel has been returned to the sender.",
+  CANCELLED: "This shipment was cancelled before collection.",
+};
+
+export const trackingStatusMessage = (status: string) => statusMessages[status] ?? "";
+
+// When each journey step was last reached, for the time under that step on the progress bar.
+// Booking always uses the creation time; later steps use the newest event with that status,
+// so a parcel sent back into transit after a failed attempt shows its latest transit time.
+export function journeyStepTimes(tracking: Pick<PublicTracking, "createdAt" | "events">, steps: readonly string[]) {
+  const times: Record<string, string> = {};
+  for (const step of steps) {
+    if (step === "CREATED") {
+      times[step] = tracking.createdAt;
+      continue;
+    }
+    const reached = tracking.events.filter((event) => event.status === step).at(-1);
+    if (reached) times[step] = reached.occurredAt;
+  }
+  return times;
+}
+
 export function eventTitle(event: Pick<PublicTrackingEvent, "type" | "status">) {
   if (event.type === "HUB_TRANSFER") return "Arrived at a hub";
   if (event.type === "DELIVERY_ATTEMPT") return "Delivery attempted";
@@ -51,6 +81,21 @@ function formatterFor(timeZone: string) {
 }
 
 export const trackingTime = (value: string, timeZone = DEFAULT_TIME_ZONE) => formatterFor(timeZone).format(new Date(value));
+
+// Compact form for the progress steps ("19 Nov, 10:19"); the full date is in the title.
+const shortFormatters = new Map<string, Intl.DateTimeFormat>();
+export function trackingShortTime(value: string, timeZone = DEFAULT_TIME_ZONE) {
+  let formatter = shortFormatters.get(timeZone);
+  if (!formatter) {
+    try {
+      formatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone });
+    } catch {
+      return trackingShortTime(value, DEFAULT_TIME_ZONE);
+    }
+    shortFormatters.set(timeZone, formatter);
+  }
+  return formatter.format(new Date(value));
+}
 
 // "Asia/Dhaka, GMT+6" — the zone name plus its current offset, for the note under the history.
 export function timeZoneLabel(timeZone: string, now = new Date()) {
