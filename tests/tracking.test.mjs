@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 const { trackingNumberSchema, publicTrackingSchema } = await import("../validators/track.ts");
 const { createTrackingStream, toPublicTracking, trackingSignature } = await import("../services/tracking-stream.ts");
-const { eventTitle, journeyProgress, parseTrackingInput, reconnectDelay, trackingPath, trackingTime } = await import("../features/tracking/contracts.ts");
+const { eventTitle, journeyProgress, parseTrackingInput, reconnectDelay, timeZoneLabel, trackingPath, trackingTime } = await import("../features/tracking/contracts.ts");
 
 test("the progress line fills between the first and last journey steps", () => {
   assert.equal(journeyProgress(-1, 5), 0);
@@ -142,5 +142,12 @@ test("tracking helpers parse input, label events and format Dhaka time", () => {
   assert.equal(eventTitle({ type: "HUB_TRANSFER", status: null }), "Arrived at a hub");
   assert.equal(eventTitle({ type: "STATUS_CHANGED", status: "OUT_FOR_DELIVERY" }), "Out for delivery");
   assert.equal(trackingTime("2026-11-16T18:30:00Z"), "17 Nov 2026, 00:30");
+  // Visitors see their own timezone; an unknown zone falls back to Dhaka time.
+  assert.equal(trackingTime("2026-11-16T18:30:00Z", "Europe/London"), "16 Nov 2026, 18:30");
+  assert.equal(trackingTime("2026-11-16T18:30:00Z", "America/New_York"), "16 Nov 2026, 13:30");
+  assert.equal(trackingTime("2026-11-16T18:30:00Z", "Not/AZone"), "17 Nov 2026, 00:30");
+  assert.equal(timeZoneLabel("Asia/Dhaka"), "Asia/Dhaka, GMT+6");
+  assert.equal(timeZoneLabel("Europe/London", new Date("2026-07-01T12:00:00Z")), "Europe/London, GMT+1");
+  assert.equal(timeZoneLabel("Not/AZone"), "Asia/Dhaka, GMT+6");
   assert.deepEqual([0, 1, 2, 10].map(reconnectDelay), [1_000, 2_000, 4_000, 30_000]);
 });

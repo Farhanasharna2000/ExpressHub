@@ -6,7 +6,8 @@ import { CheckCircle2, Circle, Clock3, MapPin, Package, Radio, TriangleAlert } f
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/primitives";
 import type { ShipmentStatus } from "@/types/api";
-import { FINAL_STATUSES, eventTitle, journeyProgress, reconnectDelay, trackingStatusLabel, trackingTime, type PublicTracking } from "./contracts";
+import { FINAL_STATUSES, eventTitle, journeyProgress, reconnectDelay, timeZoneLabel, trackingStatusLabel, trackingTime, type PublicTracking } from "./contracts";
+import { useViewerTimeZone } from "./use-time-zone";
 import { TrackForm } from "./track-form";
 import { CourierLocationCard } from "@/features/maps/courier-location-card";
 
@@ -19,6 +20,7 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
   const [connection, setConnection] = useState<Connection>(FINAL_STATUSES.has(initial.status) ? "ended" : "connecting");
   const [announcement, setAnnouncement] = useState("");
   const lastStatus = useRef(initial.status);
+  const timeZone = useViewerTimeZone();
 
   useEffect(() => {
     if (FINAL_STATUSES.has(initial.status)) return;
@@ -138,8 +140,7 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
             </div>
           )}
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <div><dt className="text-xs text-muted-foreground">Booked</dt><dd><time dateTime={tracking.createdAt}>{trackingTime(tracking.createdAt)}</time></dd></div>
-            {tracking.deliveredAt && <div><dt className="text-xs text-muted-foreground">Delivered</dt><dd><time dateTime={tracking.deliveredAt}>{trackingTime(tracking.deliveredAt)}</time></dd></div>}
+            {tracking.deliveredAt && <div><dt className="text-xs text-muted-foreground">Delivered</dt><dd><time dateTime={tracking.deliveredAt}>{trackingTime(tracking.deliveredAt, timeZone)}</time></dd></div>}
           </dl>
         </CardContent>
       </Card>
@@ -157,7 +158,7 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
                     <h2 className="text-base font-semibold">{eventTitle(event)}</h2>
                     {index === 0 && <span className="text-xs font-medium text-primary">Latest</span>}
                   </div>
-                  <time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{trackingTime(event.occurredAt)}</time>
+                  <time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{trackingTime(event.occurredAt, timeZone)}</time>
                   {event.hub && <p className="flex items-center gap-1 text-sm"><MapPin className="size-3.5" aria-hidden="true" />{event.hub}</p>}
                 </li>
               ))}
@@ -165,7 +166,7 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
           ) : (
             <p className="text-sm text-muted-foreground">Updates will appear here as your parcel moves.</p>
           )}
-          <p className="mt-4 text-xs text-muted-foreground">Times are shown in Bangladesh time (GMT+6).</p>
+          <p className="mt-4 text-xs text-muted-foreground">Times are shown in your time zone ({timeZoneLabel(timeZone)}).</p>
         </CardContent>
       </Card>
 

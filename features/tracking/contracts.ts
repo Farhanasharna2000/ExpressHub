@@ -32,10 +32,37 @@ export function parseTrackingInput(value: string) {
 
 export const trackingPath = (trackingNumber: string) => `/track/${encodeURIComponent(trackingNumber)}`;
 
-// Fixed locale and timezone so the server-rendered text matches the browser's
-// first render exactly (no hydration mismatch) and every visitor sees Dhaka time.
-const formatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Dhaka" });
-export const trackingTime = (value: string) => formatter.format(new Date(value));
+// The server cannot know a visitor's timezone, so pages render in Dhaka time first
+// and switch to the visitor's own zone after hydration (see use-time-zone.ts).
+export const DEFAULT_TIME_ZONE = "Asia/Dhaka";
+
+const formatters = new Map<string, Intl.DateTimeFormat>();
+function formatterFor(timeZone: string) {
+  let formatter = formatters.get(timeZone);
+  if (!formatter) {
+    try {
+      formatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone });
+    } catch {
+      return formatterFor(DEFAULT_TIME_ZONE);
+    }
+    formatters.set(timeZone, formatter);
+  }
+  return formatter;
+}
+
+export const trackingTime = (value: string, timeZone = DEFAULT_TIME_ZONE) => formatterFor(timeZone).format(new Date(value));
+
+// "Asia/Dhaka, GMT+6" — the zone name plus its current offset, for the note under the history.
+export function timeZoneLabel(timeZone: string, now = new Date()) {
+  try {
+    const offset = new Intl.DateTimeFormat("en-GB", { timeZone, timeZoneName: "shortOffset" })
+      .formatToParts(now)
+      .find((part) => part.type === "timeZoneName")?.value;
+    return offset ? `${timeZone}, ${offset}` : timeZone;
+  } catch {
+    return timeZoneLabel(DEFAULT_TIME_ZONE, now);
+  }
+}
 
 // Delay before reconnecting after the stream fails: 1s, 2s, 4s … capped at 30s.
 // Share of the progress line between the first and last journey steps that is filled.
