@@ -15,8 +15,9 @@ export async function GET(request: NextRequest) {
     const assistant = enabled && (ASSISTANT_ROLES as readonly string[]).includes(actor.role);
     const bookingDraft = enabled && actor.role === "CUSTOMER";
     const opsBrief = enabled && actor.role === "ADMIN";
+    const dispatch = enabled && actor.role === "ADMIN";
     const help = await helpAvailable(aiConfig());
-    return successResponse("AI status fetched successfully", { assistant, bookingDraft, opsBrief, help });
+    return successResponse("AI status fetched successfully", { assistant, bookingDraft, opsBrief, dispatch, help });
   } catch (error) {
     return handleRouteError(error, request);
   }

@@ -39,3 +39,6 @@ export const helpRequestSchema = z.object({
 }).strict();
 
 export type HelpRequestInput = z.infer<typeof helpRequestSchema>;
+
+export const dispatchSuggestionRequestSchema = z.object({ shipmentId: z.cuid() }).strict();
+export type DispatchSuggestionRequestInput = z.infer<typeof dispatchSuggestionRequestSchema>;

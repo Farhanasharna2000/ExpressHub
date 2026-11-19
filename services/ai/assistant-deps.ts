@@ -11,6 +11,9 @@ import { claudeFallbackParams, runAssistant, type AssistantBaseDeps } from "@/se
 import { draftBooking, type BookingDraftDeps, type JsonGeneration } from "@/services/ai/booking-draft.service";
 import { BOOKING_DRAFT_SCHEMA } from "@/services/ai/prompts/booking";
 import { OPS_BRIEF_SCHEMA } from "@/services/ai/prompts/ops-brief";
+import { DISPATCH_SCHEMA } from "@/services/ai/prompts/dispatch";
+import { suggestDispatch, type DispatchDeps } from "@/services/ai/dispatch-suggestions.service";
+import { loadDispatchContext } from "@/services/dispatch.service";
 import { DELAY_THRESHOLD_HOURS, generateOpsBrief, getCachedBrief, type OpsBriefDeps } from "@/services/ai/ops-brief.service";
 import { getOperationsFacts } from "@/services/admin.service";
 import { aiBusy as busy, aiUnavailable as unavailable, aiUpstream as upstream, geminiStatusError } from "@/services/ai/provider-errors";
@@ -25,7 +28,7 @@ import { listPaymentsSchema } from "@/validators/payment";
 import { listShipmentsSchema } from "@/validators/shipment";
 
 const AI_WINDOW_MS = 15 * 60 * 1000;
-const AI_LIMITS = { "ai-assistant": 20, "ai-booking-draft": 10, "ai-ops-brief": 3 } as const;
+const AI_LIMITS = { "ai-assistant": 20, "ai-booking-draft": 10, "ai-ops-brief": 3, "ai-dispatch": 20 } as const;
 
 const PROVIDER_TIMEOUT_MS = 45_000;
 
@@ -294,4 +297,18 @@ export function helpDeps(config: AiConfig): HelpDeps {
 
 export function runConfiguredHelp(question: string, config: AiConfig) {
   return answerHelpQuestion(question, helpDeps(config));
+}
+
+// Dispatch suggestions run with rules only when AI is disabled. The model sees courier
+// labels and figures, never names; audit rows record labels, not people.
+export function runConfiguredDispatch(actor: AuthenticatedUser, shipmentId: string, config: AiConfig) {
+  const deps: DispatchDeps = {
+    model: config.enabled ? config.model : null,
+    loadContext: (who, id) => loadDispatchContext(who, id),
+    beforeGenerate: (who) => enforceAssistantRateLimit(who, "ai-dispatch"),
+    generateJson: (request) => configuredJson(config)({ ...request, schema: DISPATCH_SCHEMA }),
+    audit: (who, details) => writeAiAudit(who, "AI_DISPATCH_SUGGESTION", details),
+    auditFailure: (who, details) => writeAiAudit(who, "AI_DISPATCH_SUGGESTION_FAILED", details),
+  };
+  return suggestDispatch(actor, shipmentId, deps);
 }
