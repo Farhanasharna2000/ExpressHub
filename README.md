@@ -623,7 +623,7 @@ in your local environment or deployment secret settings.
 | `ANTHROPIC_API_KEY` | Claude API key; required when the provider is `anthropic` |
 | `GEMINI_API_KEY` | Gemini API key from Google AI Studio (free tier available); required when the provider is `gemini`, and for the help chat's embeddings with either provider |
 | `AI_MODEL` | Optional model override; defaults to `claude-opus-5-5` or `gemini-3.1-flash-lite` |
-| `APP_URL` | Public site URL used for tracking links in emails; falls back to `ALLOWED_ORIGIN` |
+| `APP_URL` | Public site URL used in tracking links in emails and in shipping-label QR codes, for example `https://express-hub-sepia.vercel.app`. On Vercel a localhost or private-network value is ignored and Vercel's production domain is used, so a copied local `.env` can never print QR codes that open the phone itself. Locally it falls back to `ALLOWED_ORIGIN` |
 | `BREVO_API_KEY`, `NOTIFICATIONS_FROM` | Brevo API key and a verified sender address (for example `ExpressHub <you@gmail.com>`); no domain needed. Without both, emails are only logged |
 | `CRON_SECRET` | At least 16 random characters; Vercel Cron sends it as a bearer token to the notification sweeper |
 | `WEBHOOK_ENCRYPTION_KEY` | 32 random bytes, base64 (`openssl rand -base64 32`); encrypts webhook signing secrets. Without it, webhook endpoints are unavailable |
