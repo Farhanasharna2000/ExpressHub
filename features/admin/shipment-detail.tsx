@@ -21,6 +21,8 @@ import {
 } from "@/features/shipments/contracts";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { AssignCourierControl } from "@/features/shipments/assign-courier";
+import { ShipmentDispatchSuggestions } from "./dispatch-suggestions";
+import { needsDispatch } from "./dispatch-contracts";
 import { StatusTransitionControl } from "@/features/shipments/status-transition";
 import { DeliveryProofView } from "@/features/shipments/proof-view";
 import { ShipmentCourierMap } from "@/features/maps/shipment-courier-map";
@@ -133,6 +135,9 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
 
           {/* Admin Courier Assignment Card */}
           <AssignCourierControl shipment={shipment} onSuccess={reload} />
+          {needsDispatch(shipment) && (
+            <ShipmentDispatchSuggestions shipmentId={shipment.id} trackingNumber={shipment.trackingNumber} onAssigned={reload} />
+          )}
 
           {/* Admin Operational Actions Card */}
           <StatusTransitionControl

@@ -16,6 +16,7 @@ import { OpsBriefCard } from "@/features/ai/ops-brief";
 import { useCountUpOnce } from "@/lib/gsap";
 import { useRef } from "react";
 import { FailedNotificationsCard } from "./failed-notifications";
+import { DispatchQueueCard } from "./dispatch-suggestions";
 import type { ShipmentStatus, PaymentStatus } from "@/types/api";
 
 export function AdminDashboard() {
@@ -111,6 +112,8 @@ export function AdminDashboard() {
           </motion.div>
 
           <OpsBriefCard />
+
+          <DispatchQueueCard />
 
           <FailedNotificationsCard />
 
