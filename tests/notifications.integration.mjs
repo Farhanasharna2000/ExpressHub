@@ -8,7 +8,6 @@ import { setTimeout as delay } from "node:timers/promises";
 // sender; nothing is sent to a real provider.
 process.env.NODE_ENV = "test";
 process.env.JWT_ACCESS_SECRET = randomUUID().repeat(2);
-process.env.RESEND_API_KEY = "";
 process.env.BREVO_API_KEY = "";
 const { default: prisma } = await import("../lib/prisma.ts");
 const { updateShipmentStatus } = await import("../services/shipment.service.ts");

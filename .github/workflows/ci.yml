@@ -13,7 +13,7 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# Placeholders only: no job contacts Stripe, Resend, an AI provider or Upstash.
+# Placeholders only: no job contacts Stripe, Brevo, an AI provider or Upstash.
 env:
   NEXT_TELEMETRY_DISABLED: "1"
   JWT_ACCESS_SECRET: ci-placeholder-access-secret-at-least-32-chars

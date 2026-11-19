@@ -14191,7 +14191,7 @@
                         "id": "cm123456789012345678901234",
                         "type": "SHIPMENT_DELIVERED",
                         "attempts": 5,
-                        "lastError": "Resend 503: unavailable",
+                        "lastError": "Brevo 503: unavailable",
                         "createdAt": "2026-10-10T06:00:00.000Z",
                         "updatedAt": "2026-10-10T06:00:00.000Z",
                         "shipment": {
