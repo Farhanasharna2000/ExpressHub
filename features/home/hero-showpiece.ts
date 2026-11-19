@@ -66,19 +66,14 @@ function parallax(hero: HTMLElement, stage: HTMLElement) {
   };
   layer(".journey-hero-grid", -18);
   layer(".journey-route", -10);
-  layer(".journey-float-parcel", -42);
 }
 
-// The stage tilts toward the cursor and its layers shift by depth. quickTo keeps one
+// The stage tilts toward the cursor. quickTo keeps one
 // tween per property, so pointer moves never pile up tweens.
 function tilt(card: HTMLElement, stage: HTMLElement) {
   gsap.set(stage, { transformPerspective: 900 });
   const rotateX = gsap.quickTo(stage, "rotationX", { duration: 0.6, ease: "power3.out" });
   const rotateY = gsap.quickTo(stage, "rotationY", { duration: 0.6, ease: "power3.out" });
-  const floats = [...stage.querySelectorAll<HTMLElement>(".journey-float-parcel")].map((el) => ({
-    x: gsap.quickTo(el, "x", { duration: 0.8, ease: "power3.out" }),
-    depth: Number(el.dataset.depth ?? 1),
-  }));
 
   const move = (event: PointerEvent) => {
     const rect = card.getBoundingClientRect();
@@ -86,12 +81,10 @@ function tilt(card: HTMLElement, stage: HTMLElement) {
     const py = (event.clientY - rect.top) / rect.height - 0.5;
     rotateY(gsap.utils.clamp(-MAX_TILT_DEG, MAX_TILT_DEG, px * MAX_TILT_DEG * 2));
     rotateX(gsap.utils.clamp(-MAX_TILT_DEG, MAX_TILT_DEG, -py * MAX_TILT_DEG * 2));
-    for (const float of floats) float.x(px * 18 * float.depth);
   };
   const leave = () => {
     rotateX(0);
     rotateY(0);
-    for (const float of floats) float.x(0);
   };
   card.addEventListener("pointermove", move);
   card.addEventListener("pointerleave", leave);

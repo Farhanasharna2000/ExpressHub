@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, Check, Package } from "lucide-react";
+import { ArrowUpRight, Check } from "lucide-react";
 import Image from "next/image";
 import { useRef } from "react";
 import { ButtonLink, StatusBadge } from "@/components/ui/primitives";
@@ -166,12 +166,6 @@ export default function Home() {
                 <rect className="journey-route-parcel" x="-7" y="-7" width="14" height="14" rx="3" />
               </g>
             </svg>
-            <div className="journey-float-parcel journey-float-parcel-a" data-depth="1.4" aria-hidden="true">
-              <Package className="size-4" />
-            </div>
-            <div className="journey-float-parcel journey-float-parcel-b" data-depth="0.8" aria-hidden="true">
-              <Package className="size-3.5" />
-            </div>
             <Image
               src="/delivery-hero.png"
               alt="ExpressHub courier holding a package and clipboard"
