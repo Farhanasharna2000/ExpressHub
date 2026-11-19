@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { gsap, useGSAP, whenMotionAllowed } from "@/lib/gsap";
-import { CheckCircle2, ChevronDown, Circle, Clock3, MapPin, Package, Radio, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Circle, Clock3, MapPin, Package, Radio, TriangleAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FINAL_STATUSES, eventTitle, journeyProgress, journeyStepTimes, reconnectDelay, timeZoneLabel, trackingShortTime, trackingStatusLabel, trackingStatusMessage, trackingTime, type PublicTracking } from "./contracts";
+import { FINAL_STATUSES, eventTitle, additionalUpdates, journeyProgress, journeyStepTimes, reconnectDelay, timeZoneLabel, trackingShortTime, trackingStatusLabel, trackingStatusMessage, trackingTime, type PublicTracking } from "./contracts";
 import { useViewerTimeZone } from "./use-time-zone";
 import { TrackForm } from "./track-form";
 import { CourierLocationCard } from "@/features/maps/courier-location-card";
@@ -85,7 +85,8 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
   useTrackingAnimations(scope, journeyIndex, tracking.events.length);
 
   const stepTimes = journeyStepTimes(tracking, JOURNEY);
-  const lastUpdate = events[0]?.occurredAt ?? tracking.createdAt;
+  // With the progress steps on screen, list only what they cannot show; otherwise everything.
+  const historyEvents = offPath ? events : additionalUpdates(tracking.events, JOURNEY).reverse();
 
   return (
     <div className="page-stack" ref={scope}>
@@ -110,9 +111,6 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
                 <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Current status</p>
                 <h2 data-anim="status" className="origin-left font-semibold">{trackingStatusLabel(tracking.status)}</h2>
                 {!offPath && <p className="text-sm text-muted-foreground">{trackingStatusMessage(tracking.status)}</p>}
-                <p className="text-xs text-muted-foreground">
-                  Last updated <time dateTime={lastUpdate}>{trackingTime(lastUpdate, timeZone)}</time>
-                </p>
               </div>
             </div>
             <ConnectionBadge connection={connection} />
@@ -149,43 +147,28 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
               </ol>
             </div>
           )}
+          <p className="mt-5 text-center text-xs text-muted-foreground">Times are shown in your time zone ({timeZoneLabel(timeZone)}).</p>
         </CardContent>
       </Card>
 
       {tracking.courierLocation && <CourierLocationCard location={tracking.courierLocation} />}
 
-      <Card>
-        <CardContent>
-          <details className="group">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-md font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
-              <span className="flex items-center gap-2"><Clock3 className="size-5" aria-hidden="true" />Full tracking history</span>
-              <span className="flex items-center gap-1 text-sm font-normal text-muted-foreground">
-                {events.length} {events.length === 1 ? "update" : "updates"}
-                <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />
-              </span>
-            </summary>
-            <div className="mt-5">
-              {events.length ? (
-                <ol className="shipment-timeline">
-                  {events.map((event, index) => (
-                    <li key={`${event.occurredAt}-${event.type}-${index}`} aria-current={index === 0 ? "step" : undefined}>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <h2 className="text-base font-semibold">{eventTitle(event)}</h2>
-                        {index === 0 && <span className="text-xs font-medium text-primary">Latest</span>}
-                      </div>
-                      <time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{trackingTime(event.occurredAt, timeZone)}</time>
-                      {event.hub && <p className="flex items-center gap-1 text-sm"><MapPin className="size-3.5" aria-hidden="true" />{event.hub}</p>}
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <p className="text-sm text-muted-foreground">Updates will appear here as your parcel moves.</p>
-              )}
-            </div>
-          </details>
-          <p className="mt-4 text-xs text-muted-foreground">Times are shown in your time zone ({timeZoneLabel(timeZone)}).</p>
-        </CardContent>
-      </Card>
+      {historyEvents.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-5" aria-hidden="true" />{offPath ? "Tracking history" : "Other updates"}</CardTitle></CardHeader>
+          <CardContent>
+            <ol className="shipment-timeline">
+              {historyEvents.map((event, index) => (
+                <li key={`${event.occurredAt}-${event.type}-${index}`}>
+                  <h3 className="text-base font-semibold">{eventTitle(event)}</h3>
+                  <time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{trackingTime(event.occurredAt, timeZone)}</time>
+                  {event.hub && <p className="flex items-center gap-1 text-sm"><MapPin className="size-3.5" aria-hidden="true" />{event.hub}</p>}
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader><CardTitle>Track another parcel</CardTitle></CardHeader>

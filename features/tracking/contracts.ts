@@ -31,6 +31,22 @@ const statusMessages: Record<string, string> = {
 
 export const trackingStatusMessage = (status: string) => statusMessages[status] ?? "";
 
+// Updates the progress steps cannot show: hub arrivals, delivery attempts, failures and an
+// earlier visit to a step that was reached again. Each step's own (latest) event and the
+// booking are left out, since the steps already show them with their times.
+export function additionalUpdates<T extends Pick<PublicTrackingEvent, "type" | "status">>(events: readonly T[], steps: readonly string[]) {
+  const shownOnSteps = new Set<number>();
+  for (const step of steps) {
+    for (let index = events.length - 1; index >= 0; index--) {
+      if (events[index].status === step) {
+        shownOnSteps.add(index);
+        break;
+      }
+    }
+  }
+  return events.filter((event, index) => event.type !== "CREATED" && !shownOnSteps.has(index));
+}
+
 // When each journey step was last reached, for the time under that step on the progress bar.
 // Booking always uses the creation time; later steps use the newest event with that status,
 // so a parcel sent back into transit after a failed attempt shows its latest transit time.
@@ -67,11 +83,13 @@ export const trackingPath = (trackingNumber: string) => `/track/${encodeURICompo
 export const DEFAULT_TIME_ZONE = "Asia/Dhaka";
 
 const formatters = new Map<string, Intl.DateTimeFormat>();
-function formatterFor(timeZone: string) {
+function formatterFor(timeZone: string): Intl.DateTimeFormat {
   let formatter = formatters.get(timeZone);
   if (!formatter) {
     try {
-      formatter = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone });
+      formatter = new Intl.DateTimeFormat("en-US", {
+        day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone,
+      });
     } catch {
       return formatterFor(DEFAULT_TIME_ZONE);
     }
@@ -80,22 +98,18 @@ function formatterFor(timeZone: string) {
   return formatter;
 }
 
-export const trackingTime = (value: string, timeZone = DEFAULT_TIME_ZONE) => formatterFor(timeZone).format(new Date(value));
-
-// Compact form for the progress steps ("19 Nov, 10:19"); the full date is in the title.
-const shortFormatters = new Map<string, Intl.DateTimeFormat>();
-export function trackingShortTime(value: string, timeZone = DEFAULT_TIME_ZONE) {
-  let formatter = shortFormatters.get(timeZone);
-  if (!formatter) {
-    try {
-      formatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone });
-    } catch {
-      return trackingShortTime(value, DEFAULT_TIME_ZONE);
-    }
-    shortFormatters.set(timeZone, formatter);
-  }
-  return formatter.format(new Date(value));
+// Built from parts so every browser prints the same text: "19 Nov 2026, 5:09 PM".
+function formatParts(value: string, timeZone: string, withYear: boolean) {
+  const part: Record<string, string> = {};
+  for (const { type, value: text } of formatterFor(timeZone).formatToParts(new Date(value))) part[type] = text;
+  const date = withYear ? `${part.day} ${part.month} ${part.year}` : `${part.day} ${part.month}`;
+  return `${date}, ${part.hour}:${part.minute} ${part.dayPeriod?.toUpperCase() ?? ""}`.trimEnd();
 }
+
+export const trackingTime = (value: string, timeZone = DEFAULT_TIME_ZONE) => formatParts(value, timeZone, true);
+
+// Compact form under the progress steps ("19 Nov, 5:09 PM"); the full date is in the title.
+export const trackingShortTime = (value: string, timeZone = DEFAULT_TIME_ZONE) => formatParts(value, timeZone, false);
 
 // "Asia/Dhaka, GMT+6" — the zone name plus its current offset, for the note under the history.
 export function timeZoneLabel(timeZone: string, now = new Date()) {

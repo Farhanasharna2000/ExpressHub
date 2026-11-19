@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 const { trackingNumberSchema, publicTrackingSchema } = await import("../validators/track.ts");
 const { createTrackingStream, toPublicTracking, trackingSignature } = await import("../services/tracking-stream.ts");
-const { eventTitle, journeyProgress, journeyStepTimes, parseTrackingInput, reconnectDelay, timeZoneLabel, trackingPath, trackingShortTime, trackingStatusMessage, trackingTime } = await import("../features/tracking/contracts.ts");
+const { additionalUpdates, eventTitle, journeyProgress, journeyStepTimes, parseTrackingInput, reconnectDelay, timeZoneLabel, trackingPath, trackingShortTime, trackingStatusMessage, trackingTime } = await import("../features/tracking/contracts.ts");
 
 test("the progress line fills between the first and last journey steps", () => {
   assert.equal(journeyProgress(-1, 5), 0);
@@ -141,16 +141,20 @@ test("tracking helpers parse input, label events and format Dhaka time", () => {
   assert.equal(trackingPath(TRACK), `/track/${TRACK}`);
   assert.equal(eventTitle({ type: "HUB_TRANSFER", status: null }), "Arrived at a hub");
   assert.equal(eventTitle({ type: "STATUS_CHANGED", status: "OUT_FOR_DELIVERY" }), "Out for delivery");
-  assert.equal(trackingTime("2026-11-16T18:30:00Z"), "17 Nov 2026, 00:30");
+  assert.equal(trackingTime("2026-11-16T18:30:00Z"), "17 Nov 2026, 12:30 AM");
   // Visitors see their own timezone; an unknown zone falls back to Dhaka time.
-  assert.equal(trackingTime("2026-11-16T18:30:00Z", "Europe/London"), "16 Nov 2026, 18:30");
-  assert.equal(trackingTime("2026-11-16T18:30:00Z", "America/New_York"), "16 Nov 2026, 13:30");
-  assert.equal(trackingTime("2026-11-16T18:30:00Z", "Not/AZone"), "17 Nov 2026, 00:30");
+  assert.equal(trackingTime("2026-11-16T18:30:00Z", "Europe/London"), "16 Nov 2026, 6:30 PM");
+  assert.equal(trackingTime("2026-11-16T18:30:00Z", "America/New_York"), "16 Nov 2026, 1:30 PM");
+  assert.equal(trackingTime("2026-11-16T18:30:00Z", "Not/AZone"), "17 Nov 2026, 12:30 AM");
   assert.equal(timeZoneLabel("Asia/Dhaka"), "Asia/Dhaka, GMT+6");
   assert.equal(timeZoneLabel("Europe/London", new Date("2026-07-01T12:00:00Z")), "Europe/London, GMT+1");
   assert.equal(timeZoneLabel("Not/AZone"), "Asia/Dhaka, GMT+6");
-  assert.equal(trackingShortTime("2026-11-16T18:30:00Z"), "17 Nov, 00:30");
-  assert.equal(trackingShortTime("2026-11-16T18:30:00Z", "Europe/London"), "16 Nov, 18:30");
+  assert.equal(trackingShortTime("2026-11-16T18:30:00Z"), "17 Nov, 12:30 AM");
+  assert.equal(trackingShortTime("2026-11-16T18:30:00Z", "Europe/London"), "16 Nov, 6:30 PM");
+  // 12-hour clock with upper-case AM/PM, including noon and a morning time.
+  assert.equal(trackingTime("2026-11-19T06:00:00Z"), "19 Nov 2026, 12:00 PM");
+  assert.equal(trackingTime("2026-10-12T11:09:00Z"), "12 Oct 2026, 5:09 PM");
+  assert.equal(trackingShortTime("2026-11-19T04:19:00Z"), "19 Nov, 10:19 AM");
   assert.deepEqual([0, 1, 2, 10].map(reconnectDelay), [1_000, 2_000, 4_000, 30_000]);
 });
 
@@ -179,4 +183,29 @@ test("each journey step shows when it was last reached, and statuses are explain
     assert.notEqual(message.toLowerCase(), status.toLowerCase().replaceAll("_", " "));
   }
   assert.equal(trackingStatusMessage("UNKNOWN"), "");
+});
+
+test("the history lists only updates the progress steps cannot show", () => {
+  const steps = ["CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
+  const plain = [
+    { type: "CREATED", status: "CREATED", occurredAt: "1" },
+    { type: "STATUS_CHANGED", status: "PICKED_UP", occurredAt: "2" },
+    { type: "STATUS_CHANGED", status: "IN_TRANSIT", occurredAt: "3" },
+    { type: "STATUS_CHANGED", status: "OUT_FOR_DELIVERY", occurredAt: "4" },
+  ];
+  // Every milestone is already on the progress bar, so nothing repeats below it.
+  assert.deepEqual(additionalUpdates(plain, steps), []);
+
+  const eventful = [
+    ...plain.slice(0, 3),
+    { type: "HUB_TRANSFER", status: null, occurredAt: "3b" },
+    { type: "STATUS_CHANGED", status: "OUT_FOR_DELIVERY", occurredAt: "4" },
+    { type: "DELIVERY_ATTEMPT", status: null, occurredAt: "5" },
+    { type: "STATUS_CHANGED", status: "FAILED", occurredAt: "6" },
+    { type: "STATUS_CHANGED", status: "IN_TRANSIT", occurredAt: "7" },
+    { type: "STATUS_CHANGED", status: "OUT_FOR_DELIVERY", occurredAt: "8" },
+  ];
+  // Hub arrival, the attempt, the failure and the earlier transit and delivery runs stay;
+  // the latest visit to each step is shown on the bar instead.
+  assert.deepEqual(additionalUpdates(eventful, steps).map((event) => event.occurredAt), ["3", "3b", "4", "5", "6"]);
 });
