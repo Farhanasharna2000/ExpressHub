@@ -87,7 +87,7 @@ jobs:
       - run: npm run build
       - name: Integration suites
         run: |
-          for suite in auth users shipments payments admin lists soft-delete errors notifications proof help tracking location analytics merchant; do
+          for suite in auth users shipments payments admin lists soft-delete errors notifications proof help tracking location analytics merchant dispatch; do
             echo "::group::$suite"
             npm run "test:$suite:integration"
             echo "::endgroup::"
