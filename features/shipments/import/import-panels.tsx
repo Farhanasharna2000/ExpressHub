@@ -136,13 +136,13 @@ export function ProblemsTable({ problems, total, title }: { problems: ImportProb
       </h2>
       <p className="mb-2 text-sm text-muted-foreground">{t("preview.problemsHint")}</p>
       <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-left text-sm">
+        <table className="w-full min-w-[30rem] text-left text-sm">
           <caption className="sr-only">{title}</caption>
           <thead className="bg-muted/40 text-xs text-muted-foreground">
             <tr>
-              <th scope="col" className="px-3 py-2 font-medium">{t("preview.rowHeader")}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{t("preview.columnHeader")}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{t("preview.problemHeader")}</th>
+              <th scope="col" className="whitespace-nowrap px-3 py-2 font-medium">{t("preview.rowHeader")}</th>
+              <th scope="col" className="whitespace-nowrap px-3 py-2 font-medium">{t("preview.columnHeader")}</th>
+              <th scope="col" className="whitespace-nowrap px-3 py-2 font-medium">{t("preview.problemHeader")}</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -222,22 +222,22 @@ export function PreviewPanel({ detail, busy, onConfirm, onReset, onDownload }: {
                 <CheckCircle2 className="size-4 text-primary" aria-hidden="true" /> {t("preview.sampleTitle")}
               </h2>
               <div className="overflow-x-auto rounded-lg border">
-                <table className="w-full text-left text-sm">
+                <table className="w-full min-w-[38rem] text-left text-sm">
                   <caption className="sr-only">{t("preview.sampleCaption", { count: f.number(detail.sample.length) })}</caption>
                   <thead className="bg-muted/40 text-xs text-muted-foreground">
                     <tr>
-                      <th scope="col" className="px-3 py-2 font-medium">{t("preview.rowHeader")}</th>
-                      <th scope="col" className="px-3 py-2 font-medium">{t("preview.recipient")}</th>
-                      <th scope="col" className="px-3 py-2 font-medium">{t("preview.address")}</th>
-                      <th scope="col" className="px-3 py-2 font-medium">{t("preview.weight")}</th>
-                      <th scope="col" className="px-3 py-2 font-medium">{t("preview.price")}</th>
+                      <th scope="col" className="whitespace-nowrap px-3 py-2 font-medium">{t("preview.rowHeader")}</th>
+                      <th scope="col" className="whitespace-nowrap px-3 py-2 font-medium">{t("preview.recipient")}</th>
+                      <th scope="col" className="whitespace-nowrap px-3 py-2 font-medium">{t("preview.address")}</th>
+                      <th scope="col" className="whitespace-nowrap px-3 py-2 font-medium">{t("preview.weight")}</th>
+                      <th scope="col" className="whitespace-nowrap px-3 py-2 font-medium">{t("preview.price")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {detail.sample.map((row) => (
                       <tr key={row.row}>
                         <td className="whitespace-nowrap px-3 py-2 font-medium">{f.number(row.row)}</td>
-                        <td className="px-3 py-2">{row.deliveryContactName}</td>
+                        <td className="whitespace-nowrap px-3 py-2">{row.deliveryContactName}</td>
                         <td className="px-3 py-2 break-words">{row.deliveryAddress}</td>
                         <td className="whitespace-nowrap px-3 py-2">{f.number(row.parcelWeightKg, { maximumFractionDigits: 3 })}</td>
                         <td className="whitespace-nowrap px-3 py-2">{row.estimatedPrice && row.currency ? f.money(row.estimatedPrice, row.currency) : "–"}</td>
