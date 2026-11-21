@@ -14,9 +14,6 @@ import {
 } from "@/components/ui/primitives";
 import { errorMessage, ApiError } from "@/lib/client/api";
 import {
-  dateTime,
-  money,
-  statusLabel,
   type ShipmentDetail,
 } from "@/features/shipments/contracts";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
@@ -29,7 +26,13 @@ import { ShipmentCourierMap } from "@/features/maps/shipment-courier-map";
 import { ArchiveShipmentControl } from "@/features/shipments/archive-shipment";
 import { PrintLabelButton } from "@/features/shipments/print-label-button";
 
+import { useTranslations } from "next-intl";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
 export function AdminShipmentDetailView({ id }: { id: string }) {
+  const t = useTranslations("admin.shipmentDetail");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
   const valid = z.cuid().safeParse(id).success;
   const { data, loading, refreshing, error, reload } = useResource<{ shipment: ShipmentDetail }>(
     valid ? `/shipments/${encodeURIComponent(id)}` : null
@@ -49,15 +52,15 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
   return (
     <div className="page-stack">
       <Link href="/admin/shipments" className="back-link">
-        <ArrowLeft className="inline size-4" aria-hidden="true" /> Back to shipment operations
+        <ArrowLeft className="inline size-4" aria-hidden="true" /> {t("back")}
       </Link>
 
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Dispatch Operations</p>
-          <h1>Shipment Detail & Management</h1>
+          <p className="eyebrow">{t("dispatchOperations")}</p>
+          <h1>{t("shipmentDetailManagement")}</h1>
           <p className="break-all font-mono font-medium text-base">
-            {shipment?.trackingNumber ?? "Loading operational record…"}
+            {shipment?.trackingNumber ?? t("loadingOperationalRecord")}
           </p>
         </div>
         {valid && (
@@ -71,7 +74,7 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
               onClick={reload}
             >
               <RefreshCw className={`size-4 mr-2 ${loading || refreshing ? "animate-spin" : ""}`} />
-              Refresh
+              {t("refresh")}
             </Button>
           </div>
         )}
@@ -79,29 +82,29 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
 
       {!valid && (
         <EmptyState
-          title="Invalid shipment identifier"
-          description="The shipment ID format is invalid. Return to the operations list."
+          title={t("invalidShipmentIdentifier")}
+          description={t("theShipmentIdFormat")}
           action={
             <Button asChild>
-              <Link href="/admin/shipments">View shipments</Link>
+              <Link href="/admin/shipments">{t("viewShipments")}</Link>
             </Button>
           }
         />
       )}
 
       {refreshing && <ResourceRefresh />}
-      {loading && <ResourceSkeleton variant="detail" label="Loading operational shipment data…" />}
+      {loading && <ResourceSkeleton variant="detail" label={t("loadingOperationalShipmentData")} />}
 
       {!!error && (
         <ErrorNotice
           title={
             error instanceof ApiError && error.status === 404
-              ? "Shipment not found"
-              : "Could not load shipment record"
+              ? t("shipmentNotFound")
+              : t("couldNotLoadShipment")
           }
           action={
             <Button variant="outline" onClick={reload} disabled={delay > 0}>
-              {delay ? `Retry in ${delay}s` : "Try again"}
+              {delay ? tf("retryIn", { seconds: f.digits(delay) }) : t("tryAgain")}
             </Button>
           }
         >
@@ -115,23 +118,23 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
           <Card>
             <CardContent className="shipment-summary">
               <div>
-                <span className="text-xs text-muted-foreground">Shipment status</span>
+                <span className="text-xs text-muted-foreground">{t("shipmentStatus")}</span>
                 <div className="mt-2">
                   <StatusBadge status={shipment.status} />
                 </div>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Payment status</span>
+                <span className="text-xs text-muted-foreground">{t("paymentStatus")}</span>
                 <div className="mt-2">
                   <StatusBadge status={shipment.paymentStatus} />
                 </div>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Total price</span>
-                <p className="font-semibold text-lg">{money(shipment.price, shipment.currency)}</p>
+                <span className="text-xs text-muted-foreground">{t("totalPrice")}</span>
+                <p className="font-semibold text-lg">{f.money(shipment.price, shipment.currency)}</p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Customer ID</span>
+                <span className="text-xs text-muted-foreground">{t("customerId")}</span>
                 <p className="text-xs font-mono truncate max-w-[140px]" title={shipment.customerId}>
                   {shipment.customerId}
                 </p>
@@ -164,12 +167,12 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="size-5" />
-                  Origin & Pickup
+                  {t("originPickup")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <span className="text-xs text-muted-foreground">Sender:</span>
+                  <span className="text-xs text-muted-foreground">{t("sender")}</span>
                   <p className="font-semibold text-base">{shipment.pickupContactName}</p>
                   <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
                     <Phone className="size-3.5" />
@@ -177,16 +180,16 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Pickup Address:</span>
+                  <span className="text-xs text-muted-foreground">{t("pickupAddress")}</span>
                   <p className="text-sm font-medium whitespace-pre-wrap mt-0.5">
                     {shipment.pickupAddress}
                   </p>
                 </div>
                 {shipment.pickupScheduledAt && (
                   <div>
-                    <span className="text-xs text-muted-foreground">Scheduled Pickup Time:</span>
+                    <span className="text-xs text-muted-foreground">{t("scheduledPickupTime")}</span>
                     <p className="text-sm font-medium mt-0.5">
-                      {dateTime(shipment.pickupScheduledAt)}
+                      {f.dateTime(shipment.pickupScheduledAt)}
                     </p>
                   </div>
                 )}
@@ -197,12 +200,12 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="size-5 text-emerald-600" />
-                  Destination & Recipient
+                  {t("destinationRecipient")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <span className="text-xs text-muted-foreground">Recipient:</span>
+                  <span className="text-xs text-muted-foreground">{t("recipient")}</span>
                   <p className="font-semibold text-base">{shipment.deliveryContactName}</p>
                   <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
                     <Phone className="size-3.5" />
@@ -210,16 +213,16 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Delivery Address:</span>
+                  <span className="text-xs text-muted-foreground">{t("deliveryAddress")}</span>
                   <p className="text-sm font-medium whitespace-pre-wrap mt-0.5">
                     {shipment.deliveryAddress}
                   </p>
                 </div>
                 {shipment.deliveredAt && (
                   <div>
-                    <span className="text-xs text-muted-foreground">Delivered Timestamp:</span>
+                    <span className="text-xs text-muted-foreground">{t("deliveredTimestamp")}</span>
                     <p className="text-sm font-semibold text-emerald-700 mt-0.5">
-                      {dateTime(shipment.deliveredAt)}
+                      {f.dateTime(shipment.deliveredAt)}
                     </p>
                   </div>
                 )}
@@ -232,28 +235,28 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="size-5" />
-                Parcel Specifications
+                {t("parcelSpecifications")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <span className="text-xs text-muted-foreground">Weight:</span>
+                  <span className="text-xs text-muted-foreground">{t("weight")}</span>
                   <p className="font-semibold">{shipment.parcelWeightKg} kg</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Created:</span>
-                  <p className="text-sm font-medium">{dateTime(shipment.createdAt)}</p>
+                  <span className="text-xs text-muted-foreground">{t("created")}</span>
+                  <p className="text-sm font-medium">{f.dateTime(shipment.createdAt)}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Last Updated:</span>
-                  <p className="text-sm font-medium">{dateTime(shipment.updatedAt)}</p>
+                  <span className="text-xs text-muted-foreground">{t("lastUpdated")}</span>
+                  <p className="text-sm font-medium">{f.dateTime(shipment.updatedAt)}</p>
                 </div>
               </div>
 
               {shipment.packageDescription && (
                 <div className="pt-2 border-t mt-3">
-                  <span className="text-xs text-muted-foreground">Package Description:</span>
+                  <span className="text-xs text-muted-foreground">{t("packageDescription")}</span>
                   <p className="text-sm mt-0.5">{shipment.packageDescription}</p>
                 </div>
               )}
@@ -265,7 +268,7 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock3 className="size-5" />
-                Audit & Event History
+                {t("auditEventHistory")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -278,19 +281,19 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
                         {event.toStatus && <StatusBadge status={event.toStatus} />}
                         {event.actorId && (
                           <span className="text-xs text-muted-foreground font-mono flex items-center gap-1">
-                            <User className="size-3" /> Actor: {event.actorId}
+                            <User className="size-3" /> {t("actor", { id: event.actorId })}
                           </span>
                         )}
                       </div>
                       <time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>
-                        {dateTime(event.occurredAt)}
+                        {f.dateTime(event.occurredAt)}
                       </time>
                       {event.publicNote && (
                         <p className="break-words mt-1 text-sm">{event.publicNote}</p>
                       )}
                       {event.internalNote && (
                         <div className="p-2 rounded bg-muted/40 border border-muted-foreground/20 text-xs mt-1 text-muted-foreground">
-                          <strong>Internal Note:</strong> {event.internalNote}
+                          {t.rich("internalNote", { b: (chunks) => <strong>{chunks}</strong>, note: event.internalNote })}
                         </div>
                       )}
                     </li>
@@ -298,8 +301,8 @@ export function AdminShipmentDetailView({ id }: { id: string }) {
                 </ol>
               ) : (
                 <EmptyState
-                  title="No timeline events"
-                  description="Operations performed on this shipment will be logged here."
+                  title={t("noTimelineEvents")}
+                  description={t("operationsPerformedOnThis")}
                 />
               )}
             </CardContent>

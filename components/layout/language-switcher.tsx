@@ -3,10 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { LOCALE_COOKIE, locales, type Locale } from "@/lib/i18n/config";
+import { locales, writeLocaleCookie, type Locale } from "@/lib/i18n/config";
 import { useAppLocale } from "@/lib/i18n/use-format";
-
-const ONE_YEAR = 60 * 60 * 24 * 365;
 
 // EN | বাংলা. The cookie is read on the server, so a refresh re-renders every page in the
 // chosen language without changing the URL.
@@ -18,7 +16,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
 
   function choose(locale: Locale) {
     if (locale === current || pending) return;
-    document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=${ONE_YEAR}; samesite=lax`;
+    writeLocaleCookie(locale);
     startTransition(() => router.refresh());
   }
 

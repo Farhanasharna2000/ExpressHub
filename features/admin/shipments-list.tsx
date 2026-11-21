@@ -34,23 +34,26 @@ import {
 import { Pagination } from "@/components/ui/interactive";
 import { queryString, errorMessage } from "@/lib/client/api";
 import {
-  dateTime,
   localToISO,
-  money,
   paymentStatuses,
   readShipmentQuery,
   shipmentStatuses,
-  statusLabel,
   toLocalInput,
   type Shipment,
   type ShipmentList,
 } from "@/features/shipments/contracts";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 
-const columns: Column<Shipment>[] = [
+import { useTranslations } from "next-intl";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
+
+type ColumnT = ReturnType<typeof useTranslations<"admin.shipments">>;
+type Format = ReturnType<typeof useFormat>;
+
+const buildColumns = (t: ColumnT, f: Format): Column<Shipment>[] => [
   {
     key: "tracking",
-    label: "Tracking number",
+    label: t("trackingNumber"),
     render: (shipment) => (
       <Link
         className="font-semibold break-all text-primary hover:underline"
@@ -62,70 +65,70 @@ const columns: Column<Shipment>[] = [
   },
   {
     key: "route",
-    label: "Pickup → Delivery",
+    label: t("pickupDelivery"),
     render: (shipment) => (
       <div className="shipment-route text-xs">
         <span title={shipment.pickupAddress} className="truncate max-w-xs block">
-          From: {shipment.pickupAddress}
+          {t("fromAddress", { address: shipment.pickupAddress })}
         </span>
         <span aria-hidden="true" className="text-muted-foreground"><ArrowDown className="inline size-4" aria-hidden="true" /></span>
         <span title={shipment.deliveryAddress} className="truncate max-w-xs block">
-          To: {shipment.deliveryAddress}
+          {t("toAddress", { address: shipment.deliveryAddress })}
         </span>
       </div>
     ),
   },
   {
     key: "courier",
-    label: "Assigned Courier",
+    label: t("assignedCourier"),
     render: (shipment) =>
       shipment.courierId ? (
         <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
           <UserCheck className="size-3" />
-          Assigned
+          {t("assigned")}
         </span>
       ) : (
         <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
           <ShieldAlert className="size-3" />
-          Unassigned
+          {t("unassigned")}
         </span>
       ),
   },
   {
     key: "status",
-    label: "Shipment status",
+    label: t("shipmentStatus"),
     render: (shipment) => <StatusBadge status={shipment.status} />,
   },
   {
     key: "payment",
-    label: "Payment",
+    label: t("payment"),
     render: (shipment) => <StatusBadge status={shipment.paymentStatus} />,
   },
   {
     key: "price",
-    label: "Price",
+    label: t("price"),
     render: (shipment) => (
       <span className="whitespace-nowrap font-medium text-sm">
-        {money(shipment.price, shipment.currency)}
+        {f.money(shipment.price, shipment.currency)}
       </span>
     ),
   },
   {
     key: "date",
-    label: "Created",
+    label: t("created"),
     render: (shipment) => (
       <time dateTime={shipment.createdAt} className="text-xs text-muted-foreground">
-        {dateTime(shipment.createdAt)}
+        {f.dateTime(shipment.createdAt)}
       </time>
     ),
   },
   {
     key: "manage",
-    label: "Operations",
+    label: t("operations"),
     render: (shipment) => (
       <Button asChild size="sm" variant="outline">
         <Link href={`/admin/shipments/${encodeURIComponent(shipment.id)}`}>
-          Manage <ArrowRight className="size-3 ml-1" />
+          {t("manage")} <ArrowRight className="size-3 ml-1" />
         </Link>
       </Button>
     ),
@@ -133,6 +136,11 @@ const columns: Column<Shipment>[] = [
 ];
 
 export function AdminShipmentsListView() {
+  const t = useTranslations("admin.shipments");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
+  const columns = buildColumns(t, f);
   const params = useSearchParams();
   const serialized = params.toString();
 
@@ -142,7 +150,7 @@ export function AdminShipmentsListView() {
     } catch (err) {
       return {
         value: null,
-        error: err instanceof Error ? err.message : "Invalid filter parameters",
+        error: err instanceof Error ? err.message : t("invalidFilterParameters"),
       };
     }
   }, [serialized]);
@@ -191,7 +199,7 @@ export function AdminShipmentsListView() {
       update(key, value ? localToISO(value) : "");
       setDateError("");
     } catch (err) {
-      setDateError(err instanceof Error ? err.message : "Invalid date/time");
+      setDateError(err instanceof Error ? err.message : t("invalidDateTime"));
     }
   }
 
@@ -207,14 +215,14 @@ export function AdminShipmentsListView() {
   );
 
   const quickStatusPresets = [
-    { label: "All", value: "", dotColor: "bg-muted-foreground" },
-    { label: "Created", value: "CREATED", dotColor: "bg-amber-500" },
-    { label: "Picked Up", value: "PICKED_UP", dotColor: "bg-blue-500" },
-    { label: "In Transit", value: "IN_TRANSIT", dotColor: "bg-sky-500" },
-    { label: "Out for Delivery", value: "OUT_FOR_DELIVERY", dotColor: "bg-purple-500" },
-    { label: "Delivered", value: "DELIVERED", dotColor: "bg-emerald-500" },
-    { label: "Failed", value: "FAILED", dotColor: "bg-rose-500" },
-    { label: "Cancelled", value: "CANCELLED", dotColor: "bg-gray-400" },
+    { label: t("all"), value: "", dotColor: "bg-muted-foreground" },
+    { label: t("created"), value: "CREATED", dotColor: "bg-amber-500" },
+    { label: t("pickedUp"), value: "PICKED_UP", dotColor: "bg-blue-500" },
+    { label: t("inTransit"), value: "IN_TRANSIT", dotColor: "bg-sky-500" },
+    { label: t("outForDelivery"), value: "OUT_FOR_DELIVERY", dotColor: "bg-purple-500" },
+    { label: t("delivered"), value: "DELIVERED", dotColor: "bg-emerald-500" },
+    { label: t("failed"), value: "FAILED", dotColor: "bg-rose-500" },
+    { label: t("cancelled"), value: "CANCELLED", dotColor: "bg-gray-400" },
   ];
 
   const activeCount = [
@@ -229,9 +237,9 @@ export function AdminShipmentsListView() {
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Operations & Dispatch</p>
-          <h1>Shipment Operations</h1>
-          <p>Supervise network shipments, assign couriers, and manage delivery exceptions.</p>
+          <p className="eyebrow">{t("operationsDispatch")}</p>
+          <h1>{t("shipmentOperations")}</h1>
+          <p>{t("superviseNetworkShipmentsAssign")}</p>
         </div>
       </div>
 
@@ -244,20 +252,20 @@ export function AdminShipmentsListView() {
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base font-bold text-foreground">
-                  Filter Operations
+                  {t("filterOperations")}
                 </CardTitle>
                 {activeCount > 0 ? (
                   <Badge variant="secondary" className="bg-[#e5ecdf] text-[#196547] border-[#196547]/20 font-semibold text-[11px] px-2">
-                    {activeCount} {activeCount === 1 ? "filter" : "filters"} applied
+                    {tf("applied", { count: activeCount })}
                   </Badge>
                 ) : (
                   <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
-                    Live logistics search
+                    {t("liveLogisticsSearch")}
                   </span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Refine active network dispatches, courier delivery statuses, and payment records.
+                {t("refineActiveNetworkDispatches")}
               </p>
             </div>
           </div>
@@ -271,7 +279,7 @@ export function AdminShipmentsListView() {
                 className="h-8 text-xs text-muted-foreground hover:text-destructive font-medium"
               >
                 <RotateCcw className="size-3.5 mr-1" aria-hidden="true" />
-                Reset filters
+                {t("resetFilters")}
               </Button>
             )}
           </div>
@@ -281,7 +289,7 @@ export function AdminShipmentsListView() {
         <div className="border-b border-border/60 bg-background/50 px-5 py-2.5 sm:px-6">
           <div className="quick-filter-options">
             <span className="text-xs font-semibold text-muted-foreground mr-1 flex items-center gap-1">
-              <Layers className="size-3 text-muted-foreground" /> Status:
+              <Layers className="size-3 text-muted-foreground" /> {tf("statusLabel")}
             </span>
             {quickStatusPresets.map((preset) => {
               const isActive = (params.get("status") ?? "") === preset.value;
@@ -316,8 +324,8 @@ export function AdminShipmentsListView() {
             <div className="relative min-w-0">
               <Input
                 id="admin-shipment-search"
-                label="Search all shipments"
-                placeholder="Tracking number, contact, address..."
+                label={t("searchAllShipments")}
+                placeholder={t("trackingNumberContactAddress")}
                 maxLength={100}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -332,8 +340,8 @@ export function AdminShipmentsListView() {
                     update("q", "", true);
                   }}
                   className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  title="Clear search"
-                  aria-label="Clear search"
+                  title={t("clearSearch")}
+                  aria-label={t("clearSearch")}
                 >
                   <X className="size-3.5" aria-hidden="true" />
                 </button>
@@ -342,11 +350,11 @@ export function AdminShipmentsListView() {
 
             <Select
               id="admin-shipment-status"
-              label="Shipment status"
+              label={t("shipmentStatus")}
               value={params.get("status") ?? ""}
               onChange={(e) => update("status", e.target.value)}
             >
-              <option value="">All statuses</option>
+              <option value="">{t("allStatuses")}</option>
               {shipmentStatuses.map((st) => (
                 <option key={st} value={st}>
                   {statusLabel(st)}
@@ -356,11 +364,11 @@ export function AdminShipmentsListView() {
 
             <Select
               id="admin-payment-status"
-              label="Payment status"
+              label={t("paymentStatus")}
               value={params.get("paymentStatus") ?? ""}
               onChange={(e) => update("paymentStatus", e.target.value)}
             >
-              <option value="">All payment statuses</option>
+              <option value="">{t("allPaymentStatuses")}</option>
               {paymentStatuses.map((p) => (
                 <option key={p} value={p}>
                   {statusLabel(p)}
@@ -375,7 +383,7 @@ export function AdminShipmentsListView() {
               <div className="sm:col-span-1">
                 <Input
                   id="admin-created-from"
-                  label="Created from"
+                  label={t("createdFrom")}
                   type="datetime-local"
                   value={toLocalInput(params.get("from") ?? "")}
                   onChange={(e) => dateFilter("from", e.target.value)}
@@ -384,7 +392,7 @@ export function AdminShipmentsListView() {
               <div className="sm:col-span-1">
                 <Input
                   id="admin-created-to"
-                  label="Created to"
+                  label={t("createdTo")}
                   type="datetime-local"
                   value={toLocalInput(params.get("to") ?? "")}
                   onChange={(e) => dateFilter("to", e.target.value)}
@@ -392,7 +400,7 @@ export function AdminShipmentsListView() {
               </div>
               <div className="sm:col-span-2 pb-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground mr-1 font-medium">Quick dates:</span>
+                  <span className="text-xs text-muted-foreground mr-1 font-medium">{t("quickDates")}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -402,7 +410,7 @@ export function AdminShipmentsListView() {
                     }}
                     className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                   >
-                    Today
+                    {t("today")}
                   </button>
                   <button
                     type="button"
@@ -413,7 +421,7 @@ export function AdminShipmentsListView() {
                     }}
                     className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                   >
-                    Last 7 days
+                    {t("last7Days")}
                   </button>
                   <button
                     type="button"
@@ -424,7 +432,7 @@ export function AdminShipmentsListView() {
                     }}
                     className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                   >
-                    Last 30 days
+                    {t("last30Days")}
                   </button>
                   {(params.has("from") || params.has("to")) && (
                     <button
@@ -434,7 +442,7 @@ export function AdminShipmentsListView() {
                       }}
                       className="text-xs px-2 py-1 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                     >
-                      Clear dates
+                      {t("clearDates")}
                     </button>
                   )}
                 </div>
@@ -446,12 +454,12 @@ export function AdminShipmentsListView() {
           {filtered && (
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/60">
               <span className="text-xs font-semibold text-muted-foreground mr-1">
-                Active filters:
+                {tf("active")}
               </span>
               {query.value?.q && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
                   <Search className="size-3 text-muted-foreground" />
-                  <span>Search: &ldquo;{query.value.q}&rdquo;</span>
+                  <span>{tf("searchChip", { value: query.value.q })}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -459,8 +467,8 @@ export function AdminShipmentsListView() {
                       update("q", "", true);
                     }}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove search filter"
-                    aria-label="Remove search filter"
+                    title={t("removeSearchFilter")}
+                    aria-label={t("removeSearchFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -469,13 +477,13 @@ export function AdminShipmentsListView() {
               {query.value?.status && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20 font-medium">
                   <Package className="size-3" />
-                  <span>Status: {statusLabel(query.value.status)}</span>
+                  <span>{tf("statusChip", { value: statusLabel(query.value.status) })}</span>
                   <button
                     type="button"
                     onClick={() => update("status", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove status filter"
-                    aria-label="Remove status filter"
+                    title={t("removeStatusFilter")}
+                    aria-label={t("removeStatusFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -484,13 +492,13 @@ export function AdminShipmentsListView() {
               {query.value?.paymentStatus && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200 font-medium">
                   <CreditCard className="size-3" />
-                  <span>Payment: {statusLabel(query.value.paymentStatus)}</span>
+                  <span>{tf("paymentChip", { value: statusLabel(query.value.paymentStatus) })}</span>
                   <button
                     type="button"
                     onClick={() => update("paymentStatus", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove payment filter"
-                    aria-label="Remove payment filter"
+                    title={t("removePaymentFilter")}
+                    aria-label={t("removePaymentFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -499,13 +507,13 @@ export function AdminShipmentsListView() {
               {query.value?.from && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
                   <Calendar className="size-3 text-muted-foreground" />
-                  <span>From: {dateTime(query.value.from)}</span>
+                  <span>{tf("fromChip", { value: f.dateTime(query.value.from) })}</span>
                   <button
                     type="button"
                     onClick={() => update("from", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove from date filter"
-                    aria-label="Remove from date filter"
+                    title={t("removeFromDateFilter")}
+                    aria-label={t("removeFromDateFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -514,13 +522,13 @@ export function AdminShipmentsListView() {
               {query.value?.to && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
                   <Calendar className="size-3 text-muted-foreground" />
-                  <span>To: {dateTime(query.value.to)}</span>
+                  <span>{tf("toChip", { value: f.dateTime(query.value.to) })}</span>
                   <button
                     type="button"
                     onClick={() => update("to", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove to date filter"
-                    aria-label="Remove to date filter"
+                    title={t("removeToDateFilter")}
+                    aria-label={t("removeToDateFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -533,11 +541,11 @@ export function AdminShipmentsListView() {
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-muted-foreground">
             <p className="flex items-center gap-1.5">
               <Clock className="size-3.5" aria-hidden="true" />
-              Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+              {tf("timezone", { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
             </p>
             {data && (
               <span className="font-medium text-foreground">
-                Showing {data.shipments.length} of {data.pagination.total} operational shipments
+                {t("showing", { shown: data.shipments.length, total: data.pagination.total })}
               </span>
             )}
           </div>
@@ -548,10 +556,10 @@ export function AdminShipmentsListView() {
 
       {query.error && (
         <ErrorNotice
-          title="Filter error"
+          title={t("filterError")}
           action={
             <Button variant="outline" onClick={clear}>
-              Reset filters
+              {t("resetFilters")}
             </Button>
           }
         >
@@ -561,10 +569,10 @@ export function AdminShipmentsListView() {
 
       {!!error && (
         <ErrorNotice
-          title="Could not load operations list"
+          title={t("couldNotLoadOperations")}
           action={
             <Button variant="outline" onClick={reload} disabled={delay > 0}>
-              {delay ? `Retry in ${delay}s` : "Try again"}
+              {delay ? tf("retryIn", { seconds: f.digits(delay) }) : t("tryAgain")}
             </Button>
           }
         >
@@ -573,13 +581,13 @@ export function AdminShipmentsListView() {
       )}
 
       {refreshing && <ResourceRefresh />}
-      {loading && <ResourceSkeleton variant="list" label="Loading operational shipments…" />}
+      {loading && <ResourceSkeleton variant="list" label={t("loadingOperationalShipments")} />}
 
       {data && (
         <Card>
           <CardContent className="shipment-results">
             <ResponsiveTable
-              caption="Operational shipments"
+              caption={t("operationalShipments")}
               columns={columns}
               rows={data.shipments}
               rowKey={(shipment) => shipment.id}
@@ -587,26 +595,26 @@ export function AdminShipmentsListView() {
                 <EmptyState
                   title={
                     data.pagination.total > 0
-                      ? "No shipments on this page"
+                      ? t("noShipmentsOnThis")
                       : filtered
-                        ? "No matching shipments"
-                        : "No shipments in network"
+                        ? t("noMatchingShipments")
+                        : t("noShipmentsInNetwork")
                   }
                   description={
                     data.pagination.total > 0
-                      ? "Return to the first page to view available records."
+                      ? t("returnToTheFirst")
                       : filtered
-                        ? "Adjust your search terms or reset the filters."
-                        : "There are currently no shipments registered in the logistics network."
+                        ? t("adjustYourSearchTerms")
+                        : t("thereAreCurrentlyNo")
                   }
                   action={
                     data.pagination.total > 0 ? (
                       <Button variant="outline" onClick={() => update("page", "1")}>
-                        Go to first page
+                        {t("goToFirstPage")}
                       </Button>
                     ) : filtered ? (
                       <Button variant="outline" onClick={clear}>
-                        Clear filters
+                        {t("clearFilters")}
                       </Button>
                     ) : undefined
                   }

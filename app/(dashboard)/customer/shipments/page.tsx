@@ -1,5 +1,10 @@
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { ShipmentListView } from "@/features/shipments/list";
 import { ResourceSkeleton } from "@/components/ui/skeleton";
-export const metadata = { title: "My shipments" };
-export default function Page() { return <Suspense fallback={<ResourceSkeleton variant="list" label="Loading shipments…" />}><ShipmentListView /></Suspense>; }
+export async function generateMetadata() {
+  const t = await getTranslations("titles");
+  return { title: t("customer_shipments") };
+}
+export default async function Page() {
+  const tp = await getTranslations("fallback"); return <Suspense fallback={<ResourceSkeleton variant="list" label={tp("loadingShipments")} />}><ShipmentListView /></Suspense>; }
