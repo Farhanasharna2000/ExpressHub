@@ -54,8 +54,7 @@
   "language": {
     "label": "ভাষা",
     "en": "English",
-    "bn": "বাংলা",
-    "switchTo": "ভাষা পরিবর্তন করে {language} করুন"
+    "bn": "বাংলা"
   },
   "status": {
     "CREATED": "বুক করা হয়েছে",

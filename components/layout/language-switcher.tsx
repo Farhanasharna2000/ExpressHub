@@ -30,7 +30,6 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
             lang={locale}
             onClick={() => choose(locale)}
             aria-current={locale === current ? "true" : undefined}
-            aria-label={locale === current ? t(locale) : t("switchTo", { language: t(locale) })}
             disabled={pending}
             className={locale === current ? "font-bold text-[var(--brand)]" : "text-[var(--text-muted)] hover:text-[var(--brand)]"}
           >

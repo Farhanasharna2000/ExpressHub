@@ -54,8 +54,7 @@
   "language": {
     "label": "Language",
     "en": "English",
-    "bn": "বাংলা",
-    "switchTo": "Switch language to {language}"
+    "bn": "বাংলা"
   },
   "status": {
     "CREATED": "Created",
