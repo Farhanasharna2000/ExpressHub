@@ -18,12 +18,12 @@ import { StatusBadge, ErrorNotice } from "@/components/ui/primitives";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { errorMessage, isCancelled } from "@/lib/client/api";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
 import {
   getPendingPayment,
   clearPendingPayment,
-  money,
   dateTime,
-  statusLabel,
   type Payment,
   type PaymentDetailResponse,
 } from "./contracts";
@@ -33,6 +33,10 @@ interface CheckoutReturnViewProps {
 }
 
 export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
+  const t = useTranslations("payments.return");
+  const tp = useTranslations("payments");
+  const f = useFormat();
+  const when = (iso: string) => (f.locale === "en" ? dateTime(iso) : f.dateTime(iso));
   const { status: authStatus, store } = useSession();
   const searchParams = useSearchParams();
 
@@ -101,7 +105,7 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
 
       if (res.payment.status === "PAID") {
         clearPendingPayment();
-        toast.success("Payment complete", "Your payment has been successfully confirmed.");
+        toast.success(t("complete"), t("completeText"));
       }
 
       return res.payment;
@@ -115,7 +119,7 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
       }
       setError(err);
       setLoading(false);
-      toast.error("Could not verify status", errorMessage(err));
+      toast.error(t("verifyFailed"), errorMessage(err));
       return null;
     }
   }
@@ -174,34 +178,34 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
           <CardTitle className="text-2xl">
             <h2>
               {payment?.status === "PAID"
-                ? "Payment complete"
+                ? t("complete")
                 : payment && payment.status !== "PENDING"
-                  ? `Payment ${statusLabel(payment.status).toLowerCase()}`
+                  ? t("statusTitle", { status: tp(`statusName.${payment.status}`).toLowerCase() })
                   : type === "cancel"
-                    ? "Checkout closed"
-                    : loading || paymentId ? "Checking your payment" : "Payment status unavailable"}
+                    ? t("closed")
+                    : loading || paymentId ? t("checking") : t("unavailable")}
             </h2>
           </CardTitle>
           {payment?.status !== "PAID" && <CardDescription className="text-sm mt-1">
             {payment?.status === "FAILED"
-                ? "Payment failed. Open your shipment to try again."
+                ? t("failedText")
                 : payment && payment.status !== "PENDING"
-                  ? "Your latest payment status is shown below."
+                  ? t("latestText")
                   : type === "cancel"
-                    ? "Check the status below before trying again."
+                    ? t("cancelText")
                     : pollAttempt < maxPolls
-                      ? "We’re waiting for payment confirmation. This page will update automatically."
-                      : "Confirmation is taking longer than expected. Refresh to check again."}
+                      ? t("waitingText")
+                      : t("slowText")}
           </CardDescription>}
         </CardHeader>
 
         <CardContent className="space-y-4">
           {loading && !payment && (
-            <ResourceSkeleton variant="detail" label="Checking whether your payment was completed. Please wait…" />
+            <ResourceSkeleton variant="detail" label={t("checkingLabel")} />
           )}
 
           {!!error && (
-            <ErrorNotice title="Could not verify status">
+            <ErrorNotice title={t("verifyFailed")}>
               {errorMessage(error)}
             </ErrorNotice>
           )}
@@ -209,26 +213,26 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
           {payment && (
             <div className="rounded-xl bg-muted/40 p-4 border space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground font-medium">Status:</span>
+                <span className="text-muted-foreground font-medium">{t("status")}</span>
                 <StatusBadge status={payment.status} />
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground font-medium">Amount:</span>
+                <span className="text-muted-foreground font-medium">{t("amount")}</span>
                 <span className="font-bold text-base">
-                  {money(payment.amount, payment.currency)}
+                  {f.money(payment.amount, payment.currency)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground font-medium">Payment ID:</span>
+                <span className="text-muted-foreground font-medium">{t("paymentId")}</span>
                 <code className="min-w-0 break-all text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
                   {payment.id}
                 </code>
               </div>
               {payment.paidAt && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground font-medium">Paid at:</span>
+                  <span className="text-muted-foreground font-medium">{t("paidAt")}</span>
                   <span className="text-xs text-muted-foreground">
-                    {dateTime(payment.paidAt)}
+                    {when(payment.paidAt)}
                   </span>
                 </div>
               )}
@@ -237,9 +241,9 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
 
           {!loading && !paymentId && (
             <Alert className="text-xs sm:text-sm">
-              <AlertTitle>Payment not found</AlertTitle>
+              <AlertTitle>{t("notFound")}</AlertTitle>
               <AlertDescription>
-                Open your payment history to find this payment.
+                {t("notFoundText")}
               </AlertDescription>
             </Alert>
           )}
@@ -255,7 +259,7 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
               className="w-full sm:w-auto gap-2"
             >
               <RefreshCw className={loading ? "animate-spin size-3.5" : "size-3.5"} />
-              {loading ? "Checking payment…" : "Refresh status"}
+              {loading ? t("checkingShort") : t("refresh")}
             </Button>
           )}
 
@@ -264,13 +268,13 @@ export function CheckoutReturnView({ type }: CheckoutReturnViewProps) {
               <Button asChild variant="default" size="sm" className="w-full sm:w-auto">
                 <Link href={`/customer/shipments/${payment?.shipmentId || shipmentId}`}>
                   <Package className="size-4 mr-1.5" />
-                  View Shipment
+                  {t("viewShipment")}
                 </Link>
               </Button>
             )}
 
             <Link href="/customer/payments" className="text-sm font-medium text-primary hover:underline">
-              Payment history
+              {t("history")}
             </Link>
           </div>
         </CardFooter>

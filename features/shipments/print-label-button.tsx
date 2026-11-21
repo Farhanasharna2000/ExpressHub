@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { errorMessage } from "@/lib/client/api";
+import { useTranslations } from "next-intl";
 
 // The API authenticates with an in-memory bearer token, so the PDF is fetched here and
 // shown from a blob URL. The tab is opened during the click so popup blockers allow it.
 export function PrintLabelButton({ shipmentId, trackingNumber }: { shipmentId: string; trackingNumber: string }) {
+  const t = useTranslations("label");
   const { store } = useSession();
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
@@ -33,7 +35,7 @@ export function PrintLabelButton({ shipmentId, trackingNumber }: { shipmentId: s
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (error) {
       tab?.close();
-      toast.error("Could not open the label", errorMessage(error));
+      toast.error(t("openFailed"), errorMessage(error));
     } finally {
       pending.current = false;
       setBusy(false);
@@ -41,9 +43,9 @@ export function PrintLabelButton({ shipmentId, trackingNumber }: { shipmentId: s
   }
 
   return (
-    <Button type="button" variant="outline" onClick={() => void open()} disabled={busy} aria-label={`Print shipping label for ${trackingNumber}`}>
+    <Button type="button" variant="outline" onClick={() => void open()} disabled={busy} aria-label={t("aria", { trackingNumber })}>
       {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Printer aria-hidden="true" />}
-      Print label
+      {t("print")}
     </Button>
   );
 }

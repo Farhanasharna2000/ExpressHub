@@ -10,7 +10,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { ErrorNotice,  StatusBadge } from "@/components/ui/primitives";
 import { errorMessage } from "@/lib/client/api";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
-import { statusLabel, money } from "@/features/shipments/contracts";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
 import type { DashboardStats } from "./contracts";
 import { OpsBriefCard } from "@/features/ai/ops-brief";
 import { useCountUpOnce } from "@/lib/gsap";
@@ -19,7 +19,12 @@ import { FailedNotificationsCard } from "./failed-notifications";
 import { DispatchQueueCard } from "./dispatch-suggestions";
 import type { ShipmentStatus, PaymentStatus } from "@/types/api";
 
+import { useTranslations } from "next-intl";
 export function AdminDashboard() {
+  const t = useTranslations("admin.dashboard");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
   const { data, loading, refreshing, error, reload } = useResource<DashboardStats>("/admin/dashboard-stats");
   const delay = useRetryDelay(error);
 
@@ -38,18 +43,18 @@ export function AdminDashboard() {
     <div className="page-stack" ref={scope}>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Enterprise Operations</p>
-          <h1>Operations Overview</h1>
-          <p>Real-time telemetry across shipments, logistics fleet, customer accounts, and revenue.</p>
+          <p className="eyebrow">{t("enterpriseOperations")}</p>
+          <h1>{t("operationsOverview")}</h1>
+          <p>{t("realTimeTelemetryAcross")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" disabled={loading || refreshing || delay > 0} onClick={reload}>
             <RefreshCw className={`size-4 mr-2 ${loading || refreshing ? "animate-spin" : ""}`} />
-            Refresh
+            {t("refresh")}
           </Button>
           <Button asChild>
             <Link href="/admin/shipments">
-              <Package className="size-4 mr-2" /> Manage Shipments
+              <Package className="size-4 mr-2" /> {t("manageShipments")}
             </Link>
           </Button>
         </div>
@@ -57,10 +62,10 @@ export function AdminDashboard() {
 
       {!!error && (
         <ErrorNotice
-          title="Could not load operations stats"
+          title={t("couldNotLoadOperations")}
           action={
             <Button variant="outline" onClick={reload} disabled={delay > 0}>
-              {delay ? `Retry in ${delay}s` : "Try again"}
+              {delay ? tf("retryIn", { seconds: f.digits(delay) }) : t("tryAgain")}
             </Button>
           }
         >
@@ -69,7 +74,7 @@ export function AdminDashboard() {
       )}
 
       {refreshing && <ResourceRefresh />}
-      {loading && !stats && <ResourceSkeleton variant="dashboard" label="Calculating operations metrics…" />}
+      {loading && !stats && <ResourceSkeleton variant="dashboard" label={t("calculatingOperationsMetrics")} />}
 
       {stats && (
         <>
@@ -83,27 +88,27 @@ export function AdminDashboard() {
             <div className="space-y-3 max-w-xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#196547]/10 text-[#196547] text-xs font-bold uppercase tracking-wider">
                 <span className="size-2 rounded-full bg-[#196547] animate-pulse" />
-                Live Logistics Command Telemetry
+                {t("liveLogisticsCommandTelemetry")}
               </div>
               <h2 className="text-xl md:text-2xl font-bold text-ink">
-                Real-Time Operations & Courier Fleet Control
+                {t("realTimeOperationsCourier")}
               </h2>
               <p className="text-sm text-text-muted leading-relaxed">
-                Supervise end-to-end parcel dispatches, track active transit volumes, audit status overrides, and enforce strict optimistic concurrency across your logistics hubs.
+                {t("superviseEndToEnd")}
               </p>
               <div className="flex flex-wrap gap-3 pt-1 text-xs">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-line font-semibold text-ink">
-                  <ShieldCheck className="size-3.5 text-primary" /> Immutable Audit Ledger
+                  <ShieldCheck className="size-3.5 text-primary" /> {t("immutableLedger")}
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-line font-semibold text-ink">
-                  <Truck className="size-3.5 text-emerald-600" /> Active Couriers: {stats.users.byRole.COURIER ?? 0}
+                  <Truck className="size-3.5 text-emerald-600" /> {t("activeCouriersCount", { count: stats.users.byRole.COURIER ?? 0 })}
                 </span>
               </div>
             </div>
             <div className="relative shrink-0 w-full md:w-72 h-44 rounded-xl overflow-hidden border border-line/80 shadow-md bg-white">
               <Image
                 src="/admin-center.jpg"
-                alt="3D logistics command center illustration"
+                alt={t("n3dLogisticsCommandCenter")}
                 fill
                 sizes="(max-width: 768px) 100vw, 288px"
                 className="object-cover object-top transition-transform duration-500 hover:scale-105"
@@ -123,14 +128,14 @@ export function AdminDashboard() {
               <Card className="h-full">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                    <span>Total Shipments</span>
+                    <span>{t("totalShipments")}</span>
                     <Package className="size-4 text-primary" />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold" data-count-up>{stats.shipments.total}</div>
+                  <div className="text-3xl font-bold" data-count-up>{f.digits(stats.shipments.total)}</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    <span className="font-semibold text-primary">{stats.shipments.active}</span> active in transit
+                    {t.rich("activeInTransit", { b: (chunks) => <span className="font-semibold text-primary">{chunks}</span>, count: stats.shipments.active })}
                   </p>
                 </CardContent>
               </Card>
@@ -140,14 +145,14 @@ export function AdminDashboard() {
               <Card className="h-full">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                    <span>Registered Users</span>
+                    <span>{t("registeredUsers")}</span>
                     <Users className="size-4 text-emerald-600" />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold" data-count-up>{stats.users.total}</div>
+                  <div className="text-3xl font-bold" data-count-up>{f.digits(stats.users.total)}</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    <span className="font-semibold text-emerald-700">{stats.users.active}</span> active accounts
+                    {t.rich("activeAccounts", { b: (chunks) => <span className="font-semibold text-emerald-700">{chunks}</span>, count: stats.users.active })}
                   </p>
                 </CardContent>
               </Card>
@@ -157,17 +162,17 @@ export function AdminDashboard() {
               <Card className="h-full">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                    <span>Payment Transactions</span>
+                    <span>{t("paymentTransactions")}</span>
                     <CreditCard className="size-4 text-blue-600" />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold" data-count-up>{stats.payments.total}</div>
+                  <div className="text-3xl font-bold" data-count-up>{f.digits(stats.payments.total)}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     <span className="font-semibold text-blue-600">
-                      {stats.payments.byStatus.PAID ?? 0}
+                      {f.number(stats.payments.byStatus.PAID ?? 0)}
                     </span>{" "}
-                    settled with Stripe
+                    {t("settledWithStripe")}
                   </p>
                 </CardContent>
               </Card>
@@ -177,14 +182,14 @@ export function AdminDashboard() {
               <Card className="h-full">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                    <span>Delivery Success Rate</span>
+                    <span>{t("deliverySuccessRate")}</span>
                     <TrendingUp className="size-4 text-violet-600" />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold" data-count-up>{`${deliveryRate}%`}</div>
+                  <div className="text-3xl font-bold" data-count-up>{f.digits(`${deliveryRate}%`)}</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {totalDelivered} of {stats.shipments.total} completed
+                    {t("completedOf", { done: totalDelivered, total: stats.shipments.total })}
                   </p>
                 </CardContent>
               </Card>
@@ -198,23 +203,23 @@ export function AdminDashboard() {
                 <CardTitle className="text-base flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Package className="size-4 text-primary" />
-                    Shipment Operations
+                    {t("shipmentOperations")}
                   </span>
                   <Button asChild variant="ghost" size="sm">
-                    <Link href="/admin/shipments">View All <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
+                    <Link href="/admin/shipments">{t("viewAll")} <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
                   </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm space-y-2">
                 <p className="text-muted-foreground">
-                  Review courier assignments, resolve transit exceptions, and manage parcels.
+                  {t("reviewCourierAssignmentsResolve")}
                 </p>
                 <div className="flex gap-2 pt-1 text-xs">
                   <span className="bg-muted px-2 py-1 rounded">
-                    Active: {stats.shipments.active}
+                    {t("activeCount", { count: stats.shipments.active })}
                   </span>
                   <span className="bg-muted px-2 py-1 rounded">
-                    Failed: {stats.shipments.byStatus.FAILED ?? 0}
+                    {t("failedCount", { count: stats.shipments.byStatus.FAILED ?? 0 })}
                   </span>
                 </div>
               </CardContent>
@@ -225,23 +230,23 @@ export function AdminDashboard() {
                 <CardTitle className="text-base flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Users className="size-4 text-emerald-600" />
-                    User Directory
+                    {t("userDirectory")}
                   </span>
                   <Button asChild variant="ghost" size="sm">
-                    <Link href="/admin/users">View All <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
+                    <Link href="/admin/users">{t("viewAll")} <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
                   </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm space-y-2">
                 <p className="text-muted-foreground">
-                  Manage accounts, configure courier and admin permissions, and inspect access.
+                  {t("manageAccountsConfigureCourier")}
                 </p>
                 <div className="flex gap-2 pt-1 text-xs">
                   <span className="bg-muted px-2 py-1 rounded">
-                    Couriers: {stats.users.byRole.COURIER ?? 0}
+                    {t("couriersCount", { count: stats.users.byRole.COURIER ?? 0 })}
                   </span>
                   <span className="bg-muted px-2 py-1 rounded">
-                    Admins: {stats.users.byRole.ADMIN ?? 0}
+                    {t("adminsCount", { count: stats.users.byRole.ADMIN ?? 0 })}
                   </span>
                 </div>
               </CardContent>
@@ -252,20 +257,20 @@ export function AdminDashboard() {
                 <CardTitle className="text-base flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <History className="size-4 text-violet-600" />
-                    Audit Log
+                    {t("auditLog")}
                   </span>
                   <Button asChild variant="ghost" size="sm">
-                    <Link href="/admin/audit-logs">View Logs <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
+                    <Link href="/admin/audit-logs">{t("viewLogs")} <ArrowRight className="inline size-4" aria-hidden="true" /></Link>
                   </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm space-y-2">
                 <p className="text-muted-foreground">
-                  Immutable security records of administrative actions, status updates, and deletions.
+                  {t("immutableSecurityRecordsOf")}
                 </p>
                 <div className="pt-1">
                   <span className="text-xs text-muted-foreground font-mono">
-                    System-wide activity ledger
+                    {t("systemWideActivityLedger")}
                   </span>
                 </div>
               </CardContent>
@@ -279,7 +284,7 @@ export function AdminDashboard() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Truck className="size-4 text-primary" />
-                  Shipment Pipeline by Status
+                  {t("shipmentPipelineByStatus")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -298,12 +303,13 @@ export function AdminDashboard() {
                   ).map((st) => (
                     <div
                       key={st}
-                      className="p-3 rounded-lg border bg-muted/20 flex flex-col justify-between"
+                      className="min-w-0 p-3 rounded-lg border bg-muted/20 flex flex-col justify-between"
                     >
-                      <StatusBadge status={st} />
+                      {/* Longer Bangla labels wrap inside the card instead of spilling into the next one. */}
+                      <StatusBadge status={st} className="h-auto max-w-full whitespace-normal text-left leading-tight" />
                       <div className="mt-3">
                         <span className="text-2xl font-bold">
-                          {stats.shipments.byStatus[st] ?? 0}
+                          {f.number(stats.shipments.byStatus[st] ?? 0)}
                         </span>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {statusLabel(st)}
@@ -322,37 +328,37 @@ export function AdminDashboard() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <ShieldCheck className="size-4 text-emerald-600" />
-                    User Directory by Role
+                    {t("userDirectoryByRole")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="p-3 rounded-lg border bg-muted/20">
                       <span className="text-xs text-muted-foreground uppercase font-medium">
-                        Customers
+                        {t("customers")}
                       </span>
                       <p className="text-2xl font-bold mt-1 text-primary">
-                        {stats.users.byRole.CUSTOMER ?? 0}
+                        {f.number(stats.users.byRole.CUSTOMER ?? 0)}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">End users</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t("endUsers")}</p>
                     </div>
                     <div className="p-3 rounded-lg border bg-muted/20">
                       <span className="text-xs text-muted-foreground uppercase font-medium">
-                        Couriers
+                        {t("couriers")}
                       </span>
                       <p className="text-2xl font-bold mt-1 text-emerald-600">
-                        {stats.users.byRole.COURIER ?? 0}
+                        {f.number(stats.users.byRole.COURIER ?? 0)}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Delivery fleet</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t("deliveryFleet")}</p>
                     </div>
                     <div className="p-3 rounded-lg border bg-muted/20">
                       <span className="text-xs text-muted-foreground uppercase font-medium">
-                        Admins
+                        {t("admins")}
                       </span>
                       <p className="text-2xl font-bold mt-1 text-violet-600">
-                        {stats.users.byRole.ADMIN ?? 0}
+                        {f.number(stats.users.byRole.ADMIN ?? 0)}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">System operators</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t("systemOperators")}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -363,7 +369,7 @@ export function AdminDashboard() {
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <CreditCard className="size-4 text-blue-600" />
-                    Stripe Payment Settlements
+                    {t("stripePaymentSettlements")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -377,18 +383,18 @@ export function AdminDashboard() {
                           <div className="flex items-center gap-2">
                             <StatusBadge status={item.status} />
                             <span className="text-xs text-muted-foreground">
-                              ({item.count} {item.count === 1 ? "transaction" : "transactions"})
+                              {t("transactions", { count: item.count })}
                             </span>
                           </div>
                           <span className="font-semibold">
-                            {money(item.amount, item.currency)}
+                            {f.money(item.amount, item.currency)}
                           </span>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No payment settlements recorded yet.
+                      {t("noPaymentSettlementsRecorded")}
                     </p>
                   )}
                 </CardContent>

@@ -1,42 +1,46 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LogOut, X, Menu } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/primitives";
 import type { UserRole } from "@/types/api";
 import { useSession } from "@/features/auth/provider";
 import { roleHome } from "@/features/auth/session";
 
-type Item = { href: string; label: string; mobileOnly?: boolean };
+type NavKey = "overview" | "myShipments" | "bookShipment" | "payments" | "developer" | "assignedShipments" | "scanParcel" | "shipments" | "users" | "analytics" | "liveCouriers" | "auditLogs" | "profile";
+type Item = { href: string; label: NavKey | "signIn" | "createAccount"; mobileOnly?: boolean };
 const navigation: Record<UserRole, Item[]> = {
   CUSTOMER: [
-    { href: "/customer", label: "Overview" },
-    { href: "/customer/shipments", label: "My shipments" },
-    { href: "/customer/shipments/new", label: "Book a shipment" },
-    { href: "/customer/payments", label: "Payments" },
-    { href: "/customer/developer", label: "Developer" },
+    { href: "/customer", label: "overview" },
+    { href: "/customer/shipments", label: "myShipments" },
+    { href: "/customer/shipments/new", label: "bookShipment" },
+    { href: "/customer/payments", label: "payments" },
+    { href: "/customer/developer", label: "developer" },
   ],
   COURIER: [
-    { href: "/courier", label: "Overview" },
-    { href: "/courier/shipments", label: "Assigned shipments" },
-    { href: "/courier/scan", label: "Scan parcel" },
+    { href: "/courier", label: "overview" },
+    { href: "/courier/shipments", label: "assignedShipments" },
+    { href: "/courier/scan", label: "scanParcel" },
   ],
   ADMIN: [
-    { href: "/admin", label: "Overview" },
-    { href: "/admin/shipments", label: "Shipments" },
-    { href: "/admin/users", label: "Users" },
-    { href: "/admin/analytics", label: "Analytics" },
-    { href: "/admin/couriers/live", label: "Live couriers" },
-    { href: "/admin/audit-logs", label: "Audit logs" },
+    { href: "/admin", label: "overview" },
+    { href: "/admin/shipments", label: "shipments" },
+    { href: "/admin/users", label: "users" },
+    { href: "/admin/analytics", label: "analytics" },
+    { href: "/admin/couriers/live", label: "liveCouriers" },
+    { href: "/admin/audit-logs", label: "auditLogs" },
   ],
 };
 
 export function Navigation({ role }: { role?: UserRole }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations("nav");
+  const ts = useTranslations("shell");
   const { user, status, store } = useSession();
   const [openAt, setOpenAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -74,33 +78,33 @@ export function Navigation({ role }: { role?: UserRole }) {
 
   let items: Item[] = [];
   if (role) {
-    items = [...navigation[role], { href: "/profile", label: "Profile" }];
+    items = [...navigation[role], { href: "/profile", label: "profile" }];
   } else if (status === "authenticated" && user) {
     items = [
-      ...(user.role === "CUSTOMER"
+      ...((user.role === "CUSTOMER"
         ? [
-            { href: "/customer/shipments", label: "My shipments" },
-            { href: "/customer/shipments/new", label: "Book a shipment" },
-            { href: "/customer/payments", label: "Payments" },
-            { href: "/customer/developer", label: "Developer" },
+            { href: "/customer/shipments", label: "myShipments" },
+            { href: "/customer/shipments/new", label: "bookShipment" },
+            { href: "/customer/payments", label: "payments" },
+            { href: "/customer/developer", label: "developer" },
           ]
         : user.role === "COURIER"
         ? [
-            { href: "/courier/shipments", label: "Assigned shipments" },
-            { href: "/courier/scan", label: "Scan parcel" },
+            { href: "/courier/shipments", label: "assignedShipments" },
+            { href: "/courier/scan", label: "scanParcel" },
           ]
         : [
-            { href: "/admin/shipments", label: "Shipments" },
-            { href: "/admin/users", label: "Users" },
-            { href: "/admin/analytics", label: "Analytics" },
-            { href: "/admin/couriers/live", label: "Live couriers" },
-            { href: "/admin/audit-logs", label: "Audit logs" },
-          ]),
+            { href: "/admin/shipments", label: "shipments" },
+            { href: "/admin/users", label: "users" },
+            { href: "/admin/analytics", label: "analytics" },
+            { href: "/admin/couriers/live", label: "liveCouriers" },
+            { href: "/admin/audit-logs", label: "auditLogs" },
+          ]) as Item[]),
     ];
   } else if (status !== "loading") {
     items = [
-      { href: "/login", label: "Sign in", mobileOnly: true },
-      { href: "/register", label: "Create account", mobileOnly: true },
+      { href: "/login", label: "signIn", mobileOnly: true },
+      { href: "/register", label: "createAccount", mobileOnly: true },
     ];
   }
 
@@ -124,7 +128,7 @@ export function Navigation({ role }: { role?: UserRole }) {
         variant="secondary"
         className="menu-toggle"
         aria-expanded={open}
-        aria-label={open ? "Close menu" : "Open menu"}
+        aria-label={open ? t("closeMenu") : t("openMenu")}
         aria-controls="primary-navigation"
         onClick={() => setOpenAt(open ? null : pathname)}
       >
@@ -134,7 +138,7 @@ export function Navigation({ role }: { role?: UserRole }) {
         id="primary-navigation"
         className={open ? "nav-links is-open" : "nav-links"}
         aria-label={
-          activeRole ? `${activeRole.toLowerCase()} navigation` : "Main navigation"
+          activeRole ? t(`roleNavigation.${activeRole}`) : t("mainNavigation")
         }
         onKeyDown={(event) => {
           if (event.key === "Escape") {
@@ -153,7 +157,7 @@ export function Navigation({ role }: { role?: UserRole }) {
             aria-current={active === item.href ? "page" : undefined}
             onClick={() => setOpenAt(null)}
           >
-            {item.label}
+            {item.label === "signIn" || item.label === "createAccount" ? ts(item.label) : t(item.label)}
           </Link>
         ))}
 
@@ -164,14 +168,14 @@ export function Navigation({ role }: { role?: UserRole }) {
               onClick={() => setOpenAt(null)}
               className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[var(--ink)] hover:bg-[#e5ecdf] rounded-lg transition-colors"
             >
-              Dashboard
+              {ts("dashboard")}
             </Link>
             <Link
               href="/profile"
               onClick={() => setOpenAt(null)}
               className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[var(--ink)] hover:bg-[#e5ecdf] rounded-lg transition-colors"
             >
-              Profile
+              {t("profile")}
             </Link>
             <div className="flex items-center gap-2.5 px-2 py-1 text-xs">
               <div className="size-6 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0 border border-[var(--line)]">
@@ -195,7 +199,7 @@ export function Navigation({ role }: { role?: UserRole }) {
               className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left cursor-pointer"
             >
               <LogOut className="size-3.5" />
-              <span>{busy ? "Signing out…" : "Sign out"}</span>
+              <span>{busy ? ts("signingOut") : ts("signOut")}</span>
             </button>
           </div>
         )}

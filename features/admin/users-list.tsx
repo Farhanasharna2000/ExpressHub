@@ -35,10 +35,12 @@ import { Pagination } from "@/components/ui/interactive";
 import { queryString, errorMessage } from "@/lib/client/api";
 import type { CurrentUser, UserRole } from "@/types/api";
 import { readUserQuery, type UserListResponse } from "./contracts";
-import { dateTime } from "@/features/shipments/contracts";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 
+import { useTranslations } from "next-intl";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
 function RoleBadge({ role }: { role: UserRole }) {
+  const statusLabel = useStatusLabel();
   const color =
     role === "ADMIN"
       ? "bg-violet-50 text-violet-800 border-violet-200"
@@ -48,27 +50,32 @@ function RoleBadge({ role }: { role: UserRole }) {
 
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${color}`}>
-      {role}
+      {statusLabel(role)}
     </span>
   );
 }
 
 function StatusIndicator({ active }: { active: boolean }) {
+  const t = useTranslations("admin.users");
   return active ? (
     <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-      <UserCheck className="size-3" /> Active
+      <UserCheck className="size-3" /> {t("active")}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md border">
-      <UserX className="size-3" /> Inactive
+      <UserX className="size-3" /> {t("inactive")}
     </span>
   );
 }
 
-const columns: Column<CurrentUser>[] = [
+
+type ColumnT = ReturnType<typeof useTranslations<"admin.users">>;
+type Format = ReturnType<typeof useFormat>;
+
+const buildColumns = (t: ColumnT, f: Format): Column<CurrentUser>[] => [
   {
     key: "name",
-    label: "User",
+    label: t("user"),
     render: (u) => (
       <div>
         <Link
@@ -83,39 +90,39 @@ const columns: Column<CurrentUser>[] = [
   },
   {
     key: "role",
-    label: "Role",
+    label: t("role"),
     render: (u) => <RoleBadge role={u.role} />,
   },
   {
     key: "status",
-    label: "Account Status",
+    label: t("accountStatus"),
     render: (u) => <StatusIndicator active={u.isActive} />,
   },
   {
     key: "phone",
-    label: "Phone",
+    label: t("phone"),
     render: (u) => (
       <span className="text-xs text-muted-foreground">
-        {u.phone || "Not provided"}
+        {u.phone || t("notProvided")}
       </span>
     ),
   },
   {
     key: "date",
-    label: "Joined",
+    label: t("joined"),
     render: (u) => (
       <time dateTime={u.createdAt} className="text-xs text-muted-foreground">
-        {dateTime(u.createdAt)}
+        {f.dateTime(u.createdAt)}
       </time>
     ),
   },
   {
     key: "action",
-    label: "Management",
+    label: t("management"),
     render: (u) => (
       <Button asChild size="sm" variant="outline">
         <Link href={`/admin/users/${encodeURIComponent(u.id)}`}>
-          Manage <ArrowRight className="size-3 ml-1" />
+          {t("manage")} <ArrowRight className="size-3 ml-1" />
         </Link>
       </Button>
     ),
@@ -123,6 +130,11 @@ const columns: Column<CurrentUser>[] = [
 ];
 
 export function AdminUsersListView() {
+  const t = useTranslations("admin.users");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
+  const columns = buildColumns(t, f);
   const params = useSearchParams();
   const serialized = params.toString();
 
@@ -132,7 +144,7 @@ export function AdminUsersListView() {
     } catch (err) {
       return {
         value: null,
-        error: err instanceof Error ? err.message : "Invalid filter parameters",
+        error: err instanceof Error ? err.message : t("invalidFilterParameters"),
       };
     }
   }, [serialized]);
@@ -183,12 +195,12 @@ export function AdminUsersListView() {
   );
 
   const quickRolePresets = [
-    { label: "All Users", role: "", status: "", dotColor: "bg-muted-foreground" },
-    { label: "Customers", role: "CUSTOMER", status: "", dotColor: "bg-blue-500" },
-    { label: "Couriers", role: "COURIER", status: "", dotColor: "bg-emerald-500" },
-    { label: "Admins", role: "ADMIN", status: "", dotColor: "bg-violet-500" },
-    { label: "Active only", role: "", status: "true", dotColor: "bg-emerald-600" },
-    { label: "Inactive only", role: "", status: "false", dotColor: "bg-rose-500" },
+    { label: t("allUsers"), role: "", status: "", dotColor: "bg-muted-foreground" },
+    { label: t("customers"), role: "CUSTOMER", status: "", dotColor: "bg-blue-500" },
+    { label: t("couriers"), role: "COURIER", status: "", dotColor: "bg-emerald-500" },
+    { label: t("admins"), role: "ADMIN", status: "", dotColor: "bg-violet-500" },
+    { label: t("activeOnly"), role: "", status: "true", dotColor: "bg-emerald-600" },
+    { label: t("inactiveOnly"), role: "", status: "false", dotColor: "bg-rose-500" },
   ];
 
   function applyRolePreset(role: string, status: string) {
@@ -214,9 +226,9 @@ export function AdminUsersListView() {
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">User Directory</p>
-          <h1>User Management</h1>
-          <p>Inspect customer, courier, and administrator accounts across the system.</p>
+          <p className="eyebrow">{t("userDirectory")}</p>
+          <h1>{t("userManagement")}</h1>
+          <p>{t("inspectCustomerCourierAnd")}</p>
         </div>
       </div>
 
@@ -229,20 +241,20 @@ export function AdminUsersListView() {
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base font-bold text-foreground">
-                  Filter Users
+                  {t("filterUsers")}
                 </CardTitle>
                 {activeCount > 0 ? (
                   <Badge variant="secondary" className="bg-[#e5ecdf] text-[#196547] border-[#196547]/20 font-semibold text-[11px] px-2">
-                    {activeCount} {activeCount === 1 ? "filter" : "filters"} applied
+                    {tf("applied", { count: activeCount })}
                   </Badge>
                 ) : (
                   <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
-                    Live account directory
+                    {t("liveAccountDirectory")}
                   </span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Inspect customer, courier, and administrator accounts across the system.
+                {t("inspectCustomerCourierAnd")}
               </p>
             </div>
           </div>
@@ -256,7 +268,7 @@ export function AdminUsersListView() {
                 className="h-8 text-xs text-muted-foreground hover:text-destructive font-medium cursor-pointer"
               >
                 <RotateCcw className="size-3.5 mr-1" aria-hidden="true" />
-                Reset filters
+                {t("resetFilters")}
               </Button>
             )}
           </div>
@@ -266,7 +278,7 @@ export function AdminUsersListView() {
         <div className="border-b border-border/60 bg-background/50 px-5 py-2.5 sm:px-6">
           <div className="quick-filter-options">
             <span className="text-xs font-semibold text-muted-foreground mr-1 flex items-center gap-1">
-              <Layers className="size-3 text-muted-foreground" /> Role:
+              <Layers className="size-3 text-muted-foreground" /> {t("roleLabel")}
             </span>
             {quickRolePresets.map((preset) => {
               const currentRole = params.get("role") ?? "";
@@ -304,8 +316,8 @@ export function AdminUsersListView() {
             <div className="relative min-w-0">
               <Input
                 id="user-search"
-                label="Search users"
-                placeholder="Name, email, phone number..."
+                label={t("searchUsers")}
+                placeholder={t("nameEmailPhoneNumber")}
                 maxLength={100}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -320,8 +332,8 @@ export function AdminUsersListView() {
                     update("q", "", true);
                   }}
                   className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  title="Clear search"
-                  aria-label="Clear search"
+                  title={t("clearSearch")}
+                  aria-label={t("clearSearch")}
                 >
                   <X className="size-3.5" aria-hidden="true" />
                 </button>
@@ -330,25 +342,25 @@ export function AdminUsersListView() {
 
             <Select
               id="user-role"
-              label="Role"
+              label={t("role")}
               value={params.get("role") ?? ""}
               onChange={(e) => update("role", e.target.value)}
             >
-              <option value="">All roles</option>
-              <option value="CUSTOMER">Customer</option>
-              <option value="COURIER">Courier</option>
-              <option value="ADMIN">Admin</option>
+              <option value="">{t("allRoles")}</option>
+              <option value="CUSTOMER">{t("customer")}</option>
+              <option value="COURIER">{t("courier")}</option>
+              <option value="ADMIN">{t("admin")}</option>
             </Select>
 
             <Select
               id="user-status"
-              label="Account status"
+              label={t("accountStatus2")}
               value={params.get("isActive") ?? ""}
               onChange={(e) => update("isActive", e.target.value)}
             >
-              <option value="">All statuses</option>
-              <option value="true">Active only</option>
-              <option value="false">Inactive only</option>
+              <option value="">{t("allStatuses")}</option>
+              <option value="true">{t("activeOnly")}</option>
+              <option value="false">{t("inactiveOnly")}</option>
             </Select>
           </div>
 
@@ -358,7 +370,7 @@ export function AdminUsersListView() {
               <div className="sm:col-span-1">
                 <Select
                   id="user-sort-by"
-                  label="Sort by"
+                  label={t("sortBy")}
                   value={params.get("sortBy") ?? "createdAt"}
                   onChange={(e) => {
                     const nextSort = e.target.value;
@@ -374,28 +386,28 @@ export function AdminUsersListView() {
                     }
                   }}
                 >
-                  <option value="createdAt">Joined Date</option>
-                  <option value="name">Full Name</option>
-                  <option value="email">Email Address</option>
+                  <option value="createdAt">{t("joinedDate")}</option>
+                  <option value="name">{t("fullName")}</option>
+                  <option value="email">{t("emailAddress")}</option>
                 </Select>
               </div>
 
               <div className="sm:col-span-1">
                 <Select
                   id="user-sort-order"
-                  label="Display order"
+                  label={t("displayOrder")}
                   value={params.get("order") ?? ((params.get("sortBy") ?? "createdAt") === "createdAt" ? "desc" : "asc")}
                   onChange={(e) => update("order", e.target.value)}
                 >
                   {(params.get("sortBy") ?? "createdAt") === "createdAt" ? (
                     <>
-                      <option value="desc">Newest first (Recently joined)</option>
-                      <option value="asc">Oldest first (Earliest joined)</option>
+                      <option value="desc">{t("newestFirstRecentlyJoined")}</option>
+                      <option value="asc">{t("oldestFirstEarliestJoined")}</option>
                     </>
                   ) : (
                     <>
-                      <option value="asc">A to Z (Alphabetical)</option>
-                      <option value="desc">Z to A (Reverse alphabetical)</option>
+                      <option value="asc">{t("aToZAlphabetical")}</option>
+                      <option value="desc">{t("zToAReverse")}</option>
                     </>
                   )}
                 </Select>
@@ -403,7 +415,7 @@ export function AdminUsersListView() {
 
               <div className="sm:col-span-2 pb-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground mr-1 font-medium">Quick sort:</span>
+                  <span className="text-xs text-muted-foreground mr-1 font-medium">{t("quickSort")}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -416,7 +428,7 @@ export function AdminUsersListView() {
                         : "bg-background hover:bg-muted"
                     }`}
                   >
-                    Newest first
+                    {t("newestFirst")}
                   </button>
                   <button
                     type="button"
@@ -430,7 +442,7 @@ export function AdminUsersListView() {
                         : "bg-background hover:bg-muted"
                     }`}
                   >
-                    Oldest first
+                    {t("oldestFirst")}
                   </button>
                   <button
                     type="button"
@@ -444,7 +456,7 @@ export function AdminUsersListView() {
                         : "bg-background hover:bg-muted"
                     }`}
                   >
-                    Name A–Z
+                    {t("nameAZ")}
                   </button>
                 </div>
               </div>
@@ -455,12 +467,12 @@ export function AdminUsersListView() {
           {filtered && (
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/60">
               <span className="text-xs font-semibold text-muted-foreground mr-1">
-                Active filters:
+                {tf("active")}
               </span>
               {query.value?.q && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
                   <Search className="size-3 text-muted-foreground" />
-                  <span>Search: &ldquo;{query.value.q}&rdquo;</span>
+                  <span>{tf("searchChip", { value: query.value.q })}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -468,8 +480,8 @@ export function AdminUsersListView() {
                       update("q", "", true);
                     }}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove search filter"
-                    aria-label="Remove search filter"
+                    title={t("removeSearchFilter")}
+                    aria-label={t("removeSearchFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -478,13 +490,13 @@ export function AdminUsersListView() {
               {query.value?.role && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20 font-medium">
                   <User className="size-3" />
-                  <span>Role: {query.value.role}</span>
+                  <span>{t("roleChip", { value: statusLabel(query.value.role) })}</span>
                   <button
                     type="button"
                     onClick={() => update("role", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove role filter"
-                    aria-label="Remove role filter"
+                    title={t("removeRoleFilter")}
+                    aria-label={t("removeRoleFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -501,13 +513,13 @@ export function AdminUsersListView() {
                   ) : (
                     <UserX className="size-3" />
                   )}
-                  <span>Status: {query.value.isActive === "true" ? "Active" : "Inactive"}</span>
+                  <span>{tf("statusChip", { value: query.value.isActive === "true" ? t("active") : t("inactive") })}</span>
                   <button
                     type="button"
                     onClick={() => update("isActive", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove status filter"
-                    aria-label="Remove status filter"
+                    title={t("removeStatusFilter")}
+                    aria-label={t("removeStatusFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -517,13 +529,12 @@ export function AdminUsersListView() {
                 <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
                   <ArrowUpDown className="size-3 text-muted-foreground" />
                   <span>
-                    Sort: {
+                    {t("sortChip", { value:
                       (params.get("sortBy") ?? "createdAt") === "name"
-                        ? `Name (${(params.get("order") ?? "asc") === "desc" ? "Z to A" : "A to Z"})`
+                        ? t("sortName", { order: (params.get("order") ?? "asc") === "desc" ? t("zToA") : t("aToZ") })
                         : (params.get("sortBy") ?? "createdAt") === "email"
-                          ? `Email (${(params.get("order") ?? "asc") === "desc" ? "Z to A" : "A to Z"})`
-                          : (params.get("order") === "asc" ? "Oldest first" : "Newest first")
-                    }
+                          ? t("sortEmail", { order: (params.get("order") ?? "asc") === "desc" ? t("zToA") : t("aToZ") })
+                          : (params.get("order") === "asc" ? t("oldestFirst") : t("newestFirst")) })}
                   </span>
                   <button
                     type="button"
@@ -532,8 +543,8 @@ export function AdminUsersListView() {
                       update("order", "");
                     }}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Reset sorting"
-                    aria-label="Reset sorting"
+                    title={t("resetSorting")}
+                    aria-label={t("resetSorting")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -546,11 +557,11 @@ export function AdminUsersListView() {
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-muted-foreground">
             <p className="flex items-center gap-1.5">
               <Clock className="size-3.5" aria-hidden="true" />
-              Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+              {tf("timezone", { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
             </p>
             {data && (
               <span className="font-medium text-foreground">
-                Showing {data.users.length} of {data.pagination.total} registered users
+                {t("showing", { shown: data.users.length, total: data.pagination.total })}
               </span>
             )}
           </div>
@@ -559,10 +570,10 @@ export function AdminUsersListView() {
 
       {query.error && (
         <ErrorNotice
-          title="Filter error"
+          title={t("filterError")}
           action={
             <Button variant="outline" onClick={clear}>
-              Reset filters
+              {t("resetFilters")}
             </Button>
           }
         >
@@ -572,10 +583,10 @@ export function AdminUsersListView() {
 
       {!!error && (
         <ErrorNotice
-          title="Could not load users"
+          title={t("couldNotLoadUsers")}
           action={
             <Button variant="outline" onClick={reload} disabled={delay > 0}>
-              {delay ? `Retry in ${delay}s` : "Try again"}
+              {delay ? tf("retryIn", { seconds: f.digits(delay) }) : t("tryAgain")}
             </Button>
           }
         >
@@ -584,13 +595,13 @@ export function AdminUsersListView() {
       )}
 
       {refreshing && <ResourceRefresh />}
-      {loading && <ResourceSkeleton variant="list" label="Loading users directory…" />}
+      {loading && <ResourceSkeleton variant="list" label={t("loadingUsersDirectory")} />}
 
       {data && (
         <Card>
           <CardContent className="shipment-results">
             <ResponsiveTable
-              caption="User directory"
+              caption={t("userDirectory2")}
               columns={columns}
               rows={data.users}
               rowKey={(u) => u.id}
@@ -598,26 +609,26 @@ export function AdminUsersListView() {
                 <EmptyState
                   title={
                     data.pagination.total > 0
-                      ? "No users on this page"
+                      ? t("noUsersOnThis")
                       : filtered
-                        ? "No matching users"
-                        : "No users registered"
+                        ? t("noMatchingUsers")
+                        : t("noUsersRegistered")
                   }
                   description={
                     data.pagination.total > 0
-                      ? "Return to the first page to view users."
+                      ? t("returnToTheFirst")
                       : filtered
-                        ? "Try adjusting search terms or resetting filters."
-                        : "There are currently no registered users in the database."
+                        ? t("tryAdjustingSearchTerms")
+                        : t("thereAreCurrentlyNo")
                   }
                   action={
                     data.pagination.total > 0 ? (
                       <Button variant="outline" onClick={() => update("page", "1")}>
-                        Go to first page
+                        {t("goToFirstPage")}
                       </Button>
                     ) : filtered ? (
                       <Button variant="outline" onClick={clear}>
-                        Clear filters
+                        {t("clearFilters")}
                       </Button>
                     ) : undefined
                   }

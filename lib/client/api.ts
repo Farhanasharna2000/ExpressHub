@@ -1,4 +1,5 @@
 import type { ApiResponse } from "@/types/api";
+import { localize } from "@/lib/i18n/bridge";
 
 export class ApiError extends Error {
   constructor(
@@ -16,20 +17,35 @@ export class ApiError extends Error {
 export function isCancelled(error: unknown) {
   return error instanceof Error && error.name === "AbortError";
 }
+// The first machine-readable code in an API error, e.g. "RATE_LIMITED".
+function errorCode(error: ApiError) {
+  for (const issue of error.errors) {
+    if (issue && typeof issue === "object" && "code" in issue && typeof issue.code === "string") return issue.code;
+  }
+  return undefined;
+}
+
+// Known API error codes get a translated message in the active language; the server's
+// English message is the fallback for anything else.
+function serverMessage(error: ApiError) {
+  const code = errorCode(error);
+  return code ? localize(`errors.codes.${code}`, error.message) : error.message;
+}
+
 export function errorMessage(error: unknown): string {
-  if (!(error instanceof ApiError)) return "Something went wrong. Please try again.";
-  if (error.status === 0) return "Unable to connect. Check your connection and try again.";
-  if (error.status === 403) return "You do not have permission to do this. Your account access may have changed.";
-  if (error.status === 404) return "This record is unavailable. Return to the list and refresh.";
-  if (error.status === 409) return `${error.message}. Refresh the details before trying again.`;
-  if (error.status === 429) return "Too many requests. Please wait before trying again.";
+  if (!(error instanceof ApiError)) return localize("errors.generic", "Something went wrong. Please try again.");
+  if (error.status === 0) return localize("errors.offline", "Unable to connect. Check your connection and try again.");
+  if (error.status === 403) return localize("errors.forbidden", "You do not have permission to do this. Your account access may have changed.");
+  if (error.status === 404) return localize("errors.notFound", "This record is unavailable. Return to the list and refresh.");
+  if (error.status === 409) return localize("errors.conflict", `${error.message}. Refresh the details before trying again.`, { message: serverMessage(error).replace(/[.\s]+$/, "") });
+  if (error.status === 429) return localize("errors.rateLimited", "Too many requests. Please wait before trying again.");
   if (error.status >= 500) {
     const trackingId = error.incidentId || error.errorId;
     return trackingId
-      ? `The service is temporarily unavailable (Error ID: ${trackingId}). Please try again shortly.`
-      : "The service is temporarily unavailable. Please try again shortly.";
+      ? localize("errors.serverWithId", `The service is temporarily unavailable (Error ID: ${trackingId}). Please try again shortly.`, { id: trackingId })
+      : localize("errors.server", "The service is temporarily unavailable. Please try again shortly.");
   }
-  return error.message;
+  return serverMessage(error);
 }
 export function fieldErrors(error: unknown): Record<string, string> {
   if (!(error instanceof ApiError)) return {};

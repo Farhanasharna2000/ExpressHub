@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { gsap, useGSAP, whenMotionAllowed } from "@/lib/gsap";
 import { CheckCircle2, Circle, Clock3, MapPin, Package, Radio, TriangleAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FINAL_STATUSES, eventTitle, additionalUpdates, journeyProgress, journeyStepTimes, reconnectDelay, timeZoneLabel, trackingShortTime, trackingStatusLabel, trackingStatusMessage, trackingTime, type PublicTracking } from "./contracts";
+import { useTranslations } from "next-intl";
+import { useAppLocale } from "@/lib/i18n/use-format";
+import { FINAL_STATUSES, additionalUpdates, journeyProgress, journeyStepTimes, reconnectDelay, timeZoneLabel, trackingShortTime, trackingTime, type PublicTracking, type PublicTrackingEvent } from "./contracts";
 import { useViewerTimeZone } from "./use-time-zone";
 import { TrackForm } from "./track-form";
 import { CourierLocationCard } from "@/features/maps/courier-location-card";
@@ -17,6 +19,14 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
   const [tracking, setTracking] = useState(initial);
   const [connection, setConnection] = useState<Connection>(FINAL_STATUSES.has(initial.status) ? "ended" : "connecting");
   const [announcement, setAnnouncement] = useState("");
+  const t = useTranslations("tracking");
+  const locale = useAppLocale();
+  const statusText = (status: string) => t(`status.${status as (typeof JOURNEY)[number] | "FAILED" | "RETURNED" | "CANCELLED"}`);
+  const statusMessage = (status: string) => t(`message.${status as (typeof JOURNEY)[number] | "FAILED" | "RETURNED" | "CANCELLED"}`);
+  const eventText = (event: Pick<PublicTrackingEvent, "type" | "status">) =>
+    event.type === "HUB_TRANSFER" || event.type === "DELIVERY_ATTEMPT" || event.type === "CUSTOMER_CANCELLED"
+      ? t(`event.${event.type}`)
+      : event.status ? statusText(event.status) : t("event.updated");
   const lastStatus = useRef(initial.status);
   const timeZone = useViewerTimeZone();
 
@@ -48,7 +58,7 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
         setTracking(next);
         if (next.status !== lastStatus.current) {
           lastStatus.current = next.status;
-          setAnnouncement(`Status updated: ${trackingStatusLabel(next.status)}`);
+          setAnnouncement(t("statusUpdated", { status: statusText(next.status) }));
         }
       });
       source.addEventListener("end", (event) => {
@@ -92,10 +102,10 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
     <div className="page-stack" ref={scope}>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Public tracking</p>
-          <h1>Track your parcel</h1>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h1>{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Tracking number <span className="break-all font-mono text-foreground">{tracking.trackingNumber}</span>
+            {t("trackingNumber")} <span className="break-all font-mono text-foreground">{tracking.trackingNumber}</span>
           </p>
         </div>
       </div>
@@ -108,9 +118,9 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
             <div className="flex items-start gap-3">
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Package className="size-5" aria-hidden="true" /></span>
               <div className="space-y-1">
-                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Current status</p>
-                <h2 data-anim="status" className="origin-left font-semibold">{trackingStatusLabel(tracking.status)}</h2>
-                {!offPath && <p className="text-sm text-muted-foreground">{trackingStatusMessage(tracking.status)}</p>}
+                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t("currentStatus")}</p>
+                <h2 data-anim="status" className="origin-left font-semibold">{statusText(tracking.status)}</h2>
+                {!offPath && <p className="text-sm text-muted-foreground">{statusMessage(tracking.status)}</p>}
               </div>
             </div>
             <ConnectionBadge connection={connection} />
@@ -120,14 +130,14 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
           {offPath ? (
             <p className="flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
               <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              {trackingStatusMessage(tracking.status) || `This shipment is ${trackingStatusLabel(tracking.status).toLowerCase()}.`}
+              {statusMessage(tracking.status) || t("offPathFallback", { status: statusText(tracking.status) })}
             </p>
           ) : (
             <div className="relative">
               <div className="tracking-progress" aria-hidden="true">
                 <div className="tracking-progress-fill" style={{ transform: `scaleX(${progress})` }} />
               </div>
-              <ol className="relative grid grid-cols-5 gap-2" aria-label="Delivery progress">
+              <ol className="relative grid grid-cols-5 gap-2" aria-label={t("deliveryProgress")}>
                 {JOURNEY.map((step, index) => {
                   const done = index <= journeyIndex;
                   const current = index === journeyIndex;
@@ -135,11 +145,11 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
                   return (
                     <li key={step} data-anim="step" className="flex flex-col items-center gap-1 text-center text-xs" aria-current={current ? "step" : undefined}>
                       {done ? <CheckCircle2 className="size-5 rounded-full bg-card text-primary" aria-hidden="true" /> : <Circle className="size-5 rounded-full bg-card text-muted-foreground" aria-hidden="true" />}
-                      <span className={current ? "font-semibold text-ink" : done ? "font-medium" : "text-muted-foreground"}>{trackingStatusLabel(step)}</span>
+                      <span className={current ? "font-semibold text-ink" : done ? "font-medium" : "text-muted-foreground"}>{statusText(step)}</span>
                       {reachedAt ? (
-                        <time className="text-[11px] leading-tight text-muted-foreground" dateTime={reachedAt} title={trackingTime(reachedAt, timeZone)}>{trackingShortTime(reachedAt, timeZone)}</time>
+                        <time className="text-[11px] leading-tight text-muted-foreground" dateTime={reachedAt} title={trackingTime(reachedAt, timeZone, locale)}>{trackingShortTime(reachedAt, timeZone, locale)}</time>
                       ) : (
-                        <span className="sr-only">not yet</span>
+                        <span className="sr-only">{t("notYet")}</span>
                       )}
                     </li>
                   );
@@ -147,7 +157,7 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
               </ol>
             </div>
           )}
-          <p className="mt-5 text-center text-xs text-muted-foreground">Times are shown in your time zone ({timeZoneLabel(timeZone)}).</p>
+          <p className="mt-5 text-center text-xs text-muted-foreground">{t("timeZoneNote", { zone: timeZoneLabel(timeZone, new Date(), locale) })}</p>
         </CardContent>
       </Card>
 
@@ -155,13 +165,13 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
 
       {historyEvents.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-5" aria-hidden="true" />{offPath ? "Tracking history" : "Other updates"}</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-5" aria-hidden="true" />{offPath ? t("trackingHistory") : t("otherUpdates")}</CardTitle></CardHeader>
           <CardContent>
             <ol className="shipment-timeline">
               {historyEvents.map((event, index) => (
                 <li key={`${event.occurredAt}-${event.type}-${index}`}>
-                  <h3 className="text-base font-semibold">{eventTitle(event)}</h3>
-                  <time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{trackingTime(event.occurredAt, timeZone)}</time>
+                  <h3 className="text-base font-semibold">{eventText(event)}</h3>
+                  <time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{trackingTime(event.occurredAt, timeZone, locale)}</time>
                   {event.hub && <p className="flex items-center gap-1 text-sm"><MapPin className="size-3.5" aria-hidden="true" />{event.hub}</p>}
                 </li>
               ))}
@@ -171,7 +181,7 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
       )}
 
       <Card>
-        <CardHeader><CardTitle>Track another parcel</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("trackAnother")}</CardTitle></CardHeader>
         <CardContent><TrackForm /></CardContent>
       </Card>
     </div>
@@ -210,7 +220,8 @@ function useTrackingAnimations(scope: React.RefObject<HTMLDivElement | null>, jo
 }
 
 function ConnectionBadge({ connection }: { connection: Connection }) {
-  const text = { connecting: "Connecting…", live: "Live updates on", reconnecting: "Reconnecting…", ended: "Final status" }[connection];
+  const t = useTranslations("tracking.connection");
+  const text = t(connection);
   const tone = connection === "live" ? "text-primary" : connection === "reconnecting" ? "text-amber-700" : "text-muted-foreground";
   return (
     <p role="status" className={`flex items-center gap-2 text-sm font-medium ${tone}`}>

@@ -3,23 +3,26 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { StaggerIn } from "@/components/stagger-in";
 import { readHelpArticles } from "@/lib/help-articles";
+import { getLocale, getTranslations } from "next-intl/server";
 
-export const dynamic = "force-static";
+// Rendered per request: the page follows the language cookie. Articles are read from disk.
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("helpPage");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
-export const metadata: Metadata = {
-  title: "Help centre",
-  description: "Answers about booking, pricing, payments, tracking, cancellations and refunds at ExpressHub.",
-};
-
-export default function HelpCentrePage() {
+export default async function HelpCentrePage() {
+  const t = await getTranslations("helpPage");
+  const locale = await getLocale();
   const articles = readHelpArticles();
   return (
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Help centre</p>
-          <h1>How can we help?</h1>
-          <p>Guides to booking, paying, tracking and managing your shipments. You can also ask the help chat.</p>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h1>{t("title")}</h1>
+          <p>{t("intro")}</p>
+          {locale !== "en" && <p className="text-xs">{t("englishNote")}</p>}
         </div>
       </div>
       <Card>

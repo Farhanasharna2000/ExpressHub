@@ -12,7 +12,10 @@ import { useResource } from "./use-resource";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage } from "@/lib/client/api";
 import type { CurrentUser } from "@/types/api";
-import { isCourierAssignable, statusLabel, type Shipment } from "./contracts";
+import { isCourierAssignable, type Shipment } from "./contracts";
+import { useTranslations } from "next-intl";
+import { useStatusLabel } from "@/lib/i18n/use-format";
+import { translateKnownMessage } from "@/lib/i18n/bridge";
 
 interface AssignCourierControlProps {
   shipment: Shipment;
@@ -23,6 +26,8 @@ export function AssignCourierControl({
   shipment,
   onSuccess,
 }: AssignCourierControlProps) {
+  const t = useTranslations("assign");
+  const statusLabel = useStatusLabel();
   const { store } = useSession();
 
   const { data: courierData, loading: loadingCouriers, error: couriersError, reload: loadCouriers } = useResource<{ users: CurrentUser[] }>("/users?role=COURIER&isActive=true&limit=100");
@@ -62,17 +67,17 @@ export function AssignCourierControl({
       });
 
       const assignedCourier = couriers.find((c) => c.id === selectedCourierId);
-      const msg = `Courier ${assignedCourier ? `${assignedCourier.name} (${assignedCourier.email})` : selectedCourierId} assigned successfully.`;
+      const msg = t("assigned", { courier: assignedCourier ? `${assignedCourier.name} (${assignedCourier.email})` : selectedCourierId });
       setSuccessNotice(msg);
-      toast.success("Assignment Confirmed", msg);
+      toast.success(t("confirmed"), msg);
       onSuccess();
     } catch (err) {
       setMutationError(err);
       const isConflict = err instanceof ApiError && err.status === 409;
       toast.error(
-        isConflict ? "Assignment conflict detected" : "Failed to assign courier",
+        isConflict ? t("conflict") : t("failed"),
         isConflict
-          ? `${err.message}. The shipment has been refreshed with the latest data.`
+          ? t("conflictText", { message: err.message.replace(/[.\s]+$/, "") })
           : errorMessage(err)
       );
       if (isConflict) {
@@ -93,11 +98,11 @@ export function AssignCourierControl({
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             <UserCheck className="size-5" />
-            Courier Assignment
+            {t("title")}
           </span>
           {loadingCouriers && (
             <span className="text-xs text-muted-foreground flex items-center gap-1 font-normal">
-              <Loader2 className="size-3 animate-spin" /> Loading Couriers…
+              <Loader2 className="size-3 animate-spin" /> {t("loading")}
             </span>
           )}
         </CardTitle>
@@ -106,7 +111,7 @@ export function AssignCourierControl({
 
         {/* Current status display */}
         <div className="p-3 rounded-lg border bg-muted/30">
-          <span className="text-xs text-muted-foreground block">Currently Assigned:</span>
+          <span className="text-xs text-muted-foreground block">{t("current")}</span>
           {shipment.courierId ? (
             <p className="font-medium text-sm mt-0.5">
               {assignedCourierObj ? (
@@ -114,16 +119,16 @@ export function AssignCourierControl({
                   <span className="font-semibold">{assignedCourierObj.name}</span>{" "}
                   <span className="text-muted-foreground">({assignedCourierObj.email})</span>
                   {assignedCourierObj.phone && (
-                    <span className="text-muted-foreground"> • Tel: {assignedCourierObj.phone}</span>
+                    <span className="text-muted-foreground"> • {t("tel", { phone: assignedCourierObj.phone })}</span>
                   )}
                 </>
               ) : (
-                `Courier ID: ${shipment.courierId}`
+                t("courierId", { id: shipment.courierId })
               )}
             </p>
           ) : (
             <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mt-0.5">
-              Unassigned - No courier currently assigned
+              {t("unassigned")}
             </p>
           )}
         </div>
@@ -133,7 +138,7 @@ export function AssignCourierControl({
           <div className="space-y-3 pt-1">
             <div className="field">
               <label htmlFor="courier-select" className="text-sm font-medium">
-                Select Active Courier to Assign:
+                {t("select")}
               </label>
               <div className="flex gap-2 mt-1">
                 <select
@@ -143,7 +148,7 @@ export function AssignCourierControl({
                   disabled={busy || loadingCouriers}
                   className="flex-1 h-10 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value="">-- Choose active courier --</option>
+                  <option value="">{t("choose")}</option>
                   {couriers.map((courier) => (
                     <option key={courier.id} value={courier.id}>
                       {courier.name} ({courier.email}) {courier.phone ? ` - ${courier.phone}` : ""}
@@ -155,19 +160,20 @@ export function AssignCourierControl({
                   size="icon"
                   onClick={loadCouriers}
                   disabled={loadingCouriers}
-                  title="Reload courier list"
+                  title={t("reload")}
+                  aria-label={t("reload")}
                 >
                   <RefreshCw className={`size-4 ${loadingCouriers ? "animate-spin" : ""}`} />
                 </Button>
               </div>
               {form.formState.errors.courierId && (
                 <p role="alert" className="text-xs text-destructive mt-1">
-                  {form.formState.errors.courierId.message}
+                  {translateKnownMessage(form.formState.errors.courierId.message ?? "")}
                 </p>
               )}
               {!!couriersError && (
                 <p className="text-xs text-destructive mt-1">
-                  Could not load couriers: {errorMessage(couriersError)}
+                  {t("loadFailed", { message: errorMessage(couriersError) })}
                 </p>
               )}
             </div>
@@ -185,10 +191,10 @@ export function AssignCourierControl({
                 className="min-h-10"
               >
                 {busy && <Loader2 className="animate-spin size-4 mr-2" />}
-                {busy ? "Assigning…" : shipment.courierId ? "Reassign Courier" : "Assign Courier"}
+                {busy ? t("assigning") : shipment.courierId ? t("reassign") : t("assign")}
               </Button>
               {shipment.courierId && selectedCourierId === shipment.courierId && (
-                <span className="text-xs text-muted-foreground">Courier is currently assigned.</span>
+                <span className="text-xs text-muted-foreground">{t("alreadyAssigned")}</span>
               )}
             </div>
           </div>
@@ -196,8 +202,7 @@ export function AssignCourierControl({
           <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/20 p-2.5 rounded-md border">
             <AlertCircle className="size-4 text-muted-foreground shrink-0 mt-0.5" />
             <p>
-              Courier assignment is restricted to <strong>CREATED</strong> or <strong>FAILED</strong> status shipments.
-              This shipment is currently <strong>{statusLabel(shipment.status)}</strong> and cannot be reassigned during active transit or after terminal completion.
+              {t.rich("restricted", { b: (chunks) => <strong>{chunks}</strong>, status: statusLabel(shipment.status) })}
             </p>
           </div>
         )}

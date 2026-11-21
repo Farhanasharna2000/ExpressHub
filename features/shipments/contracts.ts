@@ -118,21 +118,21 @@ export function validateTransitionReadiness(
   shipment: Pick<Shipment, "status" | "paymentStatus" | "courierId"> & { deliveryProof?: DeliveryProofSummary | null },
   targetStatus: ShipmentStatus,
   role: string,
-): { eligible: boolean; reason?: string } {
+): { eligible: boolean; reason?: string; code?: "notAllowed" | "paymentRequired" | "courierRequired" | "proofRequired" } {
   const allowed = getAllowedTransitions(shipment.status, role);
   if (!allowed.includes(targetStatus)) {
-    return { eligible: false, reason: `Transition to ${statusLabel(targetStatus)} is not allowed from ${statusLabel(shipment.status)}.` };
+    return { eligible: false, code: "notAllowed", reason: `Transition to ${statusLabel(targetStatus)} is not allowed from ${statusLabel(shipment.status)}.` };
   }
   if (!["CANCELLED", "RETURNED"].includes(targetStatus)) {
     if (shipment.paymentStatus !== "PAID") {
-      return { eligible: false, reason: "Confirmed payment is required before pickup or delivery." };
+      return { eligible: false, code: "paymentRequired", reason: "Confirmed payment is required before pickup or delivery." };
     }
     if (!shipment.courierId) {
-      return { eligible: false, reason: "An active assigned Courier is required before pickup or delivery." };
+      return { eligible: false, code: "courierRequired", reason: "An active assigned Courier is required before pickup or delivery." };
     }
   }
   if (targetStatus === "DELIVERED" && !shipment.deliveryProof) {
-    return { eligible: false, reason: "The courier must capture proof of delivery first." };
+    return { eligible: false, code: "proofRequired", reason: "The courier must capture proof of delivery first." };
   }
   return { eligible: true };
 }

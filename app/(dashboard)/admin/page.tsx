@@ -1,6 +1,10 @@
+import { getTranslations } from "next-intl/server";
 import { AdminDashboard } from "@/features/admin/dashboard";
 
-export const metadata = { title: "Operations Overview" };
+export async function generateMetadata() {
+  const t = await getTranslations("titles");
+  return { title: t("admin") };
+}
 
 export default function Page() {
   return <AdminDashboard />;

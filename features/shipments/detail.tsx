@@ -18,10 +18,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { StatusBadge, ErrorNotice, EmptyState } from "@/components/ui/primitives";
 import { useSession } from "@/features/auth/provider";
 import { errorMessage, ApiError } from "@/lib/client/api";
-import { dateTime, money, statusLabel, type ShipmentDetail } from "./contracts";
+import { type ShipmentDetail } from "./contracts";
+import { useTranslations } from "next-intl";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
 import { useResource, useRetryDelay } from "./use-resource";
 
 export function ShipmentDetails({ id }: { id: string }) {
+  const t = useTranslations("shipmentDetail");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
   const { store } = useSession();
   const valid = z.cuid().safeParse(id).success;
   const { data, loading, refreshing, error, reload } = useResource<{ shipment: ShipmentDetail }>(valid ? `/shipments/${encodeURIComponent(id)}` : null);
@@ -40,29 +46,30 @@ export function ShipmentDetails({ id }: { id: string }) {
     try {
       await store.api.request(`/shipments/${encodeURIComponent(id)}/status`, { method: "PATCH", body: { status: "CANCELLED", expectedStatus: shipment.status } });
       setCancelled(true);
-      toast.success("Shipment cancelled", "The cancellation was confirmed. Cancellation does not automatically refund a payment.");
+      toast.success(t("cancelled"), t("cancelledText"));
     } catch (error) {
       setMutationError(error);
-      const msg = `${(error instanceof ApiError && error.status === 409 ? error.message : errorMessage(error)).replace(/[.\s]+$/, "")}. Review the latest shipment details before trying again. Cancellation does not automatically refund payments.${delay > 0 ? ` Try again in ${delay} seconds.` : ""}`;
-      toast.error("Cancellation could not be confirmed", msg);
+      const reason = (error instanceof ApiError && error.status === 409 ? error.message : errorMessage(error)).replace(/[.\s।]+$/, "");
+      const msg = `${t("cancelFailedText", { reason })}${delay > 0 ? ` ${t("tryAgainIn", { seconds: delay })}` : ""}`;
+      toast.error(t("cancelFailedTitle"), msg);
     }
     finally { pending.current = false; setBusy(false); setOpen(false); reload(); }
   }
 
   return <div className="page-stack">
-    <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> My shipments</Link>
-    <div className="page-heading"><div><p className="eyebrow">Every step of the journey</p><h1>Shipment details</h1><p>Your shipment information and delivery history.</p></div>{valid && <Button variant="outline" disabled={loading || refreshing || busy || delay > 0} onClick={reload}><RefreshCw />Refresh</Button>}</div>
-    {!valid && <EmptyState title="Shipment unavailable" description="This shipment link is invalid. Return to your shipment list." />}
+    <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> {t("back")}</Link>
+    <div className="page-heading"><div><p className="eyebrow">{t("eyebrow")}</p><h1>{t("title")}</h1><p>{t("intro")}</p></div>{valid && <Button variant="outline" disabled={loading || refreshing || busy || delay > 0} onClick={reload}><RefreshCw />{t("refresh")}</Button>}</div>
+    {!valid && <EmptyState title={t("unavailable")} description={t("invalidLink")} />}
     {refreshing && <ResourceRefresh />}
-    {loading && <ResourceSkeleton variant="detail" label="Loading shipment details…" />}
-    {!!error && <ErrorNotice title={error instanceof ApiError && error.status === 404 ? "Shipment unavailable" : "Could not load shipment"} action={<Button variant="outline" onClick={reload} disabled={delay > 0}>{delay ? `Retry in ${delay}s` : "Try again"}</Button>}>{errorMessage(error)}</ErrorNotice>}
+    {loading && <ResourceSkeleton variant="detail" label={t("loading")} />}
+    {!!error && <ErrorNotice title={error instanceof ApiError && error.status === 404 ? t("unavailable") : t("loadFailed")} action={<Button variant="outline" onClick={reload} disabled={delay > 0}>{delay ? tf("retryIn", { seconds: delay }) : tf("tryAgain")}</Button>}>{errorMessage(error)}</ErrorNotice>}
     {shipment && <>
       <Card>
         <CardHeader className="border-b pb-5">
           <div className="flex flex-wrap items-center gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Package className="size-5" aria-hidden="true" /></span>
             <div className="min-w-0 flex-1 basis-48">
-              <p className="text-xs font-medium text-muted-foreground">Tracking number</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("trackingNumber")}</p>
               <p className="mt-1 break-all font-mono text-sm font-semibold tracking-wide text-foreground select-all">{shipment.trackingNumber}</p>
             </div>
             {/* Wraps under the tracking number on narrow screens instead of squeezing it. */}
@@ -72,21 +79,21 @@ export function ShipmentDetails({ id }: { id: string }) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="shipment-summary"><div><span className="text-xs text-muted-foreground">Shipment status</span><div className="mt-2"><StatusBadge status={shipment.status} /></div></div><div><span className="text-xs text-muted-foreground">Payment status</span><div className="mt-2"><StatusBadge status={shipment.paymentStatus} /></div></div><div><span className="text-xs text-muted-foreground">Shipment price</span><p className="font-semibold text-xl">{money(shipment.price, shipment.currency)}</p></div><div><span className="text-xs text-muted-foreground">Created</span><p><time dateTime={shipment.createdAt}>{dateTime(shipment.createdAt)}</time></p></div></CardContent></Card>
+        <CardContent className="shipment-summary"><div><span className="text-xs text-muted-foreground">{t("shipmentStatus")}</span><div className="mt-2"><StatusBadge status={shipment.status} /></div></div><div><span className="text-xs text-muted-foreground">{t("paymentStatus")}</span><div className="mt-2"><StatusBadge status={shipment.paymentStatus} /></div></div><div><span className="text-xs text-muted-foreground">{t("price")}</span><p className="font-semibold text-xl">{f.money(shipment.price, shipment.currency)}</p></div><div><span className="text-xs text-muted-foreground">{t("created")}</span><p><time dateTime={shipment.createdAt}>{f.dateTime(shipment.createdAt)}</time></p></div></CardContent></Card>
       <div className="shipment-detail-grid">
-        <Card><CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="size-5" />Delivery route</CardTitle></CardHeader><CardContent className="space-y-6 break-words"><Address title="Pickup" name={shipment.pickupContactName} phone={shipment.pickupContactPhone} address={shipment.pickupAddress} /><Address title="Delivery" name={shipment.deliveryContactName} phone={shipment.deliveryContactPhone} address={shipment.deliveryAddress} /></CardContent></Card>
-        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Package className="size-5" />Parcel details</CardTitle></CardHeader><CardContent className="space-y-3 break-words"><p><strong>Weight:</strong> {shipment.parcelWeightKg} kg</p><p>{shipment.packageDescription || "No parcel description provided."}</p><p><strong>Preferred pickup:</strong> {shipment.pickupScheduledAt ? dateTime(shipment.pickupScheduledAt) : "Not specified"}</p>{shipment.deliveredAt && <p><strong>Delivered:</strong> {dateTime(shipment.deliveredAt)}</p>}<p className="text-xs">Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p></CardContent></Card>
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="size-5" />{t("route")}</CardTitle></CardHeader><CardContent className="space-y-6 break-words"><Address title={t("pickup")} name={shipment.pickupContactName} phone={shipment.pickupContactPhone} address={shipment.pickupAddress} /><Address title={t("delivery")} name={shipment.deliveryContactName} phone={shipment.deliveryContactPhone} address={shipment.deliveryAddress} /></CardContent></Card>
+        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Package className="size-5" />{t("parcel")}</CardTitle></CardHeader><CardContent className="space-y-3 break-words"><p><strong>{t("weight")}</strong> {t("weightValue", { weight: f.digits(shipment.parcelWeightKg) })}</p><p>{shipment.packageDescription || t("noDescription")}</p><p><strong>{t("preferredPickup")}</strong> {shipment.pickupScheduledAt ? f.dateTime(shipment.pickupScheduledAt) : t("notSpecified")}</p>{shipment.deliveredAt && <p><strong>{t("delivered")}</strong> {f.dateTime(shipment.deliveredAt)}</p>}<p className="text-xs">{t("timesShown", { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}</p></CardContent></Card>
       </div>
       <ShipmentCourierMap shipmentId={shipment.id} status={shipment.status} />
       {shipment.deliveryProof && <DeliveryProofView shipmentId={shipment.id} proof={shipment.deliveryProof} />}
-      <Card><CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-5" />Shipment history</CardTitle></CardHeader><CardContent>{events.length ? <ol className="shipment-timeline">{events.map((event, idx) => <motion.li initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.07, duration: 0.3 }} key={event.id}><div className="flex flex-wrap items-center gap-3"><h3 className="text-base">{statusLabel(event.type)}</h3>{event.toStatus && <StatusBadge status={event.toStatus} />}</div><time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{dateTime(event.occurredAt)}</time>{event.publicNote && <p className="break-words">{event.publicNote}</p>}</motion.li>)}</ol> : <EmptyState title="No history yet" description="Delivery updates will appear here as your shipment progresses." />}</CardContent></Card>
-      <Card><CardHeader><CardTitle>Next steps</CardTitle></CardHeader><CardContent className="space-y-4">
+      <Card><CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-5" />{t("history")}</CardTitle></CardHeader><CardContent>{events.length ? <ol className="shipment-timeline">{events.map((event, idx) => <motion.li initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.07, duration: 0.3 }} key={event.id}><div className="flex flex-wrap items-center gap-3"><h3 className="text-base">{statusLabel(event.type)}</h3>{event.toStatus && <StatusBadge status={event.toStatus} />}</div><time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>{f.dateTime(event.occurredAt)}</time>{event.publicNote && <p className="break-words">{event.publicNote}</p>}</motion.li>)}</ol> : <EmptyState title={t("noHistory")} description={t("noHistoryText")} />}</CardContent></Card>
+      <Card><CardHeader><CardTitle>{t("nextSteps")}</CardTitle></CardHeader><CardContent className="space-y-4">
         {shipment.status === "CREATED" && (shipment.paymentStatus === "PENDING" || shipment.paymentStatus === "FAILED") && (
           <div className="p-4 rounded-xl border bg-muted/40 space-y-3">
             <div>
-              <h4 className="font-semibold text-base">Payment Required</h4>
+              <h4 className="font-semibold text-base">{t("paymentRequired")}</h4>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Pay to confirm your booking.
+                {t("paymentRequiredText")}
               </p>
             </div>
             <PayWithStripeButton
@@ -101,15 +108,15 @@ export function ShipmentDetails({ id }: { id: string }) {
           <div className="p-4 rounded-xl border border-green-600/30 bg-green-600/10 text-green-950 space-y-2">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="size-5 text-green-700" />
-              <h4 className="font-semibold text-base">Payment received</h4>
+              <h4 className="font-semibold text-base">{t("paymentReceived")}</h4>
             </div>
             <p className="text-sm text-green-800">
-              {money(shipment.price, shipment.currency)} paid.
+              {t("paidAmount", { amount: f.money(shipment.price, shipment.currency) })}
             </p>
             <div className="pt-1">
               <Button variant="outline" size="sm" asChild className="bg-white hover:bg-white/90">
                 <Link href={`/customer/payments?shipmentId=${shipment.id}`}>
-                  View payment
+                  {t("viewPayment")}
                 </Link>
               </Button>
             </div>
@@ -118,19 +125,17 @@ export function ShipmentDetails({ id }: { id: string }) {
         {shipment.status === "CREATED" ? (
           <>
             <p className="text-sm text-muted-foreground">
-              {shipment.paymentStatus === "PAID"
-                ? "You can request cancellation before pickup. An automated refund will be initiated for this paid shipment. Note that unconfirmed checkouts do not automatically refund."
-                : "You can request cancellation before pickup. An open Checkout session may prevent cancellation. Cancelling does not automatically refund a payment."}
+              {shipment.paymentStatus === "PAID" ? t("cancelPaidHint") : t("cancelHint")}
             </p>
             <Button variant="destructive" disabled={busy || delay > 0} onClick={() => setOpen(true)}>
-              Cancel shipment
+              {t("cancel")}
             </Button>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">This shipment can no longer be cancelled by a customer.</p>
+          <p className="text-sm text-muted-foreground">{t("cannotCancel")}</p>
         )}
       </CardContent></Card>
-      <Dialog open={open} onOpenChange={value => { if (!pending.current) setOpen(value); }}><DialogContent onEscapeKeyDown={event => { if (pending.current) event.preventDefault(); }} onPointerDownOutside={event => { if (pending.current) event.preventDefault(); }} showCloseButton={!busy}><DialogHeader><DialogTitle>Cancel this shipment?</DialogTitle><DialogDescription>{shipment.paymentStatus === "PAID" ? "This action cannot be undone. An automated refund will be initiated for your payment upon cancellation; unconfirmed checkout sessions do not automatically refund." : "This action cannot be undone. An open Checkout session may block cancellation. Cancelling a shipment does not automatically refund any payment."}</DialogDescription></DialogHeader><div className="flex flex-wrap justify-end gap-3"><Button variant="outline" disabled={busy} autoFocus onClick={() => setOpen(false)}>Keep shipment</Button><Button variant="destructive" disabled={busy || delay > 0} onClick={cancel}>{busy && <Loader2 className="animate-spin" />}{busy ? "Cancelling…" : "Confirm cancellation"}</Button></div></DialogContent></Dialog>
+      <Dialog open={open} onOpenChange={value => { if (!pending.current) setOpen(value); }}><DialogContent onEscapeKeyDown={event => { if (pending.current) event.preventDefault(); }} onPointerDownOutside={event => { if (pending.current) event.preventDefault(); }} showCloseButton={!busy}><DialogHeader><DialogTitle>{t("confirmTitle")}</DialogTitle><DialogDescription>{shipment.paymentStatus === "PAID" ? t("confirmPaid") : t("confirmUnpaid")}</DialogDescription></DialogHeader><div className="flex flex-wrap justify-end gap-3"><Button variant="outline" disabled={busy} autoFocus onClick={() => setOpen(false)}>{t("keep")}</Button><Button variant="destructive" disabled={busy || delay > 0} onClick={cancel}>{busy && <Loader2 className="animate-spin" />}{busy ? t("cancelling") : t("confirm")}</Button></div></DialogContent></Dialog>
     </>}
   </div>;
 }

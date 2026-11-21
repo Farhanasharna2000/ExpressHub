@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
+
 import { Pause, Play, Check, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, type ReactNode } from "react";
@@ -34,51 +37,18 @@ export function MotionFloat({
   );
 }
 
-const TRACKER_STEPS: Array<{
-  status: ShipmentStatus;
-  label: string;
-  sub: string;
-  eta: string;
-  note: string;
-}> = [
-  {
-    status: "CREATED",
-    label: "Shipment Booked",
-    sub: "Sender doorstep pickup scheduled",
-    eta: "Ready for pickup",
-    note: "Volume quote computed and parcel registered in hub queue.",
-  },
-  {
-    status: "PICKED_UP",
-    label: "Picked Up by Courier",
-    sub: "Assigned courier verified package barcode",
-    eta: "Estimated 24h",
-    note: "Courier collected parcel from sender address.",
-  },
-  {
-    status: "IN_TRANSIT",
-    label: "In Transit Across Hubs",
-    sub: "Moving along central logistics express corridor",
-    eta: "Estimated 12h",
-    note: "Processed through central distribution hub with tamper seals intact.",
-  },
-  {
-    status: "OUT_FOR_DELIVERY",
-    label: "Out for Final Delivery",
-    sub: "Courier is in recipient neighborhood",
-    eta: "Estimated 45 mins",
-    note: "Courier on final route. Recipient contact confirmed.",
-  },
-  {
-    status: "DELIVERED",
-    label: "Delivered & Verified",
-    sub: "Signed with recipient confirmation proof",
-    eta: "Completed",
-    note: "Delivered to recipient with digital proof of delivery.",
-  },
-];
+const TRACKER_STATUSES = ["CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"] as const satisfies readonly ShipmentStatus[];
 
 export function InteractiveDeliveryTracker() {
+  const t = useTranslations("tracker");
+  const f = useFormat();
+  const TRACKER_STEPS = TRACKER_STATUSES.map((status) => ({
+    status,
+    label: t(`steps.${status}.label`),
+    sub: t(`steps.${status}.sub`),
+    eta: t(`steps.${status}.eta`),
+    note: t(`steps.${status}.note`),
+  }));
   const [activeStep, setActiveStep] = useState(2);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -103,8 +73,8 @@ export function InteractiveDeliveryTracker() {
     <div className="tracker-stage-wrapper">
       <div className="tracker-header">
         <div>
-          <span className="eyebrow">Real-Time Simulation</span>
-          <h3 className="tracker-title">Interactive Journey Tracker</h3>
+          <span className="eyebrow">{t("eyebrow")}</span>
+          <h3 className="tracker-title">{t("title")}</h3>
         </div>
         <div className="tracker-controls">
           <button
@@ -117,25 +87,25 @@ export function InteractiveDeliveryTracker() {
               setIsPlaying(!isPlaying);
             }}
           >
-            {isPlaying ? <Pause className="inline size-4" aria-hidden="true" /> : <Play className="inline size-4" aria-hidden="true" />} {isPlaying ? "Pause Demo" : "Simulate Journey"}
+            {isPlaying ? <Pause className="inline size-4" aria-hidden="true" /> : <Play className="inline size-4" aria-hidden="true" />} {isPlaying ? t("pause") : t("play")}
           </button>
         </div>
       </div>
 
       <div className="tracker-meta-banner">
         <div className="tracker-meta-col">
-          <span className="tracker-meta-label">Live Status</span>
+          <span className="tracker-meta-label">{t("liveStatus")}</span>
           <div className="tracker-badge-wrap">
             <StatusBadge status={current.status} />
           </div>
         </div>
         <div className="tracker-meta-col">
-          <span className="tracker-meta-label">Estimated Delivery</span>
+          <span className="tracker-meta-label">{t("estimatedDelivery")}</span>
           <span className="tracker-meta-val">{current.eta}</span>
         </div>
         <div className="tracker-meta-col">
-          <span className="tracker-meta-label">Tracking Number</span>
-          <span className="tracker-meta-val font-mono">EH-784920-BD</span>
+          <span className="tracker-meta-label">{t("trackingNumber")}</span>
+          <span className="tracker-meta-val font-mono">{f.digits("EH-784920-BD")}</span>
         </div>
       </div>
 
@@ -207,7 +177,7 @@ export function InteractiveDeliveryTracker() {
           <div className="tracker-detail-right">
             <div className="tracker-hub-badge">
               <span className="tracker-pulse-dot" />
-              Verified Hub Milestone
+              {t("verifiedMilestone")}
             </div>
           </div>
         </motion.div>

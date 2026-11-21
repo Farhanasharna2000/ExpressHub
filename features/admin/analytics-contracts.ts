@@ -79,8 +79,8 @@ export const formatRate = (value: number | null) => (value === null ? "—" : `$
 export const formatHours = (value: number | null) => (value === null ? "—" : `${value} h`);
 
 // Short axis labels in the viewer's locale; the period string is a Bangladesh date.
-export function periodLabel(period: string, granularity: Granularity) {
+export function periodLabel(period: string, granularity: Granularity, locale?: string) {
   const date = new Date(`${period}T00:00:00Z`);
-  const label = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", timeZone: "UTC" }).format(date);
+  const label = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", timeZone: "UTC" }).format(date);
   return granularity === "week" ? `Week of ${label}` : label;
 }

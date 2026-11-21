@@ -3,6 +3,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import { Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 export interface SignaturePadHandle {
   canvas: HTMLCanvasElement | null;
@@ -17,6 +18,7 @@ interface SignaturePadProps {
 
 // Pointer events cover finger, stylus and mouse. Keyboard users type the name instead.
 export const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(function SignaturePad({ onChange, disabled, labelId }, ref) {
+  const t = useTranslations("courier");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
@@ -90,7 +92,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, SignaturePadProps>(fu
         onPointerLeave={end}
       />
       <Button type="button" variant="outline" size="sm" onClick={clear} disabled={disabled} className="min-h-11">
-        <Eraser className="size-4" aria-hidden="true" /> Clear signature
+        <Eraser className="size-4" aria-hidden="true" /> {t("clearSignature")}
       </Button>
     </div>
   );

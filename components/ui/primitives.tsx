@@ -1,4 +1,6 @@
 import { PackageOpen, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { translateKnownMessage } from "@/lib/i18n/bridge";
 import { Button as ShadcnButton } from "./button";
 import { Input as ShadcnInput } from "./input";
 import { Label } from "./label";
@@ -24,24 +26,26 @@ function descriptionIds(id: string, hint?: string, error?: string, extra?: strin
   return [extra, hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
 }
 export function Input({ id, label, hint, error, ...props }: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> } & Field) {
-  return <div className="field"><Label htmlFor={id}>{label}</Label><ShadcnInput {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])} />{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{error}</small>}</div>;
+  return <div className="field"><Label htmlFor={id}>{label}</Label><ShadcnInput {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])} />{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{translateKnownMessage(error)}</small>}</div>;
 }
 export function Select({ id, label, hint, error, children, ...props }: Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & { ref?: Ref<HTMLSelectElement> } & Field) {
-  return <div className="field"><Label htmlFor={id}>{label}</Label><NativeSelect {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])}>{children}</NativeSelect>{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{error}</small>}</div>;
+  return <div className="field"><Label htmlFor={id}>{label}</Label><NativeSelect {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])}>{children}</NativeSelect>{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{translateKnownMessage(error)}</small>}</div>;
 }
-const labels: Record<ShipmentStatus | PaymentStatus, string> = { CREATED: "Created", PICKED_UP: "Picked up", IN_TRANSIT: "In transit", OUT_FOR_DELIVERY: "Out for delivery", DELIVERED: "Delivered", FAILED: "Failed", RETURNED: "Returned", CANCELLED: "Cancelled", PENDING: "Pending", PAID: "Paid", REFUND_PENDING: "Refund pending", REFUNDED: "Refunded" };
-export function StatusBadge({ status }: { status: ShipmentStatus | PaymentStatus }) {
+export function StatusBadge({ status, className = "" }: { status: ShipmentStatus | PaymentStatus; className?: string }) {
+  const t = useTranslations("status");
   const tone = ["PAID", "DELIVERED"].includes(status) ? "success" : status === "FAILED" ? "danger" : ["PENDING", "REFUND_PENDING", "CREATED"].includes(status) ? "warning" : "neutral";
-  return <Badge variant="outline" className={`badge badge-${tone}`}>{labels[status]}</Badge>;
+  return <Badge variant="outline" className={`badge badge-${tone} ${className}`.trim()}>{t(status)}</Badge>;
 }
 export function EmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
   return <div className="empty-state"><PackageOpen className="empty-symbol mx-auto size-8" aria-hidden="true" /><h2>{title}</h2><p>{description}</p>{action}</div>;
 }
-export function ErrorNotice({ title = "Something went wrong", children, action }: { title?: string; children: ReactNode; action?: ReactNode }) {
-  return <Alert variant="destructive"><AlertTitle>{title}</AlertTitle><AlertDescription>{children}{action}</AlertDescription></Alert>;
+export function ErrorNotice({ title, children, action }: { title?: string; children: ReactNode; action?: ReactNode }) {
+  const t = useTranslations("common");
+  return <Alert variant="destructive"><AlertTitle>{title ?? t("somethingWrong")}</AlertTitle><AlertDescription>{children}{action}</AlertDescription></Alert>;
 }
-export function LoadingState({ label = "Loading your workspace…" }: { label?: string }) {
-  return <div className="loading-state" role="status" aria-live="polite"><Loader2 className="size-5 animate-spin" aria-hidden="true" /><p>{label}</p></div>;
+export function LoadingState({ label }: { label?: string }) {
+  const t = useTranslations("common");
+  return <div className="loading-state" role="status" aria-live="polite"><Loader2 className="size-5 animate-spin" aria-hidden="true" /><p>{label ?? t("loadingWorkspace")}</p></div>;
 }
 export type Column<T> = { key: string; label: string; render: (row: T) => ReactNode };
 export function ResponsiveTable<T>({ caption, columns, rows, rowKey, empty }: { caption: string; columns: Column<T>[]; rows: T[]; rowKey: (row: T) => string; empty: ReactNode }) {

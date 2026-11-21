@@ -1,6 +1,10 @@
+import { getTranslations } from "next-intl/server";
 import { AdminUserDetailView } from "@/features/admin/user-detail";
 
-export const metadata = { title: "User Details" };
+export async function generateMetadata() {
+  const t = await getTranslations("titles");
+  return { title: t("admin_users_id") };
+}
 
 export default async function Page({
   params,

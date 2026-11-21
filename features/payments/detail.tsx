@@ -22,13 +22,17 @@ import {
 } from "@/components/ui/primitives";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { errorMessage } from "@/lib/client/api";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
 import {
   dateTime,
-  money,
   type PaymentDetailResponse,
 } from "./contracts";
 
 export function PaymentDetailsView({ id }: { id: string }) {
+  const t = useTranslations("payments.detail");
+  const f = useFormat();
+  const when = (iso: string) => (f.locale === "en" ? dateTime(iso) : f.dateTime(iso));
   const isValidId = z.string().cuid().safeParse(id).success;
   const { data, loading, refreshing, error, reload } = useResource<PaymentDetailResponse>(
     isValidId ? `/payments/${encodeURIComponent(id)}` : null
@@ -57,14 +61,14 @@ export function PaymentDetailsView({ id }: { id: string }) {
   return (
     <div className="page-stack">
       <Link href="/customer/payments" className="back-link inline-flex items-center gap-1.5 text-sm font-medium hover:underline text-muted-foreground">
-        <ArrowLeft className="size-4" /> My payments
+        <ArrowLeft className="size-4" /> {t("back")}
       </Link>
 
       <div className="page-heading">
         <div>
-          <h1>Payment details</h1>
+          <h1>{t("title")}</h1>
           <p className="break-all font-mono text-xs sm:text-sm text-muted-foreground">
-            {payment?.id ?? "Loading your payment details…"}
+            {payment?.id ?? t("loading")}
           </p>
         </div>
         {isValidId && !error && payment?.status === "PENDING" && (
@@ -78,25 +82,25 @@ export function PaymentDetailsView({ id }: { id: string }) {
             className="gap-2"
           >
             <RefreshCw className={loading || refreshing ? "animate-spin size-4" : "size-4"} />
-            {loading || refreshing ? "Checking payment…" : "Refresh"}
+            {loading || refreshing ? t("checking") : t("refresh")}
           </Button>
         )}
       </div>
 
       {!isValidId && (
         <EmptyState
-          title="Invalid payment link"
-          description="Return to your payment history to find this payment."
+          title={t("invalid")}
+          description={t("invalidText")}
 
         />
       )}
 
       {refreshing && <ResourceRefresh />}
-      {loading && !payment && <ResourceSkeleton variant="detail" label="Checking your payment status. Please wait…" />}
+      {loading && !payment && <ResourceSkeleton variant="detail" label={t("checkingLabel")} />}
 
       {!!error && (
         <ErrorNotice
-          title="Could not load payment status"
+          title={t("loadFailed")}
           action={
             <Button
               variant="outline"
@@ -104,7 +108,7 @@ export function PaymentDetailsView({ id }: { id: string }) {
               disabled={delay > 0}
               className="mt-2"
             >
-              {delay > 0 ? `Retry in ${delay}s` : "Try again"}
+              {delay > 0 ? t("retryIn", { seconds: f.digits(delay) }) : t("tryAgain")}
             </Button>
           }
         >
@@ -119,13 +123,10 @@ export function PaymentDetailsView({ id }: { id: string }) {
             <Alert className="border-amber-500/30 bg-amber-500/10">
               <Clock className="size-5 text-amber-600" />
               <AlertTitle className="text-amber-800">
-                Payment pending
+                {t("pending")}
               </AlertTitle>
               <AlertDescription className="text-amber-700">
-                Waiting for payment confirmation.
-                {pollingCount < maxPolls
-                  ? " This page will update automatically when payment is confirmed."
-                  : " Confirmation is taking longer than expected. Refresh to check again."}
+                {pollingCount < maxPolls ? t("pendingAuto") : t("pendingSlow")}
               </AlertDescription>
             </Alert>
           )}
@@ -133,9 +134,9 @@ export function PaymentDetailsView({ id }: { id: string }) {
           {payment.status === "FAILED" && (
             <Alert variant="destructive">
               <AlertTriangle className="size-5" />
-              <AlertTitle>Payment Failed</AlertTitle>
+              <AlertTitle>{t("failed")}</AlertTitle>
               <AlertDescription>
-                Open your shipment to try payment again.
+                {t("failedText")}
               </AlertDescription>
             </Alert>
           )}
@@ -144,15 +145,15 @@ export function PaymentDetailsView({ id }: { id: string }) {
           <Card>
             <CardContent className="shipment-summary p-6">
               <div>
-                <span className="text-xs text-muted-foreground">Status</span>
+                <span className="text-xs text-muted-foreground">{t("status")}</span>
                 <div className="mt-2">
                   <StatusBadge status={payment.status} />
                 </div>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Total amount</span>
+                <span className="text-xs text-muted-foreground">{t("total")}</span>
                 <p className="font-bold text-2xl mt-1">
-                  {money(payment.amount, payment.currency)}
+                  {f.money(payment.amount, payment.currency)}
                 </p>
               </div>
             </CardContent>
@@ -163,18 +164,18 @@ export function PaymentDetailsView({ id }: { id: string }) {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Package className="size-4" /> Shipment
+                  <Package className="size-4" /> {t("shipment")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <span className="text-xs text-muted-foreground">Shipment ID</span>
+                  <span className="text-xs text-muted-foreground">{t("shipmentId")}</span>
                   <p className="font-mono text-sm break-all mt-1">{payment.shipmentId}</p>
                 </div>
                 <div>
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/customer/shipments/${payment.shipmentId}`}>
-                      View shipment
+                      {t("viewShipment")}
                     </Link>
                   </Button>
                 </div>
@@ -185,33 +186,33 @@ export function PaymentDetailsView({ id }: { id: string }) {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <CreditCard className="size-4" /> Payment dates
+                  <CreditCard className="size-4" /> {t("dates")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div>
-                  <span className="text-xs text-muted-foreground">Created</span>
-                  <p className="mt-0.5">{dateTime(payment.createdAt)}</p>
+                  <span className="text-xs text-muted-foreground">{t("created")}</span>
+                  <p className="mt-0.5">{when(payment.createdAt)}</p>
                 </div>
                 {payment.paidAt && (
                   <div>
-                    <span className="text-xs text-muted-foreground">Paid</span>
+                    <span className="text-xs text-muted-foreground">{t("paid")}</span>
                     <p className="mt-0.5 text-green-700 font-medium">
-                      {dateTime(payment.paidAt)}
+                      {when(payment.paidAt)}
                     </p>
                   </div>
                 )}
                 {payment.refundedAt && (
                   <div>
-                    <span className="text-xs text-muted-foreground">Refunded</span>
+                    <span className="text-xs text-muted-foreground">{t("refunded")}</span>
                     <p className="mt-0.5 text-amber-700 font-medium">
-                      {dateTime(payment.refundedAt)}
+                      {when(payment.refundedAt)}
                     </p>
                   </div>
                 )}
                 <div>
-                  <span className="text-xs text-muted-foreground">Updated</span>
-                  <p className="mt-0.5">{dateTime(payment.updatedAt)}</p>
+                  <span className="text-xs text-muted-foreground">{t("updated")}</span>
+                  <p className="mt-0.5">{when(payment.updatedAt)}</p>
                 </div>
               </CardContent>
             </Card>

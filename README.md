@@ -547,6 +547,58 @@ Test vector: secret `whsec_test_secret`, timestamp `1700000000` and body
 Without `WEBHOOK_ENCRYPTION_KEY`, endpoint creation returns `503 WEBHOOKS_UNAVAILABLE`; API keys
 still work. Generate a key with `openssl rand -base64 32`.
 
+## Bangla and English interface
+
+Every page is available in English and Bangla.
+The EN | বাংলা switch sits in the public header, on the sign-in pages and in the dashboard header.
+It stores the choice in a `locale` cookie (`en` or `bn`, one year, `SameSite=Lax`) and refreshes the page.
+There is no locale in the URL; `i18n/request.ts` reads the cookie on the server, defaults to English, and `<html lang>` follows it.
+
+- **Library:** next-intl 4.14.9 with typed keys (`types/next-intl.d.ts`), so a misspelled key is a type error.
+- **Messages:** `messages/en.json` and `messages/bn.json`, grouped by area (`shell`, `home`, `tracking`, `shipments`, `payments`, `courier`, `admin.*` and so on).
+- **Formatting:** `lib/i18n/format.ts` and the `useFormat()` hook. Bangla uses Bangla digits (০-৯), `bn-BD` month names, পূর্বাহ্ণ/অপরাহ্ণ for AM/PM, lakh grouping (১২,৩৪,৫৬৭.৫) and ৳ amounts. English output is exactly what it was before. Dashboard count-ups, chart axes and tooltips use the same formatters.
+- **Validation:** Zod's built-in messages switch with the language, and the app's own schema messages map to `known.*` keys. Messages written by the server (API errors) are shown as sent, except known error codes, which map to `errors.codes.*`.
+- **Font:** Noto Sans Bengali through `next/font/google`.
+- **Not translated:** emails, PDF shipping labels, API responses and the OpenAPI document stay in English. Help articles are written in English; Bangla readers see a note saying so.
+
+### Adding or changing text
+
+1. Add the string to `messages/en.json` and the same key to `messages/bn.json`. Use a semantic key in the area's namespace, for example `payments.detail.title`.
+2. Read it with `useTranslations("area")` in client components and non-async server components, or `await getTranslations("area")` in async server code. Use `t.rich` for text with tags and ICU plurals (`{count, plural, one {# parcel} other {# parcels}}`) for counts.
+3. Run `npm run test:misc`. It checks that both files have the same keys and placeholders, that no Bangla value is empty or a copy of the English, and runs `npm run i18n:check`, which fails on English text written straight into JSX. Text that really is the same in every language goes in `scripts/hardcoded-strings-allowlist.json`.
+
+### Glossary
+
+Use these terms so the Bangla reads the same on every screen.
+
+| English | Bangla |
+|---|---|
+| Shipment | শিপমেন্ট |
+| Parcel | পার্সেল |
+| Courier | কুরিয়ার |
+| Tracking number | ট্র্যাকিং নম্বর |
+| Pickup | পিকআপ |
+| Delivery / Delivered | ডেলিভারি / ডেলিভারি সম্পন্ন |
+| Out for delivery | ডেলিভারির পথে |
+| In transit | পরিবহনে |
+| Failed | ব্যর্থ |
+| Returned | ফেরত |
+| Cancelled | বাতিল |
+| Payment / Paid | পেমেন্ট / পরিশোধিত |
+| Refund | অর্থ ফেরত |
+| Status | অবস্থা |
+| Assign (a courier) | নির্ধারণ করা |
+| Recipient / Sender | প্রাপক / প্রেরক |
+| Proof of delivery | ডেলিভারির প্রমাণ |
+| Archive | আর্কাইভ |
+| Dashboard | ড্যাশবোর্ড |
+| Admin | অ্যাডমিন |
+| Customer | গ্রাহক |
+| Update (noun and verb) | হালনাগাদ |
+| Try again | আবার চেষ্টা করুন |
+
+Product and technical names (ExpressHub, Stripe, API, webhook, CSV, QR) stay in Latin script.
+
 ## Technology
 
 | Area | Implementation |

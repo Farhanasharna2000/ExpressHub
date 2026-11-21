@@ -18,10 +18,15 @@ import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage } from "@/lib/client/api";
 import type { CurrentUser, UserRole } from "@/types/api";
-import { dateTime } from "@/features/shipments/contracts";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 
+import { useTranslations } from "next-intl";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
 export function AdminUserDetailView({ id }: { id: string }) {
+  const t = useTranslations("admin.userDetail");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
   const router = useRouter();
   const { user: currentActor, store } = useSession();
 
@@ -48,7 +53,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
 
   // Soft delete state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const deleteForm = useForm({ mode: "onChange", resolver: zodResolver(archiveFormSchema("A deletion reason")), defaultValues: { reason: "" } });
+  const deleteForm = useForm({ mode: "onChange", resolver: zodResolver(archiveFormSchema(t("aDeletionReason"))), defaultValues: { reason: "" } });
   const deleteReasonError = deleteForm.formState.errors.reason?.message;
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<unknown>(null);
@@ -74,14 +79,14 @@ export function AdminUserDetailView({ id }: { id: string }) {
         method: "PATCH",
         body: { role: selectedRole },
       });
-      const msg = `User role successfully changed to ${selectedRole}.`;
+      const msg = t("roleChanged", { role: statusLabel(selectedRole) });
       setFeedback(msg);
-      toast.success("Role Updated", msg);
+      toast.success(t("roleUpdated"), msg);
       setRoleModalOpen(false);
       reload();
     } catch (err) {
       setRoleError(err);
-      toast.error("Role update failed", errorMessage(err));
+      toast.error(t("roleUpdateFailed"), errorMessage(err));
     } finally {
       pendingRef.current = false;
       setRoleBusy(false);
@@ -101,14 +106,14 @@ export function AdminUserDetailView({ id }: { id: string }) {
         method: "PATCH",
         body: { isActive: nextStatus },
       });
-      const msg = `Account status successfully changed to ${nextStatus ? "Active" : "Inactive"}.`;
+      const msg = t("statusChanged", { status: nextStatus ? t("active") : t("inactive") });
       setFeedback(msg);
-      toast.success("Status Updated", msg);
+      toast.success(t("statusUpdated"), msg);
       setStatusModalOpen(false);
       reload();
     } catch (err) {
       setStatusError(err);
-      toast.error("Status update failed", errorMessage(err));
+      toast.error(t("statusUpdateFailed"), errorMessage(err));
     } finally {
       pendingRef.current = false;
       setStatusBusy(false);
@@ -131,14 +136,14 @@ export function AdminUserDetailView({ id }: { id: string }) {
         body: { reason: cleanReason },
       });
       setDeletedConfirmed(true);
-      toast.success("User Account Archived", "This user has been soft-deleted and archived from active directories.");
+      toast.success(t("userAccountArchived"), t("thisUserHasBeen"));
       setDeleteModalOpen(false);
     } catch (err) {
       setDeleteError(err);
       toast.error(
         err instanceof ApiError && err.status === 409
-          ? "User conflict"
-          : "Archival failed",
+          ? t("userConflict")
+          : t("archivalFailed"),
         errorMessage(err)
       );
     } finally {
@@ -150,19 +155,19 @@ export function AdminUserDetailView({ id }: { id: string }) {
   return (
     <div className="page-stack">
       <Link href="/admin/users" className="back-link">
-        <ArrowLeft className="inline size-4" aria-hidden="true" /> Back to user directory
+        <ArrowLeft className="inline size-4" aria-hidden="true" /> {t("back")}
       </Link>
 
       <div className="page-heading">
         <div>
-          <p className="eyebrow">User Administration</p>
-          <h1>Account Profile</h1>
+          <p className="eyebrow">{t("userAdministration")}</p>
+          <h1>{t("accountProfile")}</h1>
           <p className="font-mono text-sm text-muted-foreground">{id}</p>
         </div>
         {valid && (
           <Button variant="outline" disabled={loading || refreshing || delay > 0} onClick={reload}>
             <RefreshCw className={`size-4 mr-2 ${loading || refreshing ? "animate-spin" : ""}`} />
-            Refresh
+            {t("refresh")}
           </Button>
         )}
       </div>
@@ -170,12 +175,12 @@ export function AdminUserDetailView({ id }: { id: string }) {
       {deletedConfirmed && (
         <Alert role="status" className="border-amber-600/30 bg-amber-50 text-amber-950">
           <AlertTriangle className="size-4 text-amber-700" />
-          <AlertTitle>User Account Archived</AlertTitle>
+          <AlertTitle>{t("userAccountArchived")}</AlertTitle>
           <AlertDescription>
-            This user has been soft-deleted and archived from active directories.
+            {t("thisUserHasBeen")}
             <div className="mt-3">
               <Button asChild variant="outline" size="sm">
-                <Link href="/admin/users">Return to User Directory</Link>
+                <Link href="/admin/users">{t("returnToDirectory")}</Link>
               </Button>
             </div>
           </AlertDescription>
@@ -184,29 +189,29 @@ export function AdminUserDetailView({ id }: { id: string }) {
 
       {!valid && (
         <EmptyState
-          title="Invalid user link"
-          description="The user identifier provided is invalid. Return to the directory."
+          title={t("invalidUserLink")}
+          description={t("theUserIdentifierProvided")}
           action={
             <Button asChild>
-              <Link href="/admin/users">View all users</Link>
+              <Link href="/admin/users">{t("viewAllUsers")}</Link>
             </Button>
           }
         />
       )}
 
       {refreshing && <ResourceRefresh />}
-      {loading && <ResourceSkeleton variant="detail" label="Loading user account details…" />}
+      {loading && <ResourceSkeleton variant="detail" label={t("loadingUserAccountDetails")} />}
 
       {!!error && (
         <ErrorNotice
           title={
             error instanceof ApiError && error.status === 404
-              ? "User not found"
-              : "Could not load user profile"
+              ? t("userNotFound")
+              : t("couldNotLoadUser")
           }
           action={
             <Button variant="outline" onClick={reload} disabled={delay > 0}>
-              {delay ? `Retry in ${delay}s` : "Try again"}
+              {delay ? tf("retryIn", { seconds: f.digits(delay) }) : t("tryAgain")}
             </Button>
           }
         >
@@ -221,8 +226,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
             <div className="p-3 rounded-lg border border-blue-200 bg-blue-50/70 text-blue-950 flex items-start gap-2 text-sm">
               <ShieldAlert className="size-4 text-blue-700 shrink-0 mt-0.5" />
               <div>
-                <strong>Active Session Identity:</strong> You are currently logged in as this administrator.
-                To prevent accidental lockout, administrative self-role changes, self-deactivation, and self-archival are restricted by security policy.
+                {t.rich("selfNotice", { b: (chunks) => <strong>{chunks}</strong> })}
               </div>
             </div>
           )}
@@ -233,33 +237,33 @@ export function AdminUserDetailView({ id }: { id: string }) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="size-5" />
-                  Profile Information
+                  {t("profileInformation")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <span className="text-xs text-muted-foreground">Full Name:</span>
+                  <span className="text-xs text-muted-foreground">{t("fullName")}</span>
                   <p className="font-semibold text-lg">{targetUser.name}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Email Address:</span>
+                  <span className="text-xs text-muted-foreground">{t("emailAddress")}</span>
                   <p className="font-medium text-sm flex items-center gap-1.5 mt-0.5">
                     <Mail className="size-3.5 text-muted-foreground" />
                     {targetUser.email}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Phone Number:</span>
+                  <span className="text-xs text-muted-foreground">{t("phoneNumber")}</span>
                   <p className="font-medium text-sm flex items-center gap-1.5 mt-0.5">
                     <Phone className="size-3.5 text-muted-foreground" />
-                    {targetUser.phone || "No phone number registered"}
+                    {targetUser.phone || t("noPhoneNumberRegistered")}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Registration Date:</span>
+                  <span className="text-xs text-muted-foreground">{t("registrationDate")}</span>
                   <p className="font-medium text-sm flex items-center gap-1.5 mt-0.5">
                     <Calendar className="size-3.5 text-muted-foreground" />
-                    {dateTime(targetUser.createdAt)}
+                    {f.dateTime(targetUser.createdAt)}
                   </p>
                 </div>
               </CardContent>
@@ -269,15 +273,15 @@ export function AdminUserDetailView({ id }: { id: string }) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="size-5" />
-                  Permissions & Status
+                  {t("permissionsStatus")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <span className="text-xs text-muted-foreground">Assigned Role:</span>
+                  <span className="text-xs text-muted-foreground">{t("assignedRole")}</span>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="px-2.5 py-1 rounded text-xs font-semibold border bg-primary/10 text-primary">
-                      {targetUser.role}
+                      {statusLabel(targetUser.role)}
                     </span>
                     {!isSelf && (
                       <Button
@@ -288,14 +292,14 @@ export function AdminUserDetailView({ id }: { id: string }) {
                           setRoleModalOpen(true);
                         }}
                       >
-                        Change Role
+                        {t("changeRole")}
                       </Button>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <span className="text-xs text-muted-foreground">Account State:</span>
+                  <span className="text-xs text-muted-foreground">{t("accountState")}</span>
                   <div className="flex items-center gap-2 mt-1">
                     <span
                       className={`px-2.5 py-1 rounded text-xs font-semibold border ${
@@ -304,7 +308,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {targetUser.isActive ? "Active Account" : "Inactive / Suspended"}
+                      {targetUser.isActive ? t("activeAccount") : t("inactiveSuspended")}
                     </span>
                     {!isSelf && (
                       <Button
@@ -312,7 +316,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
                         variant={targetUser.isActive ? "outline" : "default"}
                         onClick={() => setStatusModalOpen(true)}
                       >
-                        {targetUser.isActive ? "Deactivate" : "Activate"}
+                        {targetUser.isActive ? t("deactivate") : t("activate")}
                       </Button>
                     )}
                   </div>
@@ -322,7 +326,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
                 {!isSelf && (
                   <div className="pt-4 border-t space-y-2">
                     <span className="text-xs text-muted-foreground block">
-                      Account Soft Deletion
+                      {t("accountSoftDeletion")}
                     </span>
                     <Button
                       variant="destructive"
@@ -333,10 +337,10 @@ export function AdminUserDetailView({ id }: { id: string }) {
                       }}
                     >
                       <Trash2 className="size-4 mr-1.5" />
-                      Archive Account
+                      {t("archiveAccount")}
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      Soft-delete removes this user from active operations while preserving audit records.
+                      {t("softDeleteRemovesThis")}
                     </p>
                   </div>
                 )}
@@ -348,16 +352,16 @@ export function AdminUserDetailView({ id }: { id: string }) {
           <Dialog open={roleModalOpen} onOpenChange={unlessPending(setRoleModalOpen)}>
             <DialogContent showCloseButton={!roleBusy}>
               <DialogHeader>
-                <DialogTitle>Update User Role</DialogTitle>
+                <DialogTitle>{t("updateUserRole")}</DialogTitle>
                 <DialogDescription>
-                  Modify system authority and dashboard permissions for {targetUser.name}.
+                  {t("roleIntro", { name: targetUser.name })}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 py-2">
                 <div className="field">
                   <label htmlFor="select-user-role" className="text-sm font-medium">
-                    Select New Role:
+                    {t("selectRole")}
                   </label>
                   <select
                     id="select-user-role"
@@ -365,15 +369,15 @@ export function AdminUserDetailView({ id }: { id: string }) {
                     disabled={roleBusy}
                     className="w-full h-10 mt-1 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    <option value="CUSTOMER">Customer (Standard Client)</option>
-                    <option value="COURIER">Courier (Delivery Fleet)</option>
-                    <option value="ADMIN">Admin (Full System Authority)</option>
+                    <option value="CUSTOMER">{t("customerStandardClient")}</option>
+                    <option value="COURIER">{t("courierDeliveryFleet")}</option>
+                    <option value="ADMIN">{t("adminFullSystemAuthority")}</option>
                   </select>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-2">
                   <Button variant="outline" disabled={roleBusy} onClick={() => setRoleModalOpen(false)}>
-                    Cancel
+                    {t("cancel")}
                   </Button>
                   <Button
                     variant="default"
@@ -381,7 +385,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
                     onClick={() => void handleChangeRole()}
                   >
                     {roleBusy && <Loader2 className="animate-spin size-4 mr-2" />}
-                    Confirm Role Change
+                    {t("confirmRoleChange")}
                   </Button>
                 </div>
               </div>
@@ -393,18 +397,18 @@ export function AdminUserDetailView({ id }: { id: string }) {
             <DialogContent showCloseButton={!statusBusy}>
               <DialogHeader>
                 <DialogTitle>
-                  {targetUser.isActive ? "Deactivate Account" : "Activate Account"}
+                  {targetUser.isActive ? t("deactivateAccount") : t("activateAccount")}
                 </DialogTitle>
                 <DialogDescription>
                   {targetUser.isActive
-                    ? `Deactivating ${targetUser.name} will revoke their active sessions and prevent future sign-ins.`
-                    : `Activating ${targetUser.name} will restore their access to sign in and interact with ExpressHub.`}
+                    ? t("deactivateIntro", { name: targetUser.name })
+                    : t("activateIntro", { name: targetUser.name })}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="flex justify-end gap-3 pt-4">
                 <Button variant="outline" disabled={statusBusy} onClick={() => setStatusModalOpen(false)}>
-                  Cancel
+                  {t("cancel")}
                 </Button>
                 <Button
                   variant={targetUser.isActive ? "destructive" : "default"}
@@ -412,7 +416,7 @@ export function AdminUserDetailView({ id }: { id: string }) {
                   onClick={() => void handleToggleStatus()}
                 >
                   {statusBusy && <Loader2 className="animate-spin size-4 mr-2" />}
-                  {targetUser.isActive ? "Confirm Deactivation" : "Confirm Activation"}
+                  {targetUser.isActive ? t("confirmDeactivation") : t("confirmActivation")}
                 </Button>
               </div>
             </DialogContent>
@@ -422,17 +426,16 @@ export function AdminUserDetailView({ id }: { id: string }) {
           <Dialog open={deleteModalOpen} onOpenChange={unlessPending(setDeleteModalOpen)}>
             <DialogContent showCloseButton={!deleteBusy}>
               <DialogHeader>
-                <DialogTitle>Archive and Soft-Delete User</DialogTitle>
+                <DialogTitle>{t("archiveAndSoftDelete")}</DialogTitle>
                 <DialogDescription>
-                  This action archives the user account and revokes active sessions.
-                  Active shipments or unresolved payments must be settled before deletion.
+                  {t("archiveIntro")}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 py-2">
                 <div className="field">
                   <label htmlFor="delete-reason" className="text-sm font-medium">
-                    Archival Reason (Required):
+                    {t("archiveReason")}
                   </label>
                   <textarea
                     id="delete-reason"
@@ -450,11 +453,11 @@ export function AdminUserDetailView({ id }: { id: string }) {
 
                 <div className="flex justify-end gap-3 pt-2">
                   <Button variant="outline" disabled={deleteBusy} onClick={() => setDeleteModalOpen(false)}>
-                    Cancel
+                    {t("cancel")}
                   </Button>
                   <Button variant="destructive" disabled={deleteBusy} onClick={() => void handleSoftDelete()}>
                     {deleteBusy && <Loader2 className="animate-spin size-4 mr-2" />}
-                    Confirm Account Archival
+                    {t("confirmAccountArchival")}
                   </Button>
                 </div>
               </div>

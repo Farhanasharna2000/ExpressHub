@@ -32,7 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/interactive";
 import { queryString, errorMessage } from "@/lib/client/api";
-import { dateTime, localToISO, toLocalInput } from "@/features/shipments/contracts";
+import { localToISO, toLocalInput } from "@/features/shipments/contracts";
 import { useResource, useRetryDelay, type ResourceResult } from "@/features/shipments/use-resource";
 import {
   formatAuditAction,
@@ -42,7 +42,10 @@ import {
   type AuditLogList,
 } from "./contracts";
 
+import { useTranslations } from "next-intl";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
 function EntityBadge({ type }: { type: AuditEntityType }) {
+  const t = useTranslations("admin.audit");
   const color =
     type === "SHIPMENT"
       ? "bg-blue-50 text-blue-800 border-blue-200"
@@ -54,12 +57,16 @@ function EntityBadge({ type }: { type: AuditEntityType }) {
 
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${color}`}>
-      {type}
+      {t.has(`entity.${type}`) ? t(`entity.${type}` as "entity.SHIPMENT") : type}
     </span>
   );
 }
 
 export function AdminAuditLogsView() {
+  const t = useTranslations("admin.audit");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
   const params = useSearchParams();
   const serialized = params.toString();
 
@@ -69,7 +76,7 @@ export function AdminAuditLogsView() {
     } catch (err) {
       return {
         value: null,
-        error: err instanceof Error ? err.message : "Invalid filter parameters",
+        error: err instanceof Error ? err.message : t("invalidFilterParameters"),
       };
     }
   }, [serialized]);
@@ -119,23 +126,23 @@ export function AdminAuditLogsView() {
       update(key, value ? localToISO(value) : "");
       setDateError("");
     } catch (err) {
-      setDateError(err instanceof Error ? err.message : "Invalid date/time");
+      setDateError(err instanceof Error ? err.message : t("invalidDateTime"));
     }
   }
 
   const columns: Column<AuditLog>[] = [
     {
       key: "time",
-      label: "Timestamp",
+      label: t("timestamp"),
       render: (log) => (
         <time dateTime={log.createdAt} className="text-xs text-muted-foreground block">
-          {dateTime(log.createdAt)}
+          {f.dateTime(log.createdAt)}
         </time>
       ),
     },
     {
       key: "action",
-      label: "Action",
+      label: t("action"),
       render: (log) => (
         <div>
           <span className="font-semibold text-sm block">
@@ -149,7 +156,7 @@ export function AdminAuditLogsView() {
     },
     {
       key: "entity",
-      label: "Target Entity",
+      label: t("targetEntity"),
       render: (log) => (
         <div className="space-y-1">
           <EntityBadge type={log.entityType} />
@@ -177,16 +184,16 @@ export function AdminAuditLogsView() {
     },
     {
       key: "actor",
-      label: "Actor ID",
+      label: t("actorId"),
       render: (log) => (
-        <span className="text-xs font-mono text-muted-foreground" title={log.actorId ?? "System"}>
-          {log.actorId ? log.actorId.slice(0, 14) + "…" : "System (Internal)"}
+        <span className="text-xs font-mono text-muted-foreground" title={log.actorId ?? t("system")}>
+          {log.actorId ? log.actorId.slice(0, 14) + "…" : t("systemInternal")}
         </span>
       ),
     },
     {
       key: "details",
-      label: "Payload Details",
+      label: t("payloadDetails"),
       render: (log) => (
         <Button
           variant="outline"
@@ -195,7 +202,7 @@ export function AdminAuditLogsView() {
           className="text-xs h-8"
         >
           <Code2 className="size-3.5 mr-1" />
-          Inspect Details
+          {t("inspectDetails")}
         </Button>
       ),
     },
@@ -204,12 +211,12 @@ export function AdminAuditLogsView() {
   const isDateSort = (params.get("sortBy") ?? "createdAt") === "createdAt";
 
   const quickEntityPresets = [
-    { label: "All Records", value: "", dotColor: "bg-muted-foreground" },
-    { label: "Shipments", value: "SHIPMENT", dotColor: "bg-blue-500" },
-    { label: "Users", value: "USER", dotColor: "bg-emerald-500" },
-    { label: "Payments", value: "PAYMENT", dotColor: "bg-purple-500" },
-    { label: "Rates & Pricing", value: "PRICING_RULE", dotColor: "bg-amber-500" },
-    { label: "Hubs & Stations", value: "HUB", dotColor: "bg-sky-500" },
+    { label: t("allRecords"), value: "", dotColor: "bg-muted-foreground" },
+    { label: t("shipments"), value: "SHIPMENT", dotColor: "bg-blue-500" },
+    { label: t("users"), value: "USER", dotColor: "bg-emerald-500" },
+    { label: t("payments"), value: "PAYMENT", dotColor: "bg-purple-500" },
+    { label: t("ratesPricing"), value: "PRICING_RULE", dotColor: "bg-amber-500" },
+    { label: t("hubsStations"), value: "HUB", dotColor: "bg-sky-500" },
   ];
 
   const activeCount = [
@@ -239,9 +246,9 @@ export function AdminAuditLogsView() {
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Immutable Audit Trail</p>
-          <h1>Audit Logs</h1>
-          <p>Complete traceability of operational changes, role grants, delivery transitions, and soft deletions.</p>
+          <p className="eyebrow">{t("immutableAuditTrail")}</p>
+          <h1>{t("auditLogs")}</h1>
+          <p>{t("completeTraceabilityOfOperational")}</p>
         </div>
       </div>
 
@@ -254,20 +261,20 @@ export function AdminAuditLogsView() {
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base font-bold text-foreground">
-                  Filter Audit Ledger
+                  {t("filterAuditLedger")}
                 </CardTitle>
                 {activeCount > 0 ? (
                   <Badge variant="secondary" className="bg-[#e5ecdf] text-[#196547] border-[#196547]/20 font-semibold text-[11px] px-2">
-                    {activeCount} {activeCount === 1 ? "filter" : "filters"} applied
+                    {tf("applied", { count: activeCount })}
                   </Badge>
                 ) : (
                   <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
-                    Live immutable ledger
+                    {t("liveImmutableLedger")}
                   </span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Trace operational mutations, courier status changes, and access events across entities.
+                {t("traceOperationalMutationsCourier")}
               </p>
             </div>
           </div>
@@ -281,7 +288,7 @@ export function AdminAuditLogsView() {
                 className="h-8 text-xs text-muted-foreground hover:text-destructive font-medium cursor-pointer"
               >
                 <RotateCcw className="size-3.5 mr-1" aria-hidden="true" />
-                Reset filters
+                {t("resetFilters")}
               </Button>
             )}
           </div>
@@ -291,7 +298,7 @@ export function AdminAuditLogsView() {
         <div className="border-b border-border/60 bg-background/50 px-5 py-2.5 sm:px-6">
           <div className="quick-filter-options">
             <span className="text-xs font-semibold text-muted-foreground mr-1 flex items-center gap-1">
-              <Layers className="size-3 text-muted-foreground" /> Entity:
+              <Layers className="size-3 text-muted-foreground" /> {t("entityLabel")}
             </span>
             {quickEntityPresets.map((preset) => {
               const isActive = (params.get("entityType") ?? "") === preset.value;
@@ -326,8 +333,8 @@ export function AdminAuditLogsView() {
             <div className="relative min-w-0">
               <Input
                 id="audit-action-search"
-                label="Action name"
-                placeholder="Search activity (e.g. Status changed, Login)..."
+                label={t("actionName")}
+                placeholder={t("searchActivityEG")}
                 maxLength={100}
                 value={actionSearch}
                 onChange={(e) => setActionSearch(e.target.value)}
@@ -342,8 +349,8 @@ export function AdminAuditLogsView() {
                     update("action", "", true);
                   }}
                   className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  title="Clear search"
-                  aria-label="Clear search"
+                  title={t("clearSearch")}
+                  aria-label={t("clearSearch")}
                 >
                   <X className="size-3.5" aria-hidden="true" />
                 </button>
@@ -352,22 +359,22 @@ export function AdminAuditLogsView() {
 
             <Select
               id="audit-entity-type"
-              label="Category"
+              label={t("category")}
               value={params.get("entityType") ?? ""}
               onChange={(e) => update("entityType", e.target.value)}
             >
-              <option value="">All categories</option>
-              <option value="SHIPMENT">Shipment</option>
-              <option value="USER">User</option>
-              <option value="PAYMENT">Payment</option>
-              <option value="PRICING_RULE">Rates & Pricing</option>
-              <option value="HUB">Delivery Hubs</option>
+              <option value="">{t("allCategories")}</option>
+              <option value="SHIPMENT">{t("shipment")}</option>
+              <option value="USER">{t("user")}</option>
+              <option value="PAYMENT">{t("payment")}</option>
+              <option value="PRICING_RULE">{t("ratesPricing")}</option>
+              <option value="HUB">{t("deliveryHubs")}</option>
             </Select>
 
             <Input
               id="audit-entity-id"
-              label="Record or tracking ID"
-              placeholder="Enter reference or ID"
+              label={t("recordOrTrackingId")}
+              placeholder={t("enterReferenceOrId")}
               value={params.get("entityId") ?? ""}
               onChange={(e) => update("entityId", e.target.value.trim())}
             />
@@ -379,7 +386,7 @@ export function AdminAuditLogsView() {
               <div className="sm:col-span-1">
                 <Input
                   id="audit-created-from"
-                  label="Recorded from"
+                  label={t("recordedFrom")}
                   type="datetime-local"
                   value={toLocalInput(params.get("from") ?? "")}
                   onChange={(e) => dateFilter("from", e.target.value)}
@@ -389,7 +396,7 @@ export function AdminAuditLogsView() {
               <div className="sm:col-span-1">
                 <Input
                   id="audit-created-to"
-                  label="Recorded to"
+                  label={t("recordedTo")}
                   type="datetime-local"
                   value={toLocalInput(params.get("to") ?? "")}
                   onChange={(e) => dateFilter("to", e.target.value)}
@@ -398,7 +405,7 @@ export function AdminAuditLogsView() {
 
               <div className="sm:col-span-2 pb-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground mr-1 font-medium">Quick dates:</span>
+                  <span className="text-xs text-muted-foreground mr-1 font-medium">{t("quickDates")}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -408,7 +415,7 @@ export function AdminAuditLogsView() {
                     }}
                     className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                   >
-                    Today
+                    {t("today")}
                   </button>
                   <button
                     type="button"
@@ -419,7 +426,7 @@ export function AdminAuditLogsView() {
                     }}
                     className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                   >
-                    Last 7 days
+                    {t("last7Days")}
                   </button>
                   <button
                     type="button"
@@ -430,7 +437,7 @@ export function AdminAuditLogsView() {
                     }}
                     className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                   >
-                    Last 30 days
+                    {t("last30Days")}
                   </button>
                   {(params.has("from") || params.has("to")) && (
                     <button
@@ -440,7 +447,7 @@ export function AdminAuditLogsView() {
                       }}
                       className="text-xs px-2 py-1 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                     >
-                      Clear dates
+                      {t("clearDates")}
                     </button>
                   )}
                 </div>
@@ -454,7 +461,7 @@ export function AdminAuditLogsView() {
               <div className="sm:col-span-1">
                 <Select
                   id="audit-sort-by"
-                  label="Sort by"
+                  label={t("sortBy")}
                   value={params.get("sortBy") ?? "createdAt"}
                   onChange={(e) => {
                     const nextSort = e.target.value;
@@ -470,27 +477,27 @@ export function AdminAuditLogsView() {
                     }
                   }}
                 >
-                  <option value="createdAt">Recorded Date</option>
-                  <option value="action">Action Name</option>
+                  <option value="createdAt">{t("recordedDate")}</option>
+                  <option value="action">{t("actionName2")}</option>
                 </Select>
               </div>
 
               <div className="sm:col-span-1">
                 <Select
                   id="audit-sort-order"
-                  label="Display order"
+                  label={t("displayOrder")}
                   value={params.get("order") ?? (isDateSort ? "desc" : "asc")}
                   onChange={(e) => update("order", e.target.value)}
                 >
                   {isDateSort ? (
                     <>
-                      <option value="desc">Newest first (Most recent)</option>
-                      <option value="asc">Oldest first (Earliest recorded)</option>
+                      <option value="desc">{t("newestFirstMostRecent")}</option>
+                      <option value="asc">{t("oldestFirstEarliestRecorded")}</option>
                     </>
                   ) : (
                     <>
-                      <option value="asc">A to Z (Alphabetical)</option>
-                      <option value="desc">Z to A (Reverse alphabetical)</option>
+                      <option value="asc">{t("aToZAlphabetical")}</option>
+                      <option value="desc">{t("zToAReverse")}</option>
                     </>
                   )}
                 </Select>
@@ -498,7 +505,7 @@ export function AdminAuditLogsView() {
 
               <div className="sm:col-span-2 pb-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground mr-1 font-medium">Quick sort:</span>
+                  <span className="text-xs text-muted-foreground mr-1 font-medium">{t("quickSort")}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -511,7 +518,7 @@ export function AdminAuditLogsView() {
                         : "bg-background hover:bg-muted"
                     }`}
                   >
-                    Newest first
+                    {t("newestFirst")}
                   </button>
                   <button
                     type="button"
@@ -525,7 +532,7 @@ export function AdminAuditLogsView() {
                         : "bg-background hover:bg-muted"
                     }`}
                   >
-                    Oldest first
+                    {t("oldestFirst")}
                   </button>
                   <button
                     type="button"
@@ -539,7 +546,7 @@ export function AdminAuditLogsView() {
                         : "bg-background hover:bg-muted"
                     }`}
                   >
-                    Action A–Z
+                    {t("actionAZ")}
                   </button>
                 </div>
               </div>
@@ -550,12 +557,12 @@ export function AdminAuditLogsView() {
           {filtered && (
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/60">
               <span className="text-xs font-semibold text-muted-foreground mr-1">
-                Active filters:
+                {tf("active")}
               </span>
               {query.value?.action && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
                   <Search className="size-3 text-muted-foreground" />
-                  <span>Action: &ldquo;{query.value.action}&rdquo;</span>
+                  <span>{t("actionChip", { value: query.value.action })}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -563,8 +570,8 @@ export function AdminAuditLogsView() {
                       update("action", "", true);
                     }}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove action filter"
-                    aria-label="Remove action filter"
+                    title={t("removeActionFilter")}
+                    aria-label={t("removeActionFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -573,13 +580,13 @@ export function AdminAuditLogsView() {
               {query.value?.entityType && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20 font-medium">
                   <Layers className="size-3" />
-                  <span>Entity: {query.value.entityType}</span>
+                  <span>{t("entityChip", { value: t.has(`entity.${query.value.entityType}`) ? t(`entity.${query.value.entityType}` as "entity.SHIPMENT") : query.value.entityType })}</span>
                   <button
                     type="button"
                     onClick={() => update("entityType", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove entity type filter"
-                    aria-label="Remove entity type filter"
+                    title={t("removeEntityTypeFilter")}
+                    aria-label={t("removeEntityTypeFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -593,8 +600,8 @@ export function AdminAuditLogsView() {
                     type="button"
                     onClick={() => update("entityId", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove entity ID filter"
-                    aria-label="Remove entity ID filter"
+                    title={t("removeEntityIdFilter")}
+                    aria-label={t("removeEntityIdFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -603,13 +610,13 @@ export function AdminAuditLogsView() {
               {query.value?.from && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
                   <Calendar className="size-3 text-muted-foreground" />
-                  <span>From: {dateTime(query.value.from)}</span>
+                  <span>{tf("fromChip", { value: f.dateTime(query.value.from) })}</span>
                   <button
                     type="button"
                     onClick={() => update("from", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove from date filter"
-                    aria-label="Remove from date filter"
+                    title={t("removeFromDateFilter")}
+                    aria-label={t("removeFromDateFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -618,13 +625,13 @@ export function AdminAuditLogsView() {
               {query.value?.to && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
                   <Calendar className="size-3 text-muted-foreground" />
-                  <span>To: {dateTime(query.value.to)}</span>
+                  <span>{tf("toChip", { value: f.dateTime(query.value.to) })}</span>
                   <button
                     type="button"
                     onClick={() => update("to", "")}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Remove to date filter"
-                    aria-label="Remove to date filter"
+                    title={t("removeToDateFilter")}
+                    aria-label={t("removeToDateFilter")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -634,11 +641,10 @@ export function AdminAuditLogsView() {
                 <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
                   <ArrowUpDown className="size-3 text-muted-foreground" />
                   <span>
-                    Sort: {
+                    {t("sortChip", { value:
                       (params.get("sortBy") ?? "createdAt") === "action"
-                        ? `Action (${(params.get("order") ?? "asc") === "desc" ? "Z to A" : "A to Z"})`
-                        : (params.get("order") === "asc" ? "Oldest first" : "Newest first")
-                    }
+                        ? t("sortAction", { order: (params.get("order") ?? "asc") === "desc" ? t("zToA") : t("aToZ") })
+                        : (params.get("order") === "asc" ? t("oldestFirst") : t("newestFirst")) })}
                   </span>
                   <button
                     type="button"
@@ -647,8 +653,8 @@ export function AdminAuditLogsView() {
                       update("order", "");
                     }}
                     className="hover:text-destructive transition-colors ml-0.5 cursor-pointer"
-                    title="Reset sorting"
-                    aria-label="Reset sorting"
+                    title={t("resetSorting")}
+                    aria-label={t("resetSorting")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -661,11 +667,11 @@ export function AdminAuditLogsView() {
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-muted-foreground">
             <p className="flex items-center gap-1.5">
               <Clock className="size-3.5" aria-hidden="true" />
-              Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+              {tf("timezone", { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
             </p>
             {data && (
               <span className="font-medium text-foreground">
-                Showing {data.auditLogs.length} of {data.pagination.total} audit trail events
+                {t("showing", { shown: data.auditLogs.length, total: data.pagination.total })}
               </span>
             )}
           </div>
@@ -676,10 +682,10 @@ export function AdminAuditLogsView() {
 
       {query.error && (
         <ErrorNotice
-          title="Filter error"
+          title={t("filterError")}
           action={
             <Button variant="outline" onClick={clear}>
-              Reset filters
+              {t("resetFilters")}
             </Button>
           }
         >
@@ -689,10 +695,10 @@ export function AdminAuditLogsView() {
 
       {!!error && (
         <ErrorNotice
-          title="Could not load audit trail"
+          title={t("couldNotLoadAudit")}
           action={
             <Button variant="outline" onClick={reload} disabled={delay > 0}>
-              {delay ? `Retry in ${delay}s` : "Try again"}
+              {delay ? tf("retryIn", { seconds: f.digits(delay) }) : t("tryAgain")}
             </Button>
           }
         >
@@ -701,13 +707,13 @@ export function AdminAuditLogsView() {
       )}
 
       {refreshing && <ResourceRefresh />}
-      {loading && <ResourceSkeleton variant="list" label="Loading audit trail records…" />}
+      {loading && <ResourceSkeleton variant="list" label={t("loadingAuditTrailRecords")} />}
 
       {data && (
         <Card>
           <CardContent className="shipment-results">
             <ResponsiveTable
-              caption="Audit trail"
+              caption={t("auditTrail")}
               columns={columns}
               rows={data.auditLogs}
               rowKey={(log) => log.id}
@@ -715,26 +721,26 @@ export function AdminAuditLogsView() {
                 <EmptyState
                   title={
                     data.pagination.total > 0
-                      ? "No records on this page"
+                      ? t("noRecordsOnThis")
                       : filtered
-                        ? "No matching audit entries"
-                        : "No audit records found"
+                        ? t("noMatchingAuditEntries")
+                        : t("noAuditRecordsFound")
                   }
                   description={
                     data.pagination.total > 0
-                      ? "Return to the first page to view entries."
+                      ? t("returnToTheFirst")
                       : filtered
-                        ? "Try resetting the filters."
-                        : "No system events have been recorded yet."
+                        ? t("tryResettingTheFilters")
+                        : t("noSystemEventsHave")
                   }
                   action={
                     data.pagination.total > 0 ? (
                       <Button variant="outline" onClick={() => update("page", "1")}>
-                        Go to first page
+                        {t("goToFirstPage")}
                       </Button>
                     ) : filtered ? (
                       <Button variant="outline" onClick={clear}>
-                        Clear filters
+                        {t("clearFilters")}
                       </Button>
                     ) : undefined
                   }
@@ -755,7 +761,7 @@ export function AdminAuditLogsView() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="size-5" />
-              Audit Log Details
+              {t("auditLogDetails")}
             </DialogTitle>
             <DialogDescription>
               {selectedLog?.action} ({selectedLog?.entityType}: {selectedLog?.entityId})
@@ -766,25 +772,25 @@ export function AdminAuditLogsView() {
             <div className="space-y-3 py-2">
               <div className="grid grid-cols-2 gap-2 text-xs p-3 rounded-lg border bg-muted/20">
                 <div>
-                  <span className="text-muted-foreground block">Event ID:</span>
+                  <span className="text-muted-foreground block">{t("eventId")}</span>
                   <span className="font-mono">{selectedLog.id}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block">Actor ID:</span>
-                  <span className="font-mono">{selectedLog.actorId || "System"}</span>
+                  <span className="text-muted-foreground block">{t("actorId2")}</span>
+                  <span className="font-mono">{selectedLog.actorId || t("system")}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block">Recorded At:</span>
-                  <span>{dateTime(selectedLog.createdAt)}</span>
+                  <span className="text-muted-foreground block">{t("recordedAt")}</span>
+                  <span>{f.dateTime(selectedLog.createdAt)}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block">Entity Target:</span>
+                  <span className="text-muted-foreground block">{t("entityTarget")}</span>
                   <span className="font-mono">{selectedLog.entityType} ({selectedLog.entityId})</span>
                 </div>
               </div>
 
               <div>
-                <span className="text-xs font-semibold block mb-1">State Mutation Payload:</span>
+                <span className="text-xs font-semibold block mb-1">{t("stateMutationPayload")}</span>
                 <pre className="p-3 rounded-lg bg-neutral-950 text-neutral-100 font-mono text-xs overflow-x-auto max-h-80 border">
                   {JSON.stringify(selectedLog.details, null, 2)}
                 </pre>
@@ -792,7 +798,7 @@ export function AdminAuditLogsView() {
 
               <div className="flex justify-end pt-2">
                 <Button variant="outline" onClick={() => setSelectedLog(null)}>
-                  Close
+                  {t("close")}
                 </Button>
               </div>
             </div>

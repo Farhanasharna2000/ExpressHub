@@ -1,6 +1,10 @@
+import { getTranslations } from "next-intl/server";
 import { CourierShipmentDetailView } from "@/features/courier/detail";
 
-export const metadata = { title: "Delivery Details" };
+export async function generateMetadata() {
+  const t = await getTranslations("titles");
+  return { title: t("courier_shipments_id") };
+}
 
 export default async function Page({
   params,

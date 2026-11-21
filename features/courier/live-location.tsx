@@ -10,6 +10,8 @@ import { ApiError, errorMessage, isCancelled } from "@/lib/client/api";
 import { shouldSendLocation } from "@/lib/courier-location";
 import { MAX_LOCATION_ACCURACY_M } from "@/validators/courier-location";
 
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
 type SharingState = "off" | "starting" | "sharing" | "denied" | "unavailable";
 
 type LiveLocation = {
@@ -34,6 +36,7 @@ export function useLiveLocation() {
 // courier pages. It stops when the courier turns it off, leaves the courier app, the
 // permission is refused, or no delivery is out any more (checked here and by the API).
 export function LiveLocationProvider({ children }: { children: ReactNode }) {
+  const t = useTranslations("courier");
   const { store } = useSession();
   const stats = useResource<{ byStatus: Record<string, number> }>("/courier/stats");
   const canShare = (stats.data?.byStatus.OUT_FOR_DELIVERY ?? 0) > 0;
@@ -67,7 +70,7 @@ export function LiveLocationProvider({ children }: { children: ReactNode }) {
   const send = useCallback(async (position: GeolocationPosition) => {
     const { latitude, longitude, accuracy, heading, speed } = position.coords;
     if (accuracy > MAX_LOCATION_ACCURACY_M) {
-      setMessage("Waiting for a more accurate location…");
+      setMessage(t("waitingForAMore"));
       return;
     }
     const now = Date.now();
@@ -92,12 +95,12 @@ export function LiveLocationProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       if (isCancelled(error)) return;
       if (error instanceof ApiError && error.status === 409) {
-        stop("You have no deliveries out, so location sharing has stopped.");
+        stop(t("youHaveNoDeliveries"));
         void reloadStats();
         return;
       }
       // Keep watching: the next fix retries. The courier sees why nothing is updating.
-      setMessage(`Location not sent: ${errorMessage(error)}`);
+      setMessage(t("locationNotSent", { message: errorMessage(error) }));
     } finally {
       sending.current = false;
     }
@@ -106,7 +109,7 @@ export function LiveLocationProvider({ children }: { children: ReactNode }) {
   const start = useCallback(() => {
     if (!("geolocation" in navigator)) {
       setState("unavailable");
-      setMessage("This device cannot share its location.");
+      setMessage(t("thisDeviceCannotShare"));
       return;
     }
     clearWatch();
@@ -118,9 +121,9 @@ export function LiveLocationProvider({ children }: { children: ReactNode }) {
         if (error.code === error.PERMISSION_DENIED) {
           clearWatch();
           setState("denied");
-          setMessage("Location permission was refused. Allow location for this site in your browser settings, then try again.");
+          setMessage(t("locationPermissionWasRefused"));
         } else {
-          setMessage(error.code === error.TIMEOUT ? "Still looking for your location…" : "Your location is unavailable right now. We will keep trying.");
+          setMessage(error.code === error.TIMEOUT ? t("stillLookingForYour") : t("yourLocationIsUnavailable"));
         }
       },
       { enableHighAccuracy: true, maximumAge: 10_000, timeout: 30_000 },
@@ -129,7 +132,7 @@ export function LiveLocationProvider({ children }: { children: ReactNode }) {
 
   // Nothing out for delivery any more: stop instead of sending positions the API rejects.
   useEffect(() => {
-    if (!canShare && stats.data && watchId.current !== null) stop("All your deliveries are done, so location sharing has stopped.");
+    if (!canShare && stats.data && watchId.current !== null) stop(t("allYourDeliveriesAre"));
   }, [canShare, stats.data, stop]);
 
   // Leaving the courier app stops sharing.
@@ -148,40 +151,42 @@ export function LiveLocationProvider({ children }: { children: ReactNode }) {
 
 // Visible on every courier page while sharing, with a one-tap stop.
 function LiveLocationBanner() {
+  const t = useTranslations("courier");
   const { state, stop } = useLiveLocation();
   if (state !== "sharing" && state !== "starting") return null;
   return (
     <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2 text-sm">
       <span className="flex items-center gap-2 font-medium text-primary">
         {state === "starting" ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Navigation className="size-4 animate-pulse" aria-hidden="true" />}
-        {state === "starting" ? "Starting live location…" : "Sharing live location"}
+        {state === "starting" ? t("startingLiveLocation") : t("sharingLiveLocation")}
       </span>
-      <Button type="button" size="sm" variant="outline" onClick={stop}>Stop sharing</Button>
+      <Button type="button" size="sm" variant="outline" onClick={stop}>{t("stopSharing")}</Button>
     </div>
   );
 }
 
 // The opt-in control, shown on the delivery screen and dashboard while a delivery is out.
 export function LiveLocationToggle() {
+  const t = useTranslations("courier");
+  const f = useFormat();
   const { state, canShare, message, lastSentAt, start, stop } = useLiveLocation();
   if (!canShare && state === "off" && !message) return null;
   const active = state === "sharing" || state === "starting";
   return (
     <Card data-testid="live-location-toggle">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><LocateFixed className="size-5" aria-hidden="true" />Live location</CardTitle>
+        <CardTitle className="flex items-center gap-2"><LocateFixed className="size-5" aria-hidden="true" />{t("liveLocation")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <p className="text-muted-foreground">
-          While you have a delivery out, customers can follow your approximate position on their tracking page, rounded to about 100 m.
-          Only your latest position is kept, and it is removed when your deliveries are done.
+          {t("liveIntro")}
         </p>
         {active ? (
-          <Button type="button" variant="outline" onClick={stop}><MapPinOff aria-hidden="true" /> Stop sharing my location</Button>
+          <Button type="button" variant="outline" onClick={stop}><MapPinOff aria-hidden="true" /> {t("stopSharingMyLocation")}</Button>
         ) : (
-          <Button type="button" onClick={start} disabled={!canShare}><Navigation aria-hidden="true" /> Share my live location</Button>
+          <Button type="button" onClick={start} disabled={!canShare}><Navigation aria-hidden="true" /> {t("shareMyLiveLocation")}</Button>
         )}
-        {state === "sharing" && lastSentAt && <p className="text-xs text-muted-foreground">Last sent at {new Date(lastSentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}.</p>}
+        {state === "sharing" && lastSentAt && <p className="text-xs text-muted-foreground">{t("lastSentAt", { time: f.digits(new Date(lastSentAt).toLocaleTimeString(f.locale === "bn" ? "bn-BD" : [], { hour: "2-digit", minute: "2-digit", second: "2-digit" })) })}</p>}
         {message && <p role="alert" className={state === "denied" || state === "unavailable" ? "text-destructive" : "text-amber-800"}>{message}</p>}
       </CardContent>
     </Card>

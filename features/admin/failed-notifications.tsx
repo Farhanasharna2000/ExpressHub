@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/components/ui/toast";
 import { errorMessage } from "@/lib/client/api";
 import { useSession } from "@/features/auth/provider";
-import { dateTime } from "@/features/shipments/contracts";
+import { useFormat } from "@/lib/i18n/use-format";
 import { useResource } from "@/features/shipments/use-resource";
 
+import { useTranslations } from "next-intl";
 export interface FailedNotification {
   id: string;
   type: string;
@@ -27,6 +28,9 @@ export function notificationLabel(type: string) {
 
 // Shown only when some emails have used up their retries.
 export function FailedNotificationsCard() {
+  const t = useTranslations("admin.notifications");
+  const f = useFormat();
+  const kind = (type: string) => { const key = `type.${type}` as Parameters<typeof t>[0]; return t.has(key) ? t(key) : notificationLabel(type); };
   const { store } = useSession();
   const { data } = useResource<{ notifications: FailedNotification[]; pagination: { total: number } }>("/admin/notifications?limit=5");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -53,22 +57,22 @@ export function FailedNotificationsCard() {
   const dismiss = (id: string) => act(
     `dismiss:${id}`,
     () => store.api.request(`/admin/notifications/${encodeURIComponent(id)}/dismiss`, { method: "POST" }),
-    ["Email dismissed", "It will not be sent."],
-    "Could not dismiss email",
+    [t("emailDismissed"), t("itWillNotBe")],
+    t("couldNotDismissEmail"),
   );
 
   const dismissAll = () => act(
     "dismiss-all",
     () => store.api.request("/admin/notifications/dismiss-all", { method: "POST" }),
-    ["Failed emails dismissed", "None of them will be sent."],
-    "Could not dismiss emails",
+    [t("failedEmailsDismissed"), t("noneOfThemWill")],
+    t("couldNotDismissEmails"),
   );
 
   const retry = (id: string) => act(
     `retry:${id}`,
     () => store.api.request(`/admin/notifications/${encodeURIComponent(id)}/retry`, { method: "POST" }),
-    ["Email queued", "It will be sent again in a moment."],
-    "Could not retry email",
+    [t("emailQueued"), t("itWillBeSent")],
+    t("couldNotRetryEmail"),
   );
 
   return (
@@ -77,26 +81,25 @@ export function FailedNotificationsCard() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base">
-              <MailWarning className="size-4 text-amber-600" aria-hidden="true" /> Emails that could not be sent
+              <MailWarning className="size-4 text-amber-600" aria-hidden="true" /> {t("title")}
             </CardTitle>
             <CardDescription>
-              {data.pagination.total} customer {data.pagination.total === 1 ? "email has" : "emails have"} failed after every retry.
-              Retry to send now, or dismiss old ones you no longer need.
+              {t("intro", { count: data.pagination.total })}
             </CardDescription>
           </div>
           {confirmAll ? (
-            <div className="flex items-center gap-2" role="group" aria-label="Confirm dismissing all failed emails">
-              <span className="text-xs text-muted-foreground">Dismiss all {data.pagination.total}? They won&apos;t be sent.</span>
+            <div className="flex items-center gap-2" role="group" aria-label={t("confirmDismissingAllFailed")}>
+              <span className="text-xs text-muted-foreground">{t("confirmAll", { count: data.pagination.total })}</span>
               <Button type="button" size="sm" variant="destructive" onClick={() => void dismissAll()} disabled={busyId !== null}>
-                Dismiss all
+                {t("dismissAll")}
               </Button>
               <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmAll(false)} disabled={busyId !== null}>
-                Cancel
+                {t("cancel")}
               </Button>
             </div>
           ) : (
             <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmAll(true)} disabled={busyId !== null}>
-              <X aria-hidden="true" /> Dismiss all
+              <X aria-hidden="true" /> {t("dismissAll")}
             </Button>
           )}
         </div>
@@ -107,13 +110,13 @@ export function FailedNotificationsCard() {
             <li key={notification.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
               <div className="min-w-0 flex-1 space-y-0.5">
                 <p className="font-medium">
-                  {notificationLabel(notification.type)} ·{" "}
+                  {kind(notification.type)} ·{" "}
                   <Link href={`/admin/shipments/${encodeURIComponent(notification.shipment.id)}`} className="font-mono text-primary hover:underline">
                     {notification.shipment.trackingNumber}
                   </Link>
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  To {notification.recipient.name} · {notification.attempts} attempts · {dateTime(notification.updatedAt)}
+                  {t("meta", { name: notification.recipient.name, attempts: notification.attempts, time: f.dateTime(notification.updatedAt) })}
                 </p>
                 {notification.lastError && <p className="truncate text-xs text-destructive">{notification.lastError}</p>}
               </div>
@@ -124,9 +127,9 @@ export function FailedNotificationsCard() {
                   variant="outline"
                   onClick={() => void retry(notification.id)}
                   disabled={busyId !== null}
-                  aria-label={`Retry ${notificationLabel(notification.type).toLowerCase()} email for ${notification.shipment.trackingNumber}`}
+                  aria-label={t("retryLabel", { kind: kind(notification.type).toLowerCase(), tracking: notification.shipment.trackingNumber })}
                 >
-                  <RotateCcw className={busyId === `retry:${notification.id}` ? "animate-spin" : undefined} aria-hidden="true" /> Retry
+                  <RotateCcw className={busyId === `retry:${notification.id}` ? "animate-spin" : undefined} aria-hidden="true" /> {t("retry")}
                 </Button>
                 <Button
                   type="button"
@@ -134,9 +137,9 @@ export function FailedNotificationsCard() {
                   variant="ghost"
                   onClick={() => void dismiss(notification.id)}
                   disabled={busyId !== null}
-                  aria-label={`Dismiss ${notificationLabel(notification.type).toLowerCase()} email for ${notification.shipment.trackingNumber}`}
+                  aria-label={t("dismissLabel", { kind: kind(notification.type).toLowerCase(), tracking: notification.shipment.trackingNumber })}
                 >
-                  <X aria-hidden="true" /> Dismiss
+                  <X aria-hidden="true" /> {t("dismiss")}
                 </Button>
               </div>
             </li>

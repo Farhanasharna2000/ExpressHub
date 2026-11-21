@@ -11,33 +11,65 @@ import { ResourceSkeleton, Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { errorMessage } from "@/lib/client/api";
 import { useSession } from "@/features/auth/provider";
-import { money, dateTime } from "@/features/shipments/contracts";
+import { useFormat } from "@/lib/i18n/use-format";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import {
   PRESETS, analyticsQuery, changeTone, formatChange, formatHours, formatRate, periodLabel, presetRange,
   type AnalyticsFilter, type AnalyticsReport, type Granularity,
 } from "./analytics-contracts";
 
+import { useTranslations } from "next-intl";
+
+function ChartsLoading() {
+  const t = useTranslations("admin.analytics");
+  return <Skeleton className="h-72 w-full" aria-label={t("loadingCharts")} />;
+}
+
 const AnalyticsCharts = dynamic(() => import("./analytics-charts"), {
   ssr: false,
-  loading: () => <Skeleton className="h-72 w-full" aria-label="Loading charts" />,
+  loading: () => <ChartsLoading />,
 });
+
+// Localized analytics figures. English output is exactly the shared helpers' text.
+export function useAnalyticsFormat() {
+  const t = useTranslations("admin.analytics");
+  const f = useFormat();
+  const bn = f.locale === "bn";
+  return {
+    f,
+    rate: (value: number | null) => f.digits(formatRate(value)),
+    hours: (value: number | null) => (bn && value !== null ? t("hoursValue", { value: f.digits(value) }) : formatHours(value)),
+    change: (value: number | null, kind: Parameters<typeof formatChange>[1]) => {
+      const text = formatChange(value, kind);
+      return text && bn ? f.digits(text).replace(" pts", " পয়েন্ট").replace(/ h$/, " ঘণ্টা") : text;
+    },
+    period: (period: string, granularity: Granularity) => {
+      if (!bn) return periodLabel(period, granularity);
+      const label = periodLabel(period, "day", "bn-BD");
+      return granularity === "week" ? t("weekOf", { label }) : label;
+    },
+  };
+}
 
 const toneClass = { good: "text-emerald-700", bad: "text-destructive", neutral: "text-muted-foreground" } as const;
 
 function Kpi({ label, value, change, tone, hint }: { label: string; value: string; change: string | null; tone: keyof typeof toneClass; hint: string }) {
+  const t = useTranslations("admin.analytics");
   return (
     <div className="rounded-lg border bg-card p-4">
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-2xl font-bold" data-count-up>{value}</dd>
       <dd className={`mt-1 text-xs ${toneClass[tone]}`}>
-        {change ? `${change} vs previous ${hint}` : `No previous ${hint} to compare`}
+        {change ? t("vsPrevious", { change, hint }) : t("noPrevious", { hint })}
       </dd>
     </div>
   );
 }
 
 export function AdminAnalyticsView() {
+  const t = useTranslations("admin.analytics");
+  const tf = useTranslations("filters");
+  const { f, rate, hours, change, period: periodText } = useAnalyticsFormat();
   const { store } = useSession();
   const [preset, setPreset] = useState<number | null>(30);
   const [filter, setFilter] = useState<AnalyticsFilter>(() => ({ ...presetRange(30), granularity: "day" }));
@@ -58,7 +90,7 @@ export function AdminAnalyticsView() {
   function applyCustom(event: React.FormEvent) {
     event.preventDefault();
     if (!draft.from || !draft.to || draft.from > draft.to) {
-      toast.error("Check the dates", "Choose a start date on or before the end date.");
+      toast.error(t("checkTheDates"), t("chooseAStartDate"));
       return;
     }
     setPreset(null);
@@ -81,13 +113,13 @@ export function AdminAnalyticsView() {
       link.click();
       URL.revokeObjectURL(url);
     } catch (cause) {
-      toast.error("Could not export analytics", errorMessage(cause));
+      toast.error(t("couldNotExportAnalytics"), errorMessage(cause));
     } finally {
       setExporting(false);
     }
   }
 
-  const period = report ? `${report.range.days} days` : "period";
+  const period = report ? t("daysPeriod", { days: report.range.days }) : t("periodWord");
   const hasActivity = Boolean(report && (report.summary.booked || report.summary.delivered || report.summary.failed || Number(report.summary.revenue)));
   const scope = useRef<HTMLDivElement>(null);
   useCountUpOnce(scope, Boolean(report));
@@ -96,44 +128,44 @@ export function AdminAnalyticsView() {
     <div className="page-stack" ref={scope}>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Business insights</p>
-          <h1>Analytics</h1>
-          <p>Bookings, deliveries, revenue and courier performance, in Bangladesh time.</p>
+          <p className="eyebrow">{t("businessInsights")}</p>
+          <h1>{t("analytics")}</h1>
+          <p>{t("bookingsDeliveriesRevenueAnd")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" onClick={reload} disabled={loading || refreshing || delay > 0}>
-            <RefreshCw className={`size-4 ${loading || refreshing ? "animate-spin" : ""}`} aria-hidden="true" /> Refresh
+            <RefreshCw className={`size-4 ${loading || refreshing ? "animate-spin" : ""}`} aria-hidden="true" /> {t("refresh")}
           </Button>
           <Button variant="outline" onClick={() => void downloadCsv()} disabled={exporting || !report}>
-            <Download className="size-4" aria-hidden="true" /> {exporting ? "Preparing…" : "Export CSV"}
+            <Download className="size-4" aria-hidden="true" /> {exporting ? t("preparing") : t("exportCsv")}
           </Button>
         </div>
       </div>
 
       <Card className="shadow-none">
         <CardContent className="flex flex-wrap items-end gap-4 pt-6">
-          <div role="group" aria-label="Date range" className="flex flex-wrap gap-2">
+          <div role="group" aria-label={t("dateRange")} className="flex flex-wrap gap-2">
             {PRESETS.map((days) => (
               <Button key={days} size="sm" variant={preset === days ? "default" : "outline"} aria-pressed={preset === days} onClick={() => choosePreset(days)}>
-                Last {days} days
+                {t("lastDays", { days })}
               </Button>
             ))}
           </div>
-          <form onSubmit={applyCustom} className="flex flex-wrap items-end gap-2" aria-label="Custom date range">
+          <form onSubmit={applyCustom} className="flex flex-wrap items-end gap-2" aria-label={t("customDateRange")}>
             <label className="grid gap-1 text-xs font-medium">
-              From
+              {t("from")}
               <input type="date" className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={draft.from} max={draft.to} onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))} required />
             </label>
             <label className="grid gap-1 text-xs font-medium">
-              To
+              {t("to")}
               <input type="date" className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={draft.to} min={draft.from} onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))} required />
             </label>
-            <Button type="submit" size="sm" variant="outline">Apply</Button>
+            <Button type="submit" size="sm" variant="outline">{t("apply")}</Button>
           </form>
-          <div role="group" aria-label="Group by" className="flex gap-2">
+          <div role="group" aria-label={t("groupBy")} className="flex gap-2">
             {(["day", "week"] as const).map((granularity) => (
               <Button key={granularity} size="sm" variant={filter.granularity === granularity ? "default" : "outline"} aria-pressed={filter.granularity === granularity} onClick={() => chooseGranularity(granularity)}>
-                By {granularity}
+                {t(`by.${granularity}`)}
               </Button>
             ))}
           </div>
@@ -142,64 +174,64 @@ export function AdminAnalyticsView() {
 
       {!!error && (
         <ErrorNotice
-          title="Could not load analytics"
-          action={<Button variant="outline" onClick={reload} disabled={delay > 0}>{delay ? `Retry in ${delay}s` : "Try again"}</Button>}
+          title={t("couldNotLoadAnalytics")}
+          action={<Button variant="outline" onClick={reload} disabled={delay > 0}>{delay ? tf("retryIn", { seconds: f.digits(delay) }) : t("tryAgain")}</Button>}
         >
           {errorMessage(error)}
         </ErrorNotice>
       )}
 
-      {loading && !report && <ResourceSkeleton variant="dashboard" label="Calculating analytics…" />}
+      {loading && !report && <ResourceSkeleton variant="dashboard" label={t("calculatingAnalytics")} />}
 
       {report && (
         <div className="space-y-4" aria-busy={refreshing}>
           <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            <Kpi label="Shipments booked" value={String(report.summary.booked)} change={formatChange(report.change.booked, "percent")} tone={changeTone(report.change.booked, true)} hint={period} />
-            <Kpi label="Delivered" value={String(report.summary.delivered)} change={formatChange(report.change.delivered, "percent")} tone={changeTone(report.change.delivered, true)} hint={period} />
-            <Kpi label="Net revenue" value={money(report.summary.revenue, report.currency)} change={formatChange(report.change.revenue, "percent")} tone={changeTone(report.change.revenue, true)} hint={period} />
-            <Kpi label={`On time (within ${report.onTimeHours} h)`} value={formatRate(report.summary.onTimeRate)} change={formatChange(report.change.onTimeRate, "points")} tone={changeTone(report.change.onTimeRate, true)} hint={period} />
-            <Kpi label="Median delivery time" value={formatHours(report.summary.medianDeliveryHours)} change={formatChange(report.change.medianDeliveryHours, "hours")} tone={changeTone(report.change.medianDeliveryHours, false)} hint={period} />
-            <Kpi label="Failure rate" value={formatRate(report.summary.failureRate)} change={formatChange(report.change.failureRate, "points")} tone={changeTone(report.change.failureRate, false)} hint={period} />
+            <Kpi label={t("shipmentsBooked")} value={f.digits(report.summary.booked)} change={change(report.change.booked, "percent")} tone={changeTone(report.change.booked, true)} hint={period} />
+            <Kpi label={t("delivered")} value={f.digits(report.summary.delivered)} change={change(report.change.delivered, "percent")} tone={changeTone(report.change.delivered, true)} hint={period} />
+            <Kpi label={t("netRevenue")} value={f.money(report.summary.revenue, report.currency)} change={change(report.change.revenue, "percent")} tone={changeTone(report.change.revenue, true)} hint={period} />
+            <Kpi label={t("onTimeWithin", { hours: f.digits(report.onTimeHours) })} value={rate(report.summary.onTimeRate)} change={change(report.change.onTimeRate, "points")} tone={changeTone(report.change.onTimeRate, true)} hint={period} />
+            <Kpi label={t("medianDeliveryTime")} value={hours(report.summary.medianDeliveryHours)} change={change(report.change.medianDeliveryHours, "hours")} tone={changeTone(report.change.medianDeliveryHours, false)} hint={period} />
+            <Kpi label={t("failureRate")} value={rate(report.summary.failureRate)} change={change(report.change.failureRate, "points")} tone={changeTone(report.change.failureRate, false)} hint={period} />
           </dl>
 
           {!hasActivity ? (
-            <EmptyState title="No activity in this range" description="No shipments were booked, delivered or paid for between these dates. Try a longer range." />
+            <EmptyState title={t("noActivityInThis")} description={t("noShipmentsWereBooked")} />
           ) : (
             <>
               <AnalyticsCharts report={report} />
 
               <table className="sr-only">
-                <caption>Shipments and net revenue by {report.range.granularity}</caption>
+                <caption>{t(`tableCaption.${report.range.granularity}`)}</caption>
                 <thead>
-                  <tr><th scope="col">Period</th><th scope="col">Booked</th><th scope="col">Delivered</th><th scope="col">Net revenue ({report.currency})</th></tr>
+                  <tr><th scope="col">{t("period")}</th><th scope="col">{t("booked")}</th><th scope="col">{t("delivered")}</th><th scope="col">{t("netRevenueCurrency", { currency: report.currency })}</th></tr>
                 </thead>
                 <tbody>
                   {report.series.map((row) => (
-                    <tr key={row.period}><th scope="row">{periodLabel(row.period, report.range.granularity)}</th><td>{row.booked}</td><td>{row.delivered}</td><td>{row.revenue}</td></tr>
+                    <tr key={row.period}><th scope="row">{periodText(row.period, report.range.granularity)}</th><td>{f.digits(row.booked)}</td><td>{f.digits(row.delivered)}</td><td>{f.digits(row.revenue)}</td></tr>
                   ))}
                 </tbody>
               </table>
 
               <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
                 <Card className="shadow-none">
-                  <CardHeader className="pb-2"><CardTitle className="text-base">Courier leaderboard</CardTitle></CardHeader>
+                  <CardHeader className="pb-2"><CardTitle className="text-base">{t("courierLeaderboard")}</CardTitle></CardHeader>
                   <CardContent>
                     {report.couriers.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No courier deliveries or failures in this range.</p>
+                      <p className="text-sm text-muted-foreground">{t("noCourierDeliveriesOr")}</p>
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                          <caption className="sr-only">Couriers by deliveries in this range</caption>
+                          <caption className="sr-only">{t("couriersByDeliveriesIn")}</caption>
                           <thead className="text-left text-xs text-muted-foreground">
-                            <tr><th scope="col" className="py-2 pr-3">Courier</th><th scope="col" className="py-2 pr-3 text-right">Delivered</th><th scope="col" className="py-2 pr-3 text-right">On time</th><th scope="col" className="py-2 text-right">Failed</th></tr>
+                            <tr><th scope="col" className="py-2 pr-3">{t("courier")}</th><th scope="col" className="py-2 pr-3 text-right">{t("delivered")}</th><th scope="col" className="py-2 pr-3 text-right">{t("onTime")}</th><th scope="col" className="py-2 text-right">{t("failed")}</th></tr>
                           </thead>
                           <tbody>
                             {report.couriers.map((courier) => (
                               <tr key={courier.id} className="border-t">
                                 <th scope="row" className="py-2 pr-3 text-left font-medium">{courier.name}</th>
-                                <td className="py-2 pr-3 text-right">{courier.deliveries}</td>
-                                <td className="py-2 pr-3 text-right">{formatRate(courier.onTimeRate)}</td>
-                                <td className="py-2 text-right">{courier.failed}</td>
+                                <td className="py-2 pr-3 text-right">{f.number(courier.deliveries)}</td>
+                                <td className="py-2 pr-3 text-right">{rate(courier.onTimeRate)}</td>
+                                <td className="py-2 text-right">{f.number(courier.failed)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -210,14 +242,14 @@ export function AdminAnalyticsView() {
                 </Card>
 
                 <Card className="shadow-none">
-                  <CardHeader className="pb-2"><CardTitle className="text-base">Busiest origin hubs</CardTitle></CardHeader>
+                  <CardHeader className="pb-2"><CardTitle className="text-base">{t("busiestOriginHubs")}</CardTitle></CardHeader>
                   <CardContent>
                     {report.hubs.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No shipments with an origin hub in this range.</p>
+                      <p className="text-sm text-muted-foreground">{t("noShipmentsWithAn")}</p>
                     ) : (
                       <ol className="space-y-2 text-sm">
                         {report.hubs.map((hub) => (
-                          <li key={hub.name} className="flex justify-between gap-3"><span>{hub.name}</span><span className="font-semibold">{hub.shipments}</span></li>
+                          <li key={hub.name} className="flex justify-between gap-3"><span>{hub.name}</span><span className="font-semibold">{f.number(hub.shipments)}</span></li>
                         ))}
                       </ol>
                     )}
@@ -228,8 +260,8 @@ export function AdminAnalyticsView() {
           )}
 
           <p className="text-xs text-muted-foreground">
-            {report.range.from} to {report.range.to} (Bangladesh time), compared with {report.range.previousFrom} to {report.range.previousTo}.
-            {" "}Prepared {dateTime(report.generatedAt)}{report.cached ? " · cached for up to 5 minutes" : ""}.
+            {t("rangeNote", { from: f.digits(report.range.from), to: f.digits(report.range.to), previousFrom: f.digits(report.range.previousFrom), previousTo: f.digits(report.range.previousTo) })}
+            {" "}{t("preparedAt", { time: f.dateTime(report.generatedAt) })}{report.cached ? t("cachedForUpTo") : ""}.
           </p>
         </div>
       )}

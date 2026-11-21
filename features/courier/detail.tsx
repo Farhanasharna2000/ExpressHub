@@ -16,9 +16,6 @@ import {
 } from "@/components/ui/primitives";
 import { errorMessage, ApiError } from "@/lib/client/api";
 import {
-  dateTime,
-  money,
-  statusLabel,
   type ShipmentDetail,
 } from "@/features/shipments/contracts";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
@@ -27,7 +24,13 @@ import { DeliveryProofView } from "@/features/shipments/proof-view";
 import { DeliveryProofCard } from "./proof-capture";
 import { LiveLocationToggle } from "./live-location";
 
+import { useTranslations } from "next-intl";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
 export function CourierShipmentDetailView({ id }: { id: string }) {
+  const t = useTranslations("courier");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
   // Set when this courier confirms the delivery here, so the proof card can celebrate it.
   const [justDelivered, setJustDelivered] = useState(false);
   const valid = z.cuid().safeParse(id).success;
@@ -49,15 +52,15 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
   return (
     <div className="page-stack">
       <Link href="/courier/shipments" className="back-link">
-        <ArrowLeft className="inline size-4" aria-hidden="true" /> Back to assigned shipments
+        <ArrowLeft className="inline size-4" aria-hidden="true" /> {t("backToAssigned")}
       </Link>
 
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Delivery Stop</p>
-          <h1>Delivery Operations</h1>
+          <p className="eyebrow">{t("deliveryStop")}</p>
+          <h1>{t("deliveryOperations")}</h1>
           <p className="break-all font-mono font-medium text-base">
-            {shipment?.trackingNumber ?? "Loading shipment assignment…"}
+            {shipment?.trackingNumber ?? t("loadingShipmentAssignment")}
           </p>
         </div>
         {valid && (
@@ -67,36 +70,36 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
             onClick={reload}
           >
             <RefreshCw className={`size-4 mr-2 ${loading || refreshing ? "animate-spin" : ""}`} />
-            Refresh
+            {t("refresh")}
           </Button>
         )}
       </div>
 
       {!valid && (
         <EmptyState
-          title="Invalid shipment link"
-          description="The shipment identifier provided is not valid. Return to your assignments."
+          title={t("invalidShipmentLink")}
+          description={t("theShipmentIdentifierProvided")}
           action={
             <Button asChild>
-              <Link href="/courier/shipments">View assigned shipments</Link>
+              <Link href="/courier/shipments">{t("viewAssigned")}</Link>
             </Button>
           }
         />
       )}
 
       {refreshing && <ResourceRefresh />}
-      {loading && <ResourceSkeleton variant="detail" label="Loading delivery details…" />}
+      {loading && <ResourceSkeleton variant="detail" label={t("loadingDeliveryDetails")} />}
 
       {!!error && (
         <ErrorNotice
           title={
             error instanceof ApiError && error.status === 404
-              ? "Assignment not found"
-              : "Could not load delivery assignment"
+              ? t("assignmentNotFound")
+              : t("couldNotLoadDelivery2")
           }
           action={
             <Button variant="outline" onClick={reload} disabled={delay > 0}>
-              {delay ? `Retry in ${delay}s` : "Try again"}
+              {delay ? tf("retryIn", { seconds: f.digits(delay) }) : t("tryAgain")}
             </Button>
           }
         >
@@ -110,25 +113,25 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
           <Card>
             <CardContent className="shipment-summary">
               <div>
-                <span className="text-xs text-muted-foreground">Delivery status</span>
+                <span className="text-xs text-muted-foreground">{t("deliveryStatus")}</span>
                 <div className="mt-2">
                   <StatusBadge status={shipment.status} />
                 </div>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Payment confirmation</span>
+                <span className="text-xs text-muted-foreground">{t("paymentConfirmation")}</span>
                 <div className="mt-2">
                   <StatusBadge status={shipment.paymentStatus} />
                 </div>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Delivery fee</span>
-                <p className="font-semibold text-lg">{money(shipment.price, shipment.currency)}</p>
+                <span className="text-xs text-muted-foreground">{t("deliveryFee")}</span>
+                <p className="font-semibold text-lg">{f.money(shipment.price, shipment.currency)}</p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Assigned on</span>
+                <span className="text-xs text-muted-foreground">{t("assignedOn")}</span>
                 <p className="text-sm">
-                  <time dateTime={shipment.createdAt}>{dateTime(shipment.createdAt)}</time>
+                  <time dateTime={shipment.createdAt}>{f.dateTime(shipment.createdAt)}</time>
                 </p>
               </div>
             </CardContent>
@@ -157,12 +160,12 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="size-5 text-amber-600" />
-                  Pickup Information
+                  {t("pickupInformation")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <span className="text-xs text-muted-foreground">Sender Contact:</span>
+                  <span className="text-xs text-muted-foreground">{t("senderContact")}</span>
                   <p className="font-semibold text-base">{shipment.pickupContactName}</p>
                   <a
                     href={`tel:${shipment.pickupContactPhone}`}
@@ -173,16 +176,16 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
                   </a>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Pickup Address:</span>
+                  <span className="text-xs text-muted-foreground">{t("pickupAddress")}</span>
                   <p className="text-sm font-medium whitespace-pre-wrap mt-0.5">
                     {shipment.pickupAddress}
                   </p>
                 </div>
                 {shipment.pickupScheduledAt && (
                   <div>
-                    <span className="text-xs text-muted-foreground">Preferred Pickup Time:</span>
+                    <span className="text-xs text-muted-foreground">{t("preferredPickupTime")}</span>
                     <p className="text-sm font-medium mt-0.5">
-                      {dateTime(shipment.pickupScheduledAt)}
+                      {f.dateTime(shipment.pickupScheduledAt)}
                     </p>
                   </div>
                 )}
@@ -194,12 +197,12 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Navigation className="size-5 text-emerald-600" />
-                  Delivery Destination
+                  {t("deliveryDestination")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <span className="text-xs text-muted-foreground">Recipient Name:</span>
+                  <span className="text-xs text-muted-foreground">{t("recipientName")}</span>
                   <p className="font-semibold text-base">{shipment.deliveryContactName}</p>
                   <a
                     href={`tel:${shipment.deliveryContactPhone}`}
@@ -210,7 +213,7 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
                   </a>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Destination Address:</span>
+                  <span className="text-xs text-muted-foreground">{t("destinationAddress")}</span>
                   <p className="text-sm font-medium whitespace-pre-wrap mt-0.5">
                     {shipment.deliveryAddress}
                   </p>
@@ -218,7 +221,7 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
                 {shipment.deliveredAt && (
                   <div className="flex items-center gap-1.5 text-sm text-emerald-700 font-medium">
                     <CheckCircle2 className="size-4" />
-                    <span>Delivered at: {dateTime(shipment.deliveredAt)}</span>
+                    <span>{t("deliveredAt", { time: f.dateTime(shipment.deliveredAt) })}</span>
                   </div>
                 )}
               </CardContent>
@@ -230,36 +233,36 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="size-5" />
-                Package Specifications
+                {t("packageSpecifications")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <span className="text-xs text-muted-foreground">Weight:</span>
+                  <span className="text-xs text-muted-foreground">{t("weight")}</span>
                   <p className="font-semibold">{shipment.parcelWeightKg} kg</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Payment Status:</span>
+                  <span className="text-xs text-muted-foreground">{t("paymentStatus")}</span>
                   <p className="font-semibold">
                     {shipment.paymentStatus === "PAID" ? (
-                      <span className="text-emerald-700">Paid in Full</span>
+                      <span className="text-emerald-700">{t("paidInFull")}</span>
                     ) : (
-                      <span className="text-amber-700">Pending Payment</span>
+                      <span className="text-amber-700">{t("pendingPayment")}</span>
                     )}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">Recipient Verified:</span>
+                  <span className="text-xs text-muted-foreground">{t("recipientVerified")}</span>
                   <p className="font-semibold">
-                    {shipment.status === "DELIVERED" ? "Yes - Confirmed" : "Pending Handover"}
+                    {shipment.status === "DELIVERED" ? t("yesConfirmed") : t("pendingHandover")}
                   </p>
                 </div>
               </div>
 
               {shipment.packageDescription && (
                 <div className="pt-2 border-t mt-3">
-                  <span className="text-xs text-muted-foreground">Package Description / Handling Notes:</span>
+                  <span className="text-xs text-muted-foreground">{t("packageDescriptionHandlingNotes")}</span>
                   <p className="text-sm mt-0.5">{shipment.packageDescription}</p>
                 </div>
               )}
@@ -271,7 +274,7 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock3 className="size-5" />
-                Delivery Event Log
+                {t("deliveryEventLog")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -289,7 +292,7 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
                         {event.toStatus && <StatusBadge status={event.toStatus} />}
                       </div>
                       <time className="text-sm text-muted-foreground" dateTime={event.occurredAt}>
-                        {dateTime(event.occurredAt)}
+                        {f.dateTime(event.occurredAt)}
                       </time>
                       {event.publicNote && <p className="break-words mt-1">{event.publicNote}</p>}
                     </motion.li>
@@ -297,8 +300,8 @@ export function CourierShipmentDetailView({ id }: { id: string }) {
                 </ol>
               ) : (
                 <EmptyState
-                  title="No delivery events recorded"
-                  description="Status updates recorded on this shipment will appear here in chronological sequence."
+                  title={t("noDeliveryEventsRecorded")}
+                  description={t("statusUpdatesRecordedOn")}
                 />
               )}
             </CardContent>

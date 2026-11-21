@@ -1,24 +1,26 @@
 import type { Metadata } from "next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrackForm } from "@/features/tracking/track-form";
+import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Track a parcel",
-  description: "Enter your ExpressHub tracking number to see live delivery status.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("tracking.page");
+  return { title: t("metaTitle"), description: t("metaDescription") };
+}
 
-export default function TrackPage() {
+export default async function TrackPage() {
+  const t = await getTranslations("tracking");
   return (
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Public tracking</p>
-          <h1>Track a parcel</h1>
-          <p>No account needed. Status updates appear live while the page is open.</p>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h1>{t("page.title")}</h1>
+          <p>{t("page.intro")}</p>
         </div>
       </div>
       <Card>
-        <CardHeader><CardTitle>Tracking number</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("trackingNumber")}</CardTitle></CardHeader>
         <CardContent><TrackForm /></CardContent>
       </Card>
     </div>

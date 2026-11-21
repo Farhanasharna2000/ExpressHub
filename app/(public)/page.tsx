@@ -3,6 +3,8 @@
 import { ArrowUpRight, Check } from "lucide-react";
 import Image from "next/image";
 import { useRef } from "react";
+import { useTranslations } from "next-intl";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
 import { ButtonLink, StatusBadge } from "@/components/ui/primitives";
 import {
   MotionFloat,
@@ -60,6 +62,9 @@ function useHomeAnimations(scope: React.RefObject<HTMLDivElement | null>, signed
 }
 
 export default function Home() {
+  const t = useTranslations("home");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
   const { user, status } = useSession();
   const isAuthenticated = status === "authenticated" && Boolean(user);
   const scope = useRef<HTMLDivElement>(null);
@@ -74,33 +79,33 @@ export default function Home() {
             <>
               <div data-hero="badge" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#e5ecdf] text-[#196547] text-xs font-bold tracking-wider uppercase mb-5 border border-[#196547]/15">
                 <span className="w-2 h-2 rounded-full bg-[#196547]" />
-                Welcome back, {user.name} • {user.role}
+                {t("welcomeBack", { name: user.name, role: statusLabel(user.role) })}
               </div>
               <h1 data-hero="title">
-                <span className="hero-line">Your parcels.</span>
-                <span className="hero-line">Your route.</span>
-                <span className="hero-line hero-accent">Always in sync.</span>
+                <span className="hero-line">{t("signedInLine1")}</span>
+                <span className="hero-line">{t("signedInLine2")}</span>
+                <span className="hero-line hero-accent">{t("signedInLine3")}</span>
               </h1>
               <p data-hero="text">
-                Signed in as an active {user.role.toLowerCase()}. Jump straight into your workspace to book parcels, track live milestone transitions, or monitor logistics telemetry.
+                {t("signedInText", { role: t(`roleWord.${user.role}`) })}
               </p>
               <div className="actions" data-hero="actions">
                 <ButtonLink href={roleHome(user.role)}>
-                  Open {user.role === "ADMIN" ? "Command Center" : user.role === "COURIER" ? "Courier Portal" : "Customer Workspace"} <ArrowUpRight className="size-4" aria-hidden="true" />
+                  {t(`openWorkspace.${user.role}`)} <ArrowUpRight className="size-4" aria-hidden="true" />
                 </ButtonLink>
                 {user.role === "CUSTOMER" && (
                   <ButtonLink href="/customer/shipments/new" secondary>
-                    Book a parcel
+                    {t("bookParcel")}
                   </ButtonLink>
                 )}
                 {user.role === "COURIER" && (
                   <ButtonLink href="/courier/shipments" secondary>
-                    View deliveries
+                    {t("viewDeliveries")}
                   </ButtonLink>
                 )}
                 {user.role === "ADMIN" && (
                   <ButtonLink href="/admin/shipments" secondary>
-                    Fleet shipments
+                    {t("fleetShipments")}
                   </ButtonLink>
                 )}
               </div>
@@ -109,45 +114,43 @@ export default function Home() {
             <>
               <div data-hero="badge" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#e5ecdf] text-[#196547] text-xs font-bold tracking-wider uppercase mb-5 border border-[#196547]/15">
                 <span className="w-2 h-2 rounded-full bg-[#196547] animate-pulse" />
-                Next-Gen Express Logistics
+                {t("badge")}
               </div>
               <h1 data-hero="title">
-                <span className="hero-line">Big plans.</span>
-                <span className="hero-line">Small parcels.</span>
-                <span className="hero-line hero-accent">All connected.</span>
+                <span className="hero-line">{t("line1")}</span>
+                <span className="hero-line">{t("line2")}</span>
+                <span className="hero-line hero-accent">{t("line3")}</span>
               </h1>
               <p data-hero="text">
-                A simpler, modern way to move what matters. Bring your bookings,
-                real-time tracking, Stripe-verified payments, and courier operations
-                together in one unified platform.
+                {t("intro")}
               </p>
               <div className="actions" data-hero="actions">
-                <ButtonLink href="/register">Book your first parcel <ArrowUpRight className="size-4" aria-hidden="true" /></ButtonLink>
+                <ButtonLink href="/register">{t("bookFirst")} <ArrowUpRight className="size-4" aria-hidden="true" /></ButtonLink>
                 <ButtonLink href="#how-it-works" secondary>
-                  How it works
+                  {t("howItWorks")}
                 </ButtonLink>
               </div>
             </>
           )}
           <div data-hero="checks" className="flex items-center gap-6 mt-8 text-xs text-[#586b64] font-medium">
             <div className="flex items-center gap-2">
-              <Check className="size-4 text-[#196547]" aria-hidden="true" /> Real-Time Tracking
+              <Check className="size-4 text-[#196547]" aria-hidden="true" /> {t("checkTracking")}
             </div>
             <div className="flex items-center gap-2">
-              <Check className="size-4 text-[#196547]" aria-hidden="true" /> Stripe Checkout
+              <Check className="size-4 text-[#196547]" aria-hidden="true" /> {t("checkStripe")}
             </div>
             <div className="flex items-center gap-2">
-              <Check className="size-4 text-[#196547]" aria-hidden="true" /> Full Audit Trails
+              <Check className="size-4 text-[#196547]" aria-hidden="true" /> {t("checkAudit")}
             </div>
           </div>
           <div data-hero="track" className="mt-8 max-w-xl rounded-2xl border border-ring/15 bg-white/70 p-4">
-            <h2 className="mb-2 text-sm font-bold text-ring">Track a parcel</h2>
+            <h2 className="mb-2 text-sm font-bold text-ring">{t("trackTitle")}</h2>
             <TrackForm compact />
           </div>
         </div>
 
         <div data-hero="journey" className="journey-card">
-          <p className="eyebrow">The delivery journey</p>
+          <p className="eyebrow">{t("journeyEyebrow")}</p>
           <div className="journey-hero-stage">
             <div className="journey-hero-ambient" aria-hidden="true" />
             <div className="journey-hero-grid" aria-hidden="true" />
@@ -159,7 +162,7 @@ export default function Home() {
               <g transform="translate(318 82)">
                 <g className="journey-route-chip">
                   <rect x="-40" y="-12" width="80" height="24" rx="12" />
-                  <text x="0" y="4" textAnchor="middle">Delivered</text>
+                  <text x="0" y="4" textAnchor="middle">{t("deliveredChip")}</text>
                 </g>
               </g>
               <g className="journey-route-parcel-group" transform={`translate(${ROUTE_END.x} ${ROUTE_END.y})`}>
@@ -168,7 +171,7 @@ export default function Home() {
             </svg>
             <Image
               src="/delivery-hero.png"
-              alt="ExpressHub courier holding a package and clipboard"
+              alt={t("heroImageAlt")}
               width={540}
               height={380}
               sizes="(max-width: 768px) 100vw, 420px"
@@ -178,96 +181,96 @@ export default function Home() {
             <MotionFloat duration={3.2} yOffset={4}>
               <div className="journey-hero-badge" aria-hidden="true">
                 <span className="journey-hero-pulse" />
-                Live Express Courier
+                {t("liveBadge")}
               </div>
             </MotionFloat>
           </div>
           <h2>
-            From your doorstep
+            {t("journeyTitle1")}
             <br />
-            to theirs.
+            {t("journeyTitle2")}
           </h2>
           <ol className="journey">
             <li>
-              <span>01</span> Book with your parcel weight
+              <span>{f.digits("01")}</span> {t("journeyStep1")}
             </li>
             <li>
-              <span>02</span> Pay securely with Stripe Checkout
+              <span>{f.digits("02")}</span> {t("journeyStep2")}
             </li>
             <li>
-              <span>03</span> Follow real-time milestone transitions
+              <span>{f.digits("03")}</span> {t("journeyStep3")}
             </li>
           </ol>
           <div className="actions">
             <StatusBadge status="IN_TRANSIT" />
-            <span className="muted">Live verified status</span>
+            <span className="muted">{t("liveVerified")}</span>
           </div>
         </div>
       </section>
 
       {/* Interactive Live Journey Tracker Simulation */}
-      <section id="how-it-works" className="scroll-mt-28" aria-label="How delivery works">
+      <section id="how-it-works" className="scroll-mt-28" aria-label={t("howItWorksLabel")}>
         <InteractiveDeliveryTracker />
       </section>
 
       {/* Enterprise Metrics Section */}
       <section>
-        <p className="eyebrow">Performance & Reliability</p>
-        <h2>Engineered for modern enterprise logistics.</h2>
+        <p className="eyebrow">{t("metricsEyebrow")}</p>
+        <h2>{t("metricsTitle")}</h2>
         <div className="metrics-grid">
           <AnimatedMetricCard
-            value="99.98%"
-            label="On-Time Delivery"
-            subtext="Guaranteed parcel routing SLAs"
+            value={f.digits("99.98%")}
+            label={t("metricOnTime")}
+            subtext={t("metricOnTimeText")}
           />
           <AnimatedMetricCard
-            value="<250ms"
-            label="API Latency"
-            subtext="Optimized PostgreSQL queries"
+            value={f.digits("<250ms")}
+            label={t("metricLatency")}
+            subtext={t("metricLatencyText")}
           />
           <AnimatedMetricCard
-            value="100%"
-            label="Stripe Verified"
-            subtext="Cryptographic webhook verification"
+            value={f.digits("100%")}
+            label={t("metricStripe")}
+            subtext={t("metricStripeText")}
           />
           <AnimatedMetricCard
-            value="29+"
-            label="REST Endpoints"
-            subtext="Strict OpenAPI 3.0 contract"
+            value={f.digits("29+")}
+            label={t("metricEndpoints")}
+            subtext={t("metricEndpointsText")}
           />
         </div>
       </section>
 
       {/* 3 Workspaces with 3D Generated Visuals */}
       <section>
-        <p className="eyebrow">One platform. Three perspectives.</p>
-        <h2>A purpose built workspace for every role.</h2>
+        <p className="eyebrow">{t("rolesEyebrow")}</p>
+        <h2>{t("rolesTitle")}</h2>
         <div className="grid-three">
           <div data-reveal="role" className="flex [&>*]:w-full">
           <FeatureCardWithImage
-            title="Customer Workspace"
-            text="Get weight-based shipping quotes, book doorstep pickups, complete instant Stripe checkout, and follow chronological event timelines."
-            badge={user?.role === "CUSTOMER" ? "Your Active Workspace" : "Customer Experience"}
+            title={t("customerTitle")}
+            text={t("customerText")}
+            badge={user?.role === "CUSTOMER" ? t("yourWorkspace") : t("customerBadge")}
             imageSrc="/courier-customer.jpg"
-            imageAlt="3D illustration of customer booking parcel on mobile device"
+            imageAlt={t("customerImageAlt")}
           />
           </div>
           <div data-reveal="role" className="flex [&>*]:w-full">
           <FeatureCardWithImage
-            title="Courier Workspace"
-            text="Access assigned delivery batches, execute status progressions from pickup to proof of delivery, and submit mandatory transit notes."
-            badge={user?.role === "COURIER" ? "Your Active Workspace" : "Courier Operations"}
+            title={t("courierTitle")}
+            text={t("courierText")}
+            badge={user?.role === "COURIER" ? t("yourWorkspace") : t("courierBadge")}
             imageSrc="/courier-workspace.jpg"
-            imageAlt="3D illustration of express courier van in transit"
+            imageAlt={t("courierImageAlt")}
           />
           </div>
           <div data-reveal="role" className="flex [&>*]:w-full">
           <FeatureCardWithImage
-            title="Admin Command Center"
-            text="Assign couriers with optimistic concurrency protection, monitor fleet telemetry, manage user access, and inspect immutable audit logs."
-            badge={user?.role === "ADMIN" ? "Your Active Workspace" : "Operations & Control"}
+            title={t("adminTitle")}
+            text={t("adminText")}
+            badge={user?.role === "ADMIN" ? t("yourWorkspace") : t("adminBadge")}
             imageSrc="/admin-center.jpg"
-            imageAlt="3D illustration of logistics operations analytics command center"
+            imageAlt={t("adminImageAlt")}
           />
           </div>
         </div>
@@ -282,18 +285,18 @@ export default function Home() {
           <>
             <div className="max-w-xl">
               <span className="text-[#d8ed99] text-xs font-bold uppercase tracking-widest">
-                Active Session • {user.role}
+                {t("activeSession", { role: statusLabel(user.role) })}
               </span>
               <h2 className="text-2xl md:text-3xl font-extrabold text-white mt-2 mb-3">
-                Ready to continue your logistics operations?
+                {t("continueTitle")}
               </h2>
               <p className="text-[#e5ecdf] text-sm md:text-base leading-relaxed">
-                Your account is active. Jump directly into your dedicated workspace to book deliveries, execute milestone status progressions, or update your profile.
+                {t("continueText")}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 shrink-0">
               <ButtonLink href={roleHome(user.role)}>
-                Go to your workspace <ArrowUpRight className="size-4" aria-hidden="true" />
+                {t("goToWorkspace")} <ArrowUpRight className="size-4" aria-hidden="true" />
               </ButtonLink>
             </div>
           </>
@@ -301,19 +304,17 @@ export default function Home() {
           <>
             <div className="max-w-xl">
               <span className="text-[#d8ed99] text-xs font-bold uppercase tracking-widest">
-                Security & Compliance
+                {t("securityEyebrow")}
               </span>
               <h2 className="text-2xl md:text-3xl font-extrabold text-white mt-2 mb-3">
-                Ready to experience frictionless parcel logistics?
+                {t("ctaTitle")}
               </h2>
               <p className="text-[#e5ecdf] text-sm md:text-base leading-relaxed">
-                Create an account in seconds. Book your first parcel, test the
-                milestone delivery lifecycle, and track updates in real time with
-                enterprise-grade security.
+                {t("ctaText")}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 shrink-0">
-              <ButtonLink href="/register">Create an account <ArrowUpRight className="size-4" aria-hidden="true" /></ButtonLink>
+              <ButtonLink href="/register">{t("createAccount")} <ArrowUpRight className="size-4" aria-hidden="true" /></ButtonLink>
             </div>
           </>
         )}
