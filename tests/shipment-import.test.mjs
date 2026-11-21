@@ -1,5 +1,6 @@
 import "./helpers/typescript.mjs";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 const {
@@ -131,4 +132,25 @@ test("uploads are read up to the size limit and no further", async () => {
   await assert.rejects(readLimitedBytes(request("x".repeat(200)), 100), (error) => error.status === 413);
   await assert.rejects(readLimitedBytes(request("x", { "content-length": "999999" }), 100), (error) => error.status === 413);
   await assert.rejects(readLimitedBytes(new Request("http://localhost/upload", { method: "POST" }), 100), (error) => error.status === 400);
+});
+
+test("numbers and dates typed with Bangla digits are accepted", () => {
+  const line = `Rina Akter,01700000001,Road 5 Dhaka,Rahim Uddin,01800000002,Agrabad Chattogram,২.৫,,,,,২০৯৯-০১-০১T১০:০০:০০+০৬:০০`;
+  const result = validateRow(readRows(parseCsv(file(line))).rows[0]);
+  assert.equal(result.ok, true);
+  assert.equal(result.input.parcelWeightKg, 2.5);
+  assert.equal(result.input.pickupScheduledAt, "2099-01-01T10:00:00+06:00");
+  // Names and addresses keep the digits they were written with.
+  const named = readRows(parseCsv(file("রহিম ২,01700000001,বাসা ১২ রোড ৫ ঢাকা,C D,67890,Chattogram road,1,,,,,"))).rows[0];
+  assert.equal(validateRow(named).input.pickupAddress, "বাসা ১২ রোড ৫ ঢাকা");
+  assert.equal(validateRow(named).input.pickupContactName, "রহিম ২");
+});
+
+test("the sample file in the docs passes the importer", () => {
+  const sample = readFileSync(new URL("../docs/sample-shipments.csv", import.meta.url), "utf8");
+  const parsed = readRows(parseCsv(sample));
+  assert.equal(parsed.rows.length, 3);
+  assert.deepEqual(parsed.unknownColumns, []);
+  assert.deepEqual(parsed.rows.map((row) => validateRow(row).ok), [true, true, true]);
+  assert.equal(validateRow(parsed.rows[1]).input.packageDescription, "Documents, sealed envelope");
 });

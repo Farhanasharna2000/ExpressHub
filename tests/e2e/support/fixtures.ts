@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 // Refresh tokens rotate on use and reuse revokes every session, so a shared
 // storage state would sign the other tests out. This also keeps the suite clear
 // of the login rate limits. Login itself is covered by the registration journey.
-async function sessionCookies(baseURL: string, userId: string, role: UserRole) {
+export async function sessionCookies(baseURL: string, userId: string, role: UserRole) {
   const refreshToken = randomBytes(32).toString("base64url");
   await prisma.refreshToken.create({
     data: {
