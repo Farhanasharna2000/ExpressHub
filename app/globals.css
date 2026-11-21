@@ -32,10 +32,14 @@
   font-synthesis: none; line-height: 1.6;
 }
 html[lang="bn"] { line-height: 1.7; }
-.language-switcher { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; white-space: nowrap; }
-.language-switcher button { background: none; border: 0; padding: 4px 2px; cursor: pointer; font: inherit; border-radius: 4px; }
+/* Brand-green segmented toggle: the active language is a solid chip, the other a quiet option. */
+.language-switcher { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid rgba(25, 101, 71, .28); border-radius: 999px; background: #eef4ef; font-size: .78rem; line-height: 1; white-space: nowrap; }
+.language-switcher button { min-width: 2.6rem; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--text-muted); font: inherit; font-weight: 600; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+.language-switcher button:hover:not([aria-current]) { background: rgba(25, 101, 71, .1); color: var(--brand); }
+.language-switcher button[aria-current] { background: var(--brand); color: #fff; box-shadow: 0 1px 2px rgba(23, 55, 47, .25); cursor: default; }
 .language-switcher button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.language-switcher button:disabled { cursor: progress; }
+.language-switcher button:disabled:not([aria-current]) { cursor: progress; opacity: .7; }
+@media (prefers-reduced-motion: reduce) { .language-switcher button { transition: none; } }
 .auth-language { position: absolute; top: 16px; right: 20px; z-index: 5; }
 html[lang="bn"] h1, html[lang="bn"] h2, html[lang="bn"] h3 { letter-spacing: 0; line-height: 1.3; }
 /* Tracking splits Bangla conjuncts apart, and Bangla has no capitals to space out. */

@@ -22,20 +22,17 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
 
   return (
     <div role="group" aria-label={t("label")} className={`language-switcher ${className}`.trim()} aria-busy={pending}>
-      {locales.map((locale, index) => (
-        <span key={locale} className="contents">
-          {index > 0 && <span aria-hidden="true" className="text-[var(--line-strong,#c5d1c9)]">|</span>}
-          <button
-            type="button"
-            lang={locale}
-            onClick={() => choose(locale)}
-            aria-current={locale === current ? "true" : undefined}
-            disabled={pending}
-            className={locale === current ? "font-bold text-[var(--brand)]" : "text-[var(--text-muted)] hover:text-[var(--brand)]"}
-          >
-            {locale === "en" ? "EN" : t("bn")}
-          </button>
-        </span>
+      {locales.map((locale) => (
+        <button
+          key={locale}
+          type="button"
+          lang={locale}
+          onClick={() => choose(locale)}
+          aria-current={locale === current ? "true" : undefined}
+          disabled={pending}
+        >
+          {locale === "en" ? "EN" : t("bn")}
+        </button>
       ))}
     </div>
   );
