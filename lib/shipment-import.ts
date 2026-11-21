@@ -136,6 +136,9 @@ export function parseCsv(input: string): CsvRecord[] {
   return records;
 }
 
+// Added by the error report so a fixed file can be uploaded again without deleting them.
+export const REPORT_COLUMNS = ["row", "error"] as const;
+
 const normalizeHeader = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 const COLUMN_BY_KEY = new Map<string, ImportColumn>(IMPORT_COLUMNS.map((column) => [normalizeHeader(column), column]));
 
@@ -167,7 +170,7 @@ export function readRows(records: CsvRecord[]): ParsedFile {
     const column = COLUMN_BY_KEY.get(normalizeHeader(raw)) ?? null;
     if (column && seen.has(column)) throw new CsvFileError("duplicate_column", { column });
     if (column) seen.add(column);
-    else if (raw.trim() !== "") unknownColumns.push(raw.trim());
+    else if (raw.trim() !== "" && !(REPORT_COLUMNS as readonly string[]).includes(raw.trim().toLowerCase())) unknownColumns.push(raw.trim());
     columns.push(column);
   }
   const missing = REQUIRED_IMPORT_COLUMNS.filter((column) => !seen.has(column));
@@ -351,3 +354,61 @@ export function templateCsv() {
   const lines = [IMPORT_COLUMNS.join(","), ...SAMPLE_ROWS.map((row) => IMPORT_COLUMNS.map((column) => quote(row[column])).join(","))];
   return `${lines.join("\r\n")}\r\n`;
 }
+
+// ---- What the import API returns, shared with the page ----
+
+export type ImportStatus = "PREVIEW" | "PROCESSING" | "DONE" | "FAILED";
+
+export type ImportWarning =
+  | { code: "duplicate_row"; row: number; of: number }
+  | { code: "ignored_columns"; columns: string[] };
+
+export interface ImportProblem {
+  row: number;
+  status: "INVALID" | "FAILED";
+  issues: RowIssue[];
+}
+
+export interface ImportSampleRow {
+  row: number;
+  deliveryContactName: string;
+  deliveryAddress: string;
+  parcelWeightKg: number;
+  estimatedPrice: string | null;
+  currency: string | null;
+}
+
+export interface ImportCreatedShipment {
+  row: number;
+  id: string;
+  trackingNumber: string;
+}
+
+export interface ImportSummary {
+  id: string;
+  fileName: string;
+  status: ImportStatus;
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  createdCount: number;
+  failedCount: number;
+  pendingCount: number;
+  estimatedTotals: { currency: string; amount: string }[];
+  warnings: ImportWarning[];
+  createdAt: string;
+  confirmedAt: string | null;
+  finishedAt: string | null;
+}
+
+export interface ImportDetail {
+  import: ImportSummary;
+  problems: ImportProblem[];
+  problemsTotal: number;
+  sample: ImportSampleRow[];
+  createdShipments: ImportCreatedShipment[];
+}
+
+export const IMPORT_PROBLEM_LIMIT = 200;
+export const IMPORT_SAMPLE_LIMIT = 20;
+export const IMPORT_CREATED_LIMIT = 50;

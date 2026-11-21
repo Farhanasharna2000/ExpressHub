@@ -1,11 +1,7 @@
 import { AppError } from "@/lib/http/errors";
 
-// Reads a multipart body without letting an oversized upload be buffered past the limit.
-export async function readLimitedFormData(request: Request, maxBytes: number): Promise<FormData> {
-  const contentType = request.headers.get("content-type") ?? "";
-  if (contentType.split(";")[0].trim().toLowerCase() !== "multipart/form-data") {
-    throw new AppError(415, "Content-Type must be multipart/form-data", "UNSUPPORTED_MEDIA_TYPE");
-  }
+// Reads a request body without letting an oversized upload be buffered past the limit.
+export async function readLimitedBytes(request: Request, maxBytes: number): Promise<Uint8Array<ArrayBuffer>> {
   const declared = Number(request.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) {
     throw new AppError(413, "Request body is too large", "REQUEST_TOO_LARGE");
@@ -32,6 +28,15 @@ export async function readLimitedFormData(request: Request, maxBytes: number): P
     body.set(chunk, offset);
     offset += chunk.byteLength;
   }
+  return body;
+}
+
+export async function readLimitedFormData(request: Request, maxBytes: number): Promise<FormData> {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.split(";")[0].trim().toLowerCase() !== "multipart/form-data") {
+    throw new AppError(415, "Content-Type must be multipart/form-data", "UNSUPPORTED_MEDIA_TYPE");
+  }
+  const body = await readLimitedBytes(request, maxBytes);
   try {
     return await new Response(body, { headers: { "content-type": contentType } }).formData();
   } catch {

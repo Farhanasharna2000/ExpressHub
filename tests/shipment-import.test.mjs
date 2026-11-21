@@ -6,6 +6,7 @@ const {
   CsvFileError, IMPORT_COLUMNS, IMPORT_MAX_ROWS, findDuplicates, parseCsv, readRows, templateCsv, validateRow,
 } = await import("../lib/shipment-import.ts");
 const { csvCell, toCsv } = await import("../lib/csv.ts");
+const { readLimitedBytes } = await import("../lib/http/multipart.ts");
 
 const HEADER = IMPORT_COLUMNS.join(",");
 const GOOD = 'Rina Akter,01700000001,"House 12, Road 5, Gulshan",Rahim Uddin,01800000002,Agrabad Chattogram,2.5,Box of books,,,,';
@@ -122,4 +123,12 @@ test("the template is a valid file that passes its own validation", () => {
   assert.deepEqual(parsed.unknownColumns, []);
   assert.equal(validateRow(parsed.rows[0]).ok, true);
   assert.equal(templateCsv().split("\r\n")[0], HEADER);
+});
+
+test("uploads are read up to the size limit and no further", async () => {
+  const request = (body, headers = {}) => new Request("http://localhost/upload", { method: "POST", body, headers });
+  assert.equal(new TextDecoder().decode(await readLimitedBytes(request("a,b\n1,2"), 100)), "a,b\n1,2");
+  await assert.rejects(readLimitedBytes(request("x".repeat(200)), 100), (error) => error.status === 413);
+  await assert.rejects(readLimitedBytes(request("x", { "content-length": "999999" }), 100), (error) => error.status === 413);
+  await assert.rejects(readLimitedBytes(new Request("http://localhost/upload", { method: "POST" }), 100), (error) => error.status === 400);
 });
