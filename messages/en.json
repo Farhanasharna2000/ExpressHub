@@ -267,7 +267,9 @@
     "imagePrepare": "The image could not be prepared",
     "proofTooLarge": "This photo is too large. Take it again closer up.",
     "signaturePrepare": "The signature could not be prepared",
-    "recipientName": "Enter the recipient's name"
+    "recipientName": "Enter the recipient's name",
+    "minLength3": "Enter at least 3 characters.",
+    "noteMin": "A note of at least 3 characters is required."
   },
   "auth": {
     "requestFailed": "We couldn't complete that request",
@@ -680,5 +682,80 @@
     "photoCaption": "Delivery photo",
     "signatureAlt": "Signature of {name}",
     "signatureCaption": "Recipient signature"
+  },
+  "assign": {
+    "assigned": "Courier {courier} assigned successfully.",
+    "confirmed": "Assignment Confirmed",
+    "conflict": "Assignment conflict detected",
+    "failed": "Failed to assign courier",
+    "conflictText": "{message}. The shipment has been refreshed with the latest data.",
+    "title": "Courier Assignment",
+    "loading": "Loading Couriers…",
+    "current": "Currently Assigned:",
+    "tel": "Tel: {phone}",
+    "courierId": "Courier ID: {id}",
+    "unassigned": "Unassigned - No courier currently assigned",
+    "select": "Select Active Courier to Assign:",
+    "choose": "-- Choose active courier --",
+    "reload": "Reload courier list",
+    "loadFailed": "Could not load couriers: {message}",
+    "assigning": "Assigning…",
+    "reassign": "Reassign Courier",
+    "assign": "Assign Courier",
+    "alreadyAssigned": "Courier is currently assigned.",
+    "restricted": "Courier assignment is restricted to <b>CREATED</b> or <b>FAILED</b> status shipments. This shipment is currently <b>{status}</b> and cannot be reassigned during active transit or after terminal completion."
+  },
+  "archive": {
+    "archived": "Shipment Archived",
+    "archivedText": "The shipment has been successfully archived.",
+    "conflict": "Archival conflict",
+    "failed": "Failed to archive shipment",
+    "title": "Shipment Archival (Soft Delete)",
+    "terminal": "This shipment is in terminal status ({status}). You can archive this record to remove it from operational dispatch while retaining permanent audit logs.",
+    "archiveButton": "Archive Shipment Record",
+    "notAllowed": "Shipment archival is only permitted for terminal records (<b>Delivered</b>, <b>Returned</b>, or <b>Cancelled</b>). Active shipments in transit cannot be archived until their lifecycle is settled.",
+    "confirmTitle": "Confirm Shipment Archival",
+    "confirmText": "Archiving softly deletes this shipment from operational lists. All audit event records will be permanently retained.",
+    "reason": "Archival Reason (Required):",
+    "reasonPlaceholder": "e.g., Routine archival of delivered shipment, Customer request, Billing cycle closure...",
+    "cancel": "Cancel",
+    "confirm": "Confirm Archival"
+  },
+  "transition": {
+    "deliveryStatus": "Delivery Status",
+    "terminal": "This shipment is in terminal status ({status}). No further operational transitions are available.",
+    "updated": "Shipment status successfully transitioned to {status}.",
+    "confirmed": "Update Confirmed",
+    "conflict": "Concurrent update detected",
+    "failed": "Status update failed",
+    "conflictText": "{message}. The shipment has been reloaded with its latest state.",
+    "title": "Operational Actions",
+    "current": "Current status: <b>{status}</b>. Select next operational step:",
+    "markAs": "Mark as {status}",
+    "readiness": {
+      "notAllowed": "Transition to {to} is not allowed from {from}.",
+      "paymentRequired": "Confirmed payment is required before pickup or delivery.",
+      "courierRequired": "An active assigned Courier is required before pickup or delivery.",
+      "proofRequired": "The courier must capture proof of delivery first."
+    },
+    "confirmTitle": "Confirm transition to {status}",
+    "describe": {
+      "DELIVERED": "Provide confirmation details of the completed delivery.",
+      "FAILED": "Provide the specific reason why this delivery attempt failed.",
+      "RETURNED": "Provide the reason for returning the parcel to the origin.",
+      "CANCELLED": "This cancellation is permanent. State any reason or note."
+    },
+    "noteRequired": "Note / Reason (Required):",
+    "noteOptional": "Optional Note:",
+    "placeholder": {
+      "DELIVERED": "e.g., Handed parcel to recipient at door",
+      "FAILED": "e.g., Recipient unavailable after 3 phone calls",
+      "RETURNED": "e.g., Returned to hub after multiple failed attempts",
+      "other": "Add any optional context..."
+    },
+    "minimum": "Minimum 3 characters",
+    "cancel": "Cancel",
+    "updating": "Updating…",
+    "confirmButton": "Confirm {status}"
   }
 }

@@ -15,10 +15,12 @@ import type { ShipmentStatus, UserRole } from "@/types/api";
 import {
   getAllowedTransitions,
   isNoteRequired,
-  statusLabel,
   validateTransitionReadiness,
   type Shipment,
 } from "./contracts";
+import { useTranslations } from "next-intl";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
+import { translateKnownMessage } from "@/lib/i18n/bridge";
 
 interface StatusTransitionControlProps {
   shipment: Shipment;
@@ -34,6 +36,9 @@ export function StatusTransitionControl({
   onSuccess,
   hiddenTargets = [],
 }: StatusTransitionControlProps) {
+  const t = useTranslations("transition");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
   const { store } = useSession();
   const allowed = getAllowedTransitions(shipment.status, role).filter((target) => !hiddenTargets.includes(target));
 
@@ -50,11 +55,11 @@ export function StatusTransitionControl({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Delivery Status</CardTitle>
+          <CardTitle>{t("deliveryStatus")}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            This shipment is in terminal status ({statusLabel(shipment.status)}). No further operational transitions are available.
+            {t("terminal", { status: statusLabel(shipment.status) })}
           </p>
         </CardContent>
       </Card>
@@ -97,9 +102,9 @@ export function StatusTransitionControl({
         body: payload,
       });
 
-      const msg = `Shipment status successfully transitioned to ${statusLabel(target)}.`;
+      const msg = t("updated", { status: statusLabel(target) });
       setLastActionSuccess(msg);
-      toast.success("Update Confirmed", msg);
+      toast.success(t("confirmed"), msg);
       setActiveTarget(null);
       form.reset();
       onSuccess();
@@ -107,9 +112,9 @@ export function StatusTransitionControl({
       setMutationError(err);
       const isConflict = err instanceof ApiError && err.status === 409;
       toast.error(
-        isConflict ? "Concurrent update detected" : "Status update failed",
+        isConflict ? t("conflict") : t("failed"),
         isConflict
-          ? `${err.message}. The shipment has been reloaded with its latest state.`
+          ? t("conflictText", { message: err.message.replace(/[.\s]+$/, "") })
           : errorMessage(err)
       );
       if (isConflict) {
@@ -147,14 +152,14 @@ export function StatusTransitionControl({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span>Operational Actions</span>
+          <span>{t("title")}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
 
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Current status: <strong>{statusLabel(shipment.status)}</strong>. Select next operational step:
+            {t.rich("current", { b: (chunks) => <strong>{chunks}</strong>, status: statusLabel(shipment.status) })}
           </p>
 
           <div className="flex flex-wrap gap-3">
@@ -181,10 +186,10 @@ export function StatusTransitionControl({
                     ) : (
                       getButtonIcon(target)
                     )}
-                    <span>Mark as {statusLabel(target)}</span>
+                    <span>{t("markAs", { status: statusLabel(target) })}</span>
                   </Button>
                   {!readiness.eligible && readiness.reason && (
-                    <span className="text-xs text-destructive max-w-xs">{readiness.reason}</span>
+                    <span className="text-xs text-destructive max-w-xs">{readiness.code ? t(`readiness.${readiness.code}`, { from: statusLabel(shipment.status), to: statusLabel(target) }) : readiness.reason}</span>
                   )}
                 </div>
               );
@@ -201,20 +206,20 @@ export function StatusTransitionControl({
           >
             <DialogHeader>
               <DialogTitle>
-                Confirm transition to {activeTarget ? statusLabel(activeTarget) : ""}
+                {t("confirmTitle", { status: activeTarget ? statusLabel(activeTarget) : "" })}
               </DialogTitle>
               <DialogDescription>
-                {activeTarget === "DELIVERED" && "Provide confirmation details of the completed delivery."}
-                {activeTarget === "FAILED" && "Provide the specific reason why this delivery attempt failed."}
-                {activeTarget === "RETURNED" && "Provide the reason for returning the parcel to the origin."}
-                {activeTarget === "CANCELLED" && "This cancellation is permanent. State any reason or note."}
+                {activeTarget === "DELIVERED" && t("describe.DELIVERED")}
+                {activeTarget === "FAILED" && t("describe.FAILED")}
+                {activeTarget === "RETURNED" && t("describe.RETURNED")}
+                {activeTarget === "CANCELLED" && t("describe.CANCELLED")}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-2">
               <div className="field">
                 <label htmlFor="transition-note" className="text-sm font-medium">
-                  {activeTarget && isNoteRequired(activeTarget) ? "Note / Reason (Required):" : "Optional Note:"}
+                  {activeTarget && isNoteRequired(activeTarget) ? t("noteRequired") : t("noteOptional")}
                 </label>
                 <textarea
                   id="transition-note"
@@ -226,25 +231,25 @@ export function StatusTransitionControl({
                   maxLength={1000}
                   placeholder={
                     activeTarget === "DELIVERED"
-                      ? "e.g., Handed parcel to recipient at door"
+                      ? t("placeholder.DELIVERED")
                       : activeTarget === "FAILED"
-                        ? "e.g., Recipient unavailable after 3 phone calls"
+                        ? t("placeholder.FAILED")
                         : activeTarget === "RETURNED"
-                          ? "e.g., Returned to hub after multiple failed attempts"
-                          : "Add any optional context..."
+                          ? t("placeholder.RETURNED")
+                          : t("placeholder.other")
                   }
                   className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
                 <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
-                  <span>{activeTarget && isNoteRequired(activeTarget) ? "Minimum 3 characters" : ""}</span>
-                  <span>{note.length} / 1000</span>
+                  <span>{activeTarget && isNoteRequired(activeTarget) ? t("minimum") : ""}</span>
+                  <span>{f.digits(`${note.length} / 1000`)}</span>
                 </div>
-                {noteError && <p id="transition-note-error" role="alert" className="text-xs text-destructive mt-1">{noteError}</p>}
+                {noteError && <p id="transition-note-error" role="alert" className="text-xs text-destructive mt-1">{translateKnownMessage(noteError)}</p>}
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="outline" disabled={busy} onClick={closeDialog}>
-                  Cancel
+                  {t("cancel")}
                 </Button>
                 <Button
                   variant={activeTarget ? getButtonVariant(activeTarget) : "default"}
@@ -254,7 +259,7 @@ export function StatusTransitionControl({
                   }}
                 >
                   {busy && <Loader2 className="animate-spin size-4" />}
-                  {busy ? "Updating…" : `Confirm ${activeTarget ? statusLabel(activeTarget) : ""}`}
+                  {busy ? t("updating") : t("confirmButton", { status: activeTarget ? statusLabel(activeTarget) : "" })}
                 </Button>
               </div>
             </div>
