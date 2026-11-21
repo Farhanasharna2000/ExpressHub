@@ -68,7 +68,11 @@ test("Bangla dates, times and numbers use Bangla digits and words", () => {
   assert.equal(format.fromBanglaDigits("৯৯.৯৮%"), "99.98%");
   assert.equal(format.formatClockDate(AT, "bn", "Asia/Dhaka"), "১৯ নভে ২০২৬, ১০:১৯ পূর্বাহ্ণ");
   assert.equal(format.formatClockDate("2026-11-19T10:05:00.000Z", "bn", "Asia/Dhaka"), "১৯ নভে ২০২৬, ৪:০৫ অপরাহ্ণ");
-  assert.equal(format.formatDateTime(AT, "bn"), "১৯ নভে ২০২৬, ১০:১৯ পূর্বাহ্ণ");
+  // formatDateTime uses the viewer's device timezone by design, so it must match the same
+  // formatter run with this machine's zone; it only equals Dhaka time on a Dhaka machine.
+  const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  assert.equal(format.formatDateTime(AT, "bn"), format.formatClockDate(AT, "bn", deviceZone));
+  assert.match(format.formatDateTime(AT, "bn"), /^[০-৯]{2} নভে ২০২৬, [০-৯]+:[০-৯]{2} (পূর্বাহ্ণ|অপরাহ্ণ)$/);
   assert.equal(format.formatMoney("1250.00", "BDT", "bn"), "৳১২৫০.০০");
   assert.equal(format.formatNumber(1234567.5, "bn"), "১২,৩৪,৫৬৭.৫");
   assert.equal(format.formatPercent(0.873, "bn", 1), "৮৭.৩%");
