@@ -548,7 +548,8 @@
     "noneMatching": "No matching shipments",
     "firstTitle": "Your first shipment starts here",
     "firstText": "Book a shipment to start following its journey.",
-    "viewAll": "View all shipments"
+    "viewAll": "View all shipments",
+    "importCsv": "Import CSV"
   },
   "booking": {
     "steps": {
@@ -610,7 +611,8 @@
     "priceTitle": "Price shown after booking",
     "priceText": "Create your shipment to see the final price and pay securely with Stripe.",
     "checkTitle": "Check your details",
-    "checkText": "Addresses and parcel details cannot be changed after booking."
+    "checkText": "Addresses and parcel details cannot be changed after booking.",
+    "importCsv": "Import CSV"
   },
   "weight": {
     "label": "Weight (kg)",
@@ -1839,11 +1841,149 @@
     "customer_shipments": "My shipments",
     "profile": "Your profile",
     "login": "Login",
-    "register": "Register"
+    "register": "Register",
+    "customer_shipments_import": "Import shipments"
   },
   "fallback": {
     "loadingShipments": "Loading shipments…",
     "loadingPayments": "Loading payments…",
     "loadingPayment": "Loading payment details…"
+  },
+  "shipmentImport": {
+    "title": "Import shipments from a spreadsheet",
+    "intro": "Book many parcels at once. Upload a CSV file, check the preview, then confirm. Nothing is created until you confirm.",
+    "back": "My shipments",
+    "templateButton": "Download template",
+    "guideTitle": "What goes in the file",
+    "guideIntro": "The first row holds the column names; capital letters and spaces do not matter. Up to {rows} shipments and 1 MB per file. Weights and sizes use plain numbers such as 2.5 (Bangla digits work too).",
+    "guideColumns": {
+      "column": "Column",
+      "required": "Required",
+      "format": "What to enter",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "columns": {
+      "pickupContactName": "Pickup contact name",
+      "pickupContactPhone": "Pickup phone",
+      "pickupAddress": "Pickup address",
+      "deliveryContactName": "Recipient name",
+      "deliveryContactPhone": "Recipient phone",
+      "deliveryAddress": "Delivery address",
+      "parcelWeightKg": "Weight (kg)",
+      "packageDescription": "Parcel description",
+      "parcelLengthCm": "Length (cm)",
+      "parcelWidthCm": "Width (cm)",
+      "parcelHeightCm": "Height (cm)",
+      "pickupScheduledAt": "Pickup time"
+    },
+    "hints": {
+      "pickupContactName": "Name of the sender, 2 to 100 characters",
+      "pickupContactPhone": "Sender's phone number, 5 to 30 characters",
+      "pickupAddress": "Where the parcel is collected, 5 to 500 characters",
+      "deliveryContactName": "Name of the person receiving the parcel",
+      "deliveryContactPhone": "Recipient's phone number",
+      "deliveryAddress": "Where the parcel is delivered",
+      "parcelWeightKg": "A number such as 2.5, with at most 3 decimal places",
+      "packageDescription": "Optional, up to 1,000 characters",
+      "parcelLengthCm": "Optional. Give length, width and height together",
+      "parcelWidthCm": "Optional. Give length, width and height together",
+      "parcelHeightCm": "Optional. Give length, width and height together",
+      "pickupScheduledAt": "Optional. A future date and time such as 2026-12-01T10:00:00+06:00"
+    },
+    "drop": {
+      "title": "Drag a CSV file here",
+      "or": "or",
+      "choose": "Choose a file",
+      "hint": "CSV (UTF-8), up to {rows} shipments and 1 MB.",
+      "uploading": "Checking {name}…",
+      "label": "CSV file to import"
+    },
+    "errors": {
+      "tooLarge": "The file is larger than 1 MB. Split it into smaller files.",
+      "notCsv": "Choose a .csv file.",
+      "loadFailed": "This import could not be loaded."
+    },
+    "fileErrors": {
+      "empty_file": "The file has no rows. Add a header row and at least one shipment.",
+      "unterminated_quote": "A quoted value is never closed (row {row}). Check the quotation marks.",
+      "missing_columns": "These required columns are missing: {columns}.",
+      "duplicate_column": "The column {column} appears more than once.",
+      "too_many_rows": "The file has {rows} shipments; the limit is {max}.",
+      "too_many_columns": "The file has too many columns.",
+      "cell_too_long": "A value in row {row} is longer than {max} characters.",
+      "not_csv": "This does not look like a CSV text file. Save it as CSV UTF-8 and try again.",
+      "REQUEST_TOO_LARGE": "The file is larger than 1 MB.",
+      "UNSUPPORTED_MEDIA_TYPE": "Choose a .csv file.",
+      "IMPORT_IN_PROGRESS": "Another import is still running. Wait for it to finish.",
+      "IMPORT_CONFLICT": "This import was already confirmed.",
+      "IMPORT_EMPTY": "There are no valid rows to create.",
+      "IMPORT_EXPIRED": "This preview has expired. Upload the file again."
+    },
+    "rowIssues": {
+      "required": "This value is required",
+      "too_short": "Must be at least {min} characters",
+      "too_long": "Must be at most {max} characters",
+      "not_a_number": "Enter a number such as 2.5",
+      "must_be_positive": "Must be greater than 0",
+      "too_large": "Must be at most {max}",
+      "too_many_decimals": "Use at most {decimals} decimal places",
+      "invalid_datetime": "Use a date and time like 2026-12-01T10:00:00+06:00",
+      "must_be_future": "Pickup must be scheduled in the future",
+      "dimensions_all_or_none": "Give length, width and height, or leave all three empty",
+      "extra_cells": "This row has more values than the header has columns",
+      "pricing_unavailable": "No delivery price is set for this weight"
+    },
+    "preview": {
+      "title": "Check your file",
+      "file": "File: {name}",
+      "total": "Rows in the file",
+      "ready": "Ready to create",
+      "problems": "Need fixing",
+      "estimated": "Estimated total",
+      "estimatedNote": "Shipments are created unpaid. You pay for each one from its page, and the final price is confirmed there.",
+      "warningsTitle": "Worth a look",
+      "duplicate": "Row {row} has the same details as row {of}.",
+      "ignored": "These columns are not used and were ignored: {columns}.",
+      "problemsTitle": "Rows that need fixing",
+      "problemsHint": "These rows will be skipped. Fix them in your file and upload it again, or continue without them.",
+      "problemsLimit": "Showing the first {shown} of {total} problems.",
+      "rowHeader": "Row",
+      "columnHeader": "Column",
+      "problemHeader": "Problem",
+      "wholeRow": "Whole row",
+      "sampleTitle": "Ready to create",
+      "sampleCaption": "The first {count} rows that will be created",
+      "recipient": "Recipient",
+      "address": "Delivery address",
+      "weight": "Weight (kg)",
+      "price": "Estimated price",
+      "confirm": "Create {count, plural, one {# shipment} other {# shipments}}",
+      "confirming": "Starting…",
+      "noValid": "None of the rows can be created. Fix the problems and upload the file again.",
+      "another": "Choose another file",
+      "download": "Download problem rows"
+    },
+    "progress": {
+      "title": "Creating your shipments",
+      "label": "Import progress",
+      "status": "{done} of {total} done",
+      "created": "{count} created",
+      "failed": "{count} could not be created",
+      "keepOpen": "Keep this page open to follow along. If you leave, the import still finishes and the new shipments appear in My shipments."
+    },
+    "result": {
+      "doneTitle": "Import finished",
+      "summary": "{created} of {total} shipments created",
+      "allDone": "All of your shipments were created.",
+      "someFailed": "Some rows could not be created. Download them, fix them and upload that file again.",
+      "payNote": "New shipments are unpaid. Open a shipment to pay for it.",
+      "shipmentsTitle": "New shipments",
+      "shipmentsMore": "Showing the first {shown} of {total}.",
+      "viewAll": "View all in My shipments",
+      "problemsTitle": "Rows that were not created",
+      "anotherImport": "Import another file"
+    },
+    "loading": "Loading import…"
   }
 }

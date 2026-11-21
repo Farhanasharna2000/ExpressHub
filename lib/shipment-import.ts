@@ -240,6 +240,10 @@ export function rowIssue(field: ImportColumn | null, code: RowIssueCode, params?
 }
 
 const NUMERIC_COLUMNS: readonly ImportColumn[] = ["parcelWeightKg", "parcelLengthCm", "parcelWidthCm", "parcelHeightCm"];
+// Numbers and dates typed with Bangla digits (২.৫) are read as 2.5; names and addresses keep
+// whatever digits they were written with.
+const DIGIT_COLUMNS: readonly ImportColumn[] = [...NUMERIC_COLUMNS, "pickupScheduledAt"];
+const toAsciiDigits = (value: string) => value.replace(/[০-৯]/g, (digit) => String(digit.charCodeAt(0) - 0x09e6));
 const PLAIN_DECIMAL = /^\d+(?:\.\d+)?$/;
 const columnOf = (key: unknown): ImportColumn | null => (typeof key === "string" && (IMPORT_COLUMNS as readonly string[]).includes(key) ? (key as ImportColumn) : null);
 
@@ -253,8 +257,9 @@ export function validateRow(row: RawRow): RowResult {
   const candidate: Record<string, string | number> = {};
   const unreadable = new Set<ImportColumn>();
   for (const column of IMPORT_COLUMNS) {
-    const value = row.values[column];
-    if (value === undefined || value === "") continue;
+    const raw = row.values[column];
+    if (raw === undefined || raw === "") continue;
+    const value = DIGIT_COLUMNS.includes(column) ? toAsciiDigits(raw) : raw;
     if (NUMERIC_COLUMNS.includes(column)) {
       if (PLAIN_DECIMAL.test(value)) candidate[column] = Number(value);
       else {

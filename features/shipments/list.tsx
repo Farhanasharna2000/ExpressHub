@@ -17,6 +17,7 @@ import {
   Clock3,
   X,
   Filter,
+  FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -253,12 +254,22 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
             {recent ? t("recentText") : t("text")}
           </p>
         </div>
-        <Button asChild className="min-h-11">
-          <Link href="/customer/shipments/new">
-            <Plus />
-            {t("book")}
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {!recent && (
+            <Button asChild variant="outline" className="min-h-11">
+              <Link href="/customer/shipments/import">
+                <FileUp />
+                {t("importCsv")}
+              </Link>
+            </Button>
+          )}
+          <Button asChild className="min-h-11">
+            <Link href="/customer/shipments/new">
+              <Plus />
+              {t("book")}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {!recent && (

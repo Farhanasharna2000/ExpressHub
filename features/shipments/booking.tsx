@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Loader2, Package, MapPin, Phone, Pencil, CalendarClock, Scale, CreditCard } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FileUp, Loader2, Package, MapPin, Phone, Pencil, CalendarClock, Scale, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/primitives";
@@ -118,7 +118,7 @@ export function ShipmentBooking() {
 
   return <div className="page-stack">
     <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> {t("back")}</Link>
-    <div className="page-heading"><div><p className="eyebrow">{t("eyebrow")}</p><h1>{t("title")}</h1><p>{t("intro")}</p></div></div>
+    <div className="page-heading"><div><p className="eyebrow">{t("eyebrow")}</p><h1>{t("title")}</h1><p>{t("intro")}</p></div><Button asChild variant="outline" className="min-h-11"><Link href="/customer/shipments/import"><FileUp aria-hidden="true" />{t("importCsv")}</Link></Button></div>
     <BookingAssist onApply={applyDraft} onBusyChange={setAiBusy} disabled={busy || uncertain} />
     <ol className="shipment-steps" aria-label={t("progress")}>{steps.map((name, index) => <li key={name} aria-current={step === index ? "step" : undefined}><span>{index < step ? <Check className="size-4" aria-hidden="true" /> : f.digits(index + 1)}</span>{t(`steps.${name}`)}</li>)}</ol>
     <form ref={formRef} onSubmit={form.handleSubmit(submit, invalid)} noValidate aria-busy={busy} className="booking-layout">
