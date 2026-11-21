@@ -41,6 +41,8 @@ const KNOWN_MESSAGES: Record<string, string> = {
 };
 
 export function translateKnownMessage(message: string) {
+  // "An archival reason of at least 3 characters is required." and similar.
+  if (/ of at least 3 characters is required\.$/.test(message)) return localize("known.minLength3", message);
   const key = KNOWN_MESSAGES[message];
   return key ? localize(key, message) : message;
 }
