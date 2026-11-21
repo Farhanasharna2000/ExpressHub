@@ -31,10 +31,10 @@ export function Input({ id, label, hint, error, ...props }: InputHTMLAttributes<
 export function Select({ id, label, hint, error, children, ...props }: Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & { ref?: Ref<HTMLSelectElement> } & Field) {
   return <div className="field"><Label htmlFor={id}>{label}</Label><NativeSelect {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])}>{children}</NativeSelect>{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{translateKnownMessage(error)}</small>}</div>;
 }
-export function StatusBadge({ status }: { status: ShipmentStatus | PaymentStatus }) {
+export function StatusBadge({ status, className = "" }: { status: ShipmentStatus | PaymentStatus; className?: string }) {
   const t = useTranslations("status");
   const tone = ["PAID", "DELIVERED"].includes(status) ? "success" : status === "FAILED" ? "danger" : ["PENDING", "REFUND_PENDING", "CREATED"].includes(status) ? "warning" : "neutral";
-  return <Badge variant="outline" className={`badge badge-${tone}`}>{t(status)}</Badge>;
+  return <Badge variant="outline" className={`badge badge-${tone} ${className}`.trim()}>{t(status)}</Badge>;
 }
 export function EmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
   return <div className="empty-state"><PackageOpen className="empty-symbol mx-auto size-8" aria-hidden="true" /><h2>{title}</h2><p>{description}</p>{action}</div>;

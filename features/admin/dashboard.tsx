@@ -303,9 +303,10 @@ export function AdminDashboard() {
                   ).map((st) => (
                     <div
                       key={st}
-                      className="p-3 rounded-lg border bg-muted/20 flex flex-col justify-between"
+                      className="min-w-0 p-3 rounded-lg border bg-muted/20 flex flex-col justify-between"
                     >
-                      <StatusBadge status={st} />
+                      {/* Longer Bangla labels wrap inside the card instead of spilling into the next one. */}
+                      <StatusBadge status={st} className="h-auto max-w-full whitespace-normal text-left leading-tight" />
                       <div className="mt-3">
                         <span className="text-2xl font-bold">
                           {f.number(stats.shipments.byStatus[st] ?? 0)}

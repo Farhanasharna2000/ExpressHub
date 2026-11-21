@@ -12,6 +12,8 @@
   --color-destructive: #972f30; --color-border: #d9e1d9;
   --color-input: #b5c4bb; --color-ring: #196547;
   --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+  /* Monospace fonts have no Bangla glyphs, so Bangla digits in codes fall through to Noto. */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", var(--font-bangla), monospace;
 }
 @layer base {
   :root { --background: #f6f7f2; --foreground: #17372f; --card: #fff; --primary: #196547; }
