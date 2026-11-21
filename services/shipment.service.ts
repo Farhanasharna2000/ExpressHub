@@ -7,6 +7,7 @@ import { AppError } from "@/lib/http/errors";
 import prisma from "@/lib/prisma";
 import { paginateTransaction } from "@/lib/db/pagination";
 import type { PaymentGateway } from "@/lib/payments/stripe";
+import { quoteWithRules } from "@/lib/pricing-quote";
 import { recordShipmentEvent } from "@/services/shipment-events";
 import { applyRefund, reserveRefund, sendRefund } from "@/services/payment.service";
 import type {
@@ -84,9 +85,16 @@ async function currentActor(
 
 const record = recordShipmentEvent;
 
+export interface CreateShipmentOptions {
+  // Runs inside the creation transaction, so anything it writes commits or rolls back
+  // together with the shipment. The CSV import uses it to mark its row as created.
+  onCreated?: (tx: Prisma.TransactionClient, shipment: Shipment) => Promise<void>;
+}
+
 export async function createShipment(
   actor: AuthenticatedUser,
   input: CreateShipmentInput,
+  options: CreateShipmentOptions = {},
 ) {
   return transaction(async (tx) => {
     const user = await currentActor(tx, actor);
@@ -103,29 +111,7 @@ export async function createShipment(
       },
       take: 2,
     });
-    if (rules.length !== 1)
-      throw new AppError(
-        503,
-        "A unique active pricing rule is required for this weight",
-        "PRICING_UNAVAILABLE",
-      );
-    const rule = rules[0];
-    const extraKg = Prisma.Decimal.max(
-      weight.minus(rule.minWeightKg),
-      0,
-    ).ceil();
-    const price = rule.baseFee
-      .plus(extraKg.times(rule.additionalPerKgFee))
-      .toDecimalPlaces(2);
-    if (
-      rule.baseFee.isNegative() ||
-      rule.additionalPerKgFee.isNegative() ||
-      price.lte(0) ||
-      price.gt("9999999999.99") ||
-      !/^[A-Z]{3}$/.test(rule.currency)
-    ) {
-      throw new AppError(503, "Pricing rule is invalid", "PRICING_UNAVAILABLE");
-    }
+    const { rule, price } = quoteWithRules(rules, weight);
     const shipment = await tx.shipment.create({
       data: {
         ...input,
@@ -145,6 +131,7 @@ export async function createShipment(
       price: price.toFixed(2),
       currency: rule.currency,
     });
+    await options.onCreated?.(tx, shipment);
     return shipment;
   }, true);
 }

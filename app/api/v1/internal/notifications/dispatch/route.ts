@@ -4,6 +4,7 @@ import { hasCronSecret } from "@/lib/http/cron-auth";
 import { AppError } from "@/lib/http/errors";
 import { successResponse } from "@/lib/http/responses";
 import { dispatchPendingNotifications } from "@/services/notifications/outbox";
+import { advanceShipmentImports, expireShipmentImports } from "@/services/shipment-import.service";
 import { dispatchPendingWebhooks } from "@/services/webhooks/outbox";
 
 export const runtime = "nodejs";
@@ -36,7 +37,9 @@ async function sweep(request: NextRequest) {
       webhooks.dead += summary.dead;
       if (summary.claimed === 0) break;
     }
-    return successResponse("Notifications dispatched", { summary: totals, webhooks });
+    // Imports whose background run was cut short continue here, and unconfirmed previews expire.
+    const imports = { ...(await advanceShipmentImports({ budgetMs: 25_000 })), ...(await expireShipmentImports()) };
+    return successResponse("Notifications dispatched", { summary: totals, webhooks, imports });
   } catch (error) {
     return handleRouteError(error, request);
   }

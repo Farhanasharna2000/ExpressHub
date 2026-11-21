@@ -1,0 +1,4 @@
+pickupContactName,pickupContactPhone,pickupAddress,deliveryContactName,deliveryContactPhone,deliveryAddress,parcelWeightKg,packageDescription,parcelLengthCm,parcelWidthCm,parcelHeightCm,pickupScheduledAt
+Rina Akter,01700000001,"House 12, Road 5, Gulshan 1, Dhaka",Rahim Uddin,01800000002,"Agrabad Commercial Area, Chattogram",2.5,Box of books,30,20,15,
+Rina Akter,01700000001,"House 12, Road 5, Gulshan 1, Dhaka",Karim Hossain,01900000003,"Zindabazar, Sylhet",1,"Documents, sealed envelope",,,,
+Nusrat Jahan,01600000004,"Plot 7, Section 6, Mirpur, Dhaka",Salma Begum,01500000005,"Station Road, Rajshahi",12.75,Kitchen appliance,,,,

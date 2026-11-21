@@ -57,7 +57,7 @@ test("Bangla text uses Bangla script and digits", () => {
   for (const [key, value] of Object.entries(bnFlat)) {
     const text = value.replace(/\{[^}]*\}|<\/?\w+>/g, "");
     if (/[A-Za-z]{4,}/.test(text) && !/[ঀ-৿]/.test(text)) assert.ok(allowedIdentical(key, enFlat[key]), `no Bangla in ${key}: ${value}`);
-    assert.doesNotMatch(text.replace(/2xx|HMAC-SHA256|Node\.js|OpenAPI 3\.0/g, ""), /[0-9]/, `Latin digits in ${key}: ${value}`);
+    assert.doesNotMatch(text.replace(/2xx|HMAC-SHA256|Node\.js|OpenAPI 3\.0|UTF-8/g, ""), /[0-9]/, `Latin digits in ${key}: ${value}`);
   }
 });
 

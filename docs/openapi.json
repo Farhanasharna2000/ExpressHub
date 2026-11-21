@@ -7921,6 +7921,1676 @@
         }
       }
     },
+    "/api/v1/shipments/imports": {
+      "post": {
+        "operationId": "post__api_v1_shipments_imports",
+        "tags": [
+          "shipments"
+        ],
+        "summary": "Upload a CSV to preview a bulk shipment import",
+        "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Checks and prices every row with the booking rules but creates nothing. Send multipart/form-data with the file, or the raw file as text/csv (optional ?fileName=). Columns are pickupContactName, pickupContactPhone, pickupAddress, deliveryContactName, deliveryContactPhone, deliveryAddress, parcelWeightKg (required) and packageDescription, parcelLengthCm, parcelWidthCm, parcelHeightCm, pickupScheduledAt (optional); headers match without regard to case, spaces or underscores, and Bangla digits are accepted in numbers and dates. Row numbers follow the spreadsheet (the header is row 1). Problems are listed per row and column with a stable code. File-level problems return 400 with errors[0].code one of empty_file, unterminated_quote, missing_columns, duplicate_column, too_many_rows, too_many_columns, cell_too_long, not_csv (params carry the details). 409 IMPORT_IN_PROGRESS while another import of yours is running; 413 above 1 MB; 429 after 5 uploads an hour. A new preview replaces your earlier unconfirmed one, and previews expire after 24 hours.",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "import": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "totalRows": {
+                              "type": "integer"
+                            },
+                            "validRows": {
+                              "type": "integer"
+                            },
+                            "invalidRows": {
+                              "type": "integer"
+                            },
+                            "createdCount": {
+                              "type": "integer"
+                            },
+                            "failedCount": {
+                              "type": "integer"
+                            },
+                            "pendingCount": {
+                              "type": "integer"
+                            },
+                            "estimatedTotals": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "currency": {
+                                    "type": "string"
+                                  },
+                                  "amount": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "currency",
+                                  "amount"
+                                ]
+                              }
+                            },
+                            "warnings": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "row": {
+                                    "type": "integer"
+                                  },
+                                  "of": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "code",
+                                  "row",
+                                  "of"
+                                ]
+                              }
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "confirmedAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "finishedAt": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fileName",
+                            "status",
+                            "totalRows",
+                            "validRows",
+                            "invalidRows",
+                            "createdCount",
+                            "failedCount",
+                            "pendingCount",
+                            "estimatedTotals",
+                            "warnings",
+                            "createdAt",
+                            "confirmedAt",
+                            "finishedAt"
+                          ]
+                        },
+                        "problems": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "row": {
+                                "type": "integer"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "issues": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "field": {
+                                      "type": "string"
+                                    },
+                                    "code": {
+                                      "type": "string"
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "field",
+                                    "code",
+                                    "message"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "row",
+                              "status",
+                              "issues"
+                            ]
+                          }
+                        },
+                        "problemsTotal": {
+                          "type": "integer"
+                        },
+                        "sample": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "row": {
+                                "type": "integer"
+                              },
+                              "deliveryContactName": {
+                                "type": "string"
+                              },
+                              "deliveryAddress": {
+                                "type": "string"
+                              },
+                              "parcelWeightKg": {
+                                "type": "integer"
+                              },
+                              "estimatedPrice": {
+                                "type": "string"
+                              },
+                              "currency": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "row",
+                              "deliveryContactName",
+                              "deliveryAddress",
+                              "parcelWeightKg",
+                              "estimatedPrice",
+                              "currency"
+                            ]
+                          }
+                        },
+                        "createdShipments": {
+                          "type": "array",
+                          "items": {}
+                        }
+                      },
+                      "required": [
+                        "import",
+                        "problems",
+                        "problemsTotal",
+                        "sample",
+                        "createdShipments"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Import preview ready",
+                  "data": {
+                    "import": {
+                      "id": "cm123456789012345678901234",
+                      "fileName": "shipments.csv",
+                      "status": "PREVIEW",
+                      "totalRows": 5,
+                      "validRows": 3,
+                      "invalidRows": 2,
+                      "createdCount": 0,
+                      "failedCount": 0,
+                      "pendingCount": 3,
+                      "estimatedTotals": [
+                        {
+                          "currency": "BDT",
+                          "amount": "450.00"
+                        }
+                      ],
+                      "warnings": [
+                        {
+                          "code": "duplicate_row",
+                          "row": 4,
+                          "of": 2
+                        }
+                      ],
+                      "createdAt": "2026-10-10T06:00:00.000Z",
+                      "confirmedAt": null,
+                      "finishedAt": null
+                    },
+                    "problems": [
+                      {
+                        "row": 5,
+                        "status": "INVALID",
+                        "issues": [
+                          {
+                            "field": "parcelWeightKg",
+                            "code": "not_a_number",
+                            "message": "Enter a number such as 2.5"
+                          }
+                        ]
+                      }
+                    ],
+                    "problemsTotal": 2,
+                    "sample": [
+                      {
+                        "row": 2,
+                        "deliveryContactName": "Rahim Uddin",
+                        "deliveryAddress": "Agrabad, Chattogram",
+                        "parcelWeightKg": 2.5,
+                        "estimatedPrice": "150.00",
+                        "currency": "BDT"
+                      }
+                    ],
+                    "createdShipments": []
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business state conflict or exhausted concurrency retries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Business state conflict or exhausted concurrency retries.",
+                  "errors": [
+                    {
+                      "code": "CONFLICT"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON request exceeds 16 KiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Expected application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "CSV text (UTF-8) with a header row, up to 1 MB and 500 shipments."
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "additionalProperties": false
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shipments/imports/{id}": {
+      "get": {
+        "operationId": "get__api_v1_shipments_imports_id_",
+        "tags": [
+          "shipments"
+        ],
+        "summary": "Read a shipment import",
+        "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Returns the summary with live counts (rows created, failed and still pending), up to 200 problem rows, the first 20 valid rows with their estimated price, and up to 50 created shipments. Poll this while status is PROCESSING; a stalled import is restarted by the poll. 410 IMPORT_EXPIRED for a preview older than 24 hours.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^c[a-z0-9]{24}$",
+              "example": "cm123456789012345678901234"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "import": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "totalRows": {
+                              "type": "integer"
+                            },
+                            "validRows": {
+                              "type": "integer"
+                            },
+                            "invalidRows": {
+                              "type": "integer"
+                            },
+                            "createdCount": {
+                              "type": "integer"
+                            },
+                            "failedCount": {
+                              "type": "integer"
+                            },
+                            "pendingCount": {
+                              "type": "integer"
+                            },
+                            "estimatedTotals": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "currency": {
+                                    "type": "string"
+                                  },
+                                  "amount": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "currency",
+                                  "amount"
+                                ]
+                              }
+                            },
+                            "warnings": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "row": {
+                                    "type": "integer"
+                                  },
+                                  "of": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "code",
+                                  "row",
+                                  "of"
+                                ]
+                              }
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "confirmedAt": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "finishedAt": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fileName",
+                            "status",
+                            "totalRows",
+                            "validRows",
+                            "invalidRows",
+                            "createdCount",
+                            "failedCount",
+                            "pendingCount",
+                            "estimatedTotals",
+                            "warnings",
+                            "createdAt",
+                            "confirmedAt",
+                            "finishedAt"
+                          ]
+                        },
+                        "problems": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "row": {
+                                "type": "integer"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "issues": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "field": {
+                                      "type": "string"
+                                    },
+                                    "code": {
+                                      "type": "string"
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "field",
+                                    "code",
+                                    "message"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "row",
+                              "status",
+                              "issues"
+                            ]
+                          }
+                        },
+                        "problemsTotal": {
+                          "type": "integer"
+                        },
+                        "sample": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "row": {
+                                "type": "integer"
+                              },
+                              "deliveryContactName": {
+                                "type": "string"
+                              },
+                              "deliveryAddress": {
+                                "type": "string"
+                              },
+                              "parcelWeightKg": {
+                                "type": "integer"
+                              },
+                              "estimatedPrice": {
+                                "type": "string"
+                              },
+                              "currency": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "row",
+                              "deliveryContactName",
+                              "deliveryAddress",
+                              "parcelWeightKg",
+                              "estimatedPrice",
+                              "currency"
+                            ]
+                          }
+                        },
+                        "createdShipments": {
+                          "type": "array",
+                          "items": {}
+                        }
+                      },
+                      "required": [
+                        "import",
+                        "problems",
+                        "problemsTotal",
+                        "sample",
+                        "createdShipments"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Import fetched successfully",
+                  "data": {
+                    "import": {
+                      "id": "cm123456789012345678901234",
+                      "fileName": "shipments.csv",
+                      "status": "PREVIEW",
+                      "totalRows": 5,
+                      "validRows": 3,
+                      "invalidRows": 2,
+                      "createdCount": 0,
+                      "failedCount": 0,
+                      "pendingCount": 3,
+                      "estimatedTotals": [
+                        {
+                          "currency": "BDT",
+                          "amount": "450.00"
+                        }
+                      ],
+                      "warnings": [
+                        {
+                          "code": "duplicate_row",
+                          "row": 4,
+                          "of": 2
+                        }
+                      ],
+                      "createdAt": "2026-10-10T06:00:00.000Z",
+                      "confirmedAt": null,
+                      "finishedAt": null
+                    },
+                    "problems": [
+                      {
+                        "row": 5,
+                        "status": "INVALID",
+                        "issues": [
+                          {
+                            "field": "parcelWeightKg",
+                            "code": "not_a_number",
+                            "message": "Enter a number such as 2.5"
+                          }
+                        ]
+                      }
+                    ],
+                    "problemsTotal": 2,
+                    "sample": [
+                      {
+                        "row": 2,
+                        "deliveryContactName": "Rahim Uddin",
+                        "deliveryAddress": "Agrabad, Chattogram",
+                        "parcelWeightKg": 2.5,
+                        "estimatedPrice": "150.00",
+                        "currency": "BDT"
+                      }
+                    ],
+                    "createdShipments": []
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "errors": [
+                    {}
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shipments/imports/{id}/confirm": {
+      "post": {
+        "operationId": "post__api_v1_shipments_imports_id_confirm",
+        "tags": [
+          "shipments"
+        ],
+        "summary": "Confirm a shipment import",
+        "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Moves PREVIEW to PROCESSING in one conditional update, so a second confirm gets 409 IMPORT_CONFLICT. The valid rows are then created in the background in batches of 25 through the same booking code as POST /shipments (pricing, history, audit and merchant webhooks included); each row is claimed inside its own creation transaction, so a shipment is never created twice. Shipments are created unpaid, and no booking email is sent per row. 409 IMPORT_EMPTY when no row is valid; 409 IMPORT_IN_PROGRESS while another import runs; 410 IMPORT_EXPIRED after 24 hours.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^c[a-z0-9]{24}$",
+              "example": "cm123456789012345678901234"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "import": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "totalRows": {
+                              "type": "integer"
+                            },
+                            "validRows": {
+                              "type": "integer"
+                            },
+                            "invalidRows": {
+                              "type": "integer"
+                            },
+                            "createdCount": {
+                              "type": "integer"
+                            },
+                            "failedCount": {
+                              "type": "integer"
+                            },
+                            "pendingCount": {
+                              "type": "integer"
+                            },
+                            "estimatedTotals": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "currency": {
+                                    "type": "string"
+                                  },
+                                  "amount": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "currency",
+                                  "amount"
+                                ]
+                              }
+                            },
+                            "warnings": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "row": {
+                                    "type": "integer"
+                                  },
+                                  "of": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "code",
+                                  "row",
+                                  "of"
+                                ]
+                              }
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "confirmedAt": {
+                              "type": "string"
+                            },
+                            "finishedAt": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "fileName",
+                            "status",
+                            "totalRows",
+                            "validRows",
+                            "invalidRows",
+                            "createdCount",
+                            "failedCount",
+                            "pendingCount",
+                            "estimatedTotals",
+                            "warnings",
+                            "createdAt",
+                            "confirmedAt",
+                            "finishedAt"
+                          ]
+                        },
+                        "problems": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "row": {
+                                "type": "integer"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "issues": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "field": {
+                                      "type": "string"
+                                    },
+                                    "code": {
+                                      "type": "string"
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "field",
+                                    "code",
+                                    "message"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "row",
+                              "status",
+                              "issues"
+                            ]
+                          }
+                        },
+                        "problemsTotal": {
+                          "type": "integer"
+                        },
+                        "sample": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "row": {
+                                "type": "integer"
+                              },
+                              "deliveryContactName": {
+                                "type": "string"
+                              },
+                              "deliveryAddress": {
+                                "type": "string"
+                              },
+                              "parcelWeightKg": {
+                                "type": "integer"
+                              },
+                              "estimatedPrice": {
+                                "type": "string"
+                              },
+                              "currency": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "row",
+                              "deliveryContactName",
+                              "deliveryAddress",
+                              "parcelWeightKg",
+                              "estimatedPrice",
+                              "currency"
+                            ]
+                          }
+                        },
+                        "createdShipments": {
+                          "type": "array",
+                          "items": {}
+                        }
+                      },
+                      "required": [
+                        "import",
+                        "problems",
+                        "problemsTotal",
+                        "sample",
+                        "createdShipments"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Import started",
+                  "data": {
+                    "import": {
+                      "id": "cm123456789012345678901234",
+                      "fileName": "shipments.csv",
+                      "status": "PROCESSING",
+                      "totalRows": 5,
+                      "validRows": 3,
+                      "invalidRows": 2,
+                      "createdCount": 0,
+                      "failedCount": 0,
+                      "pendingCount": 3,
+                      "estimatedTotals": [
+                        {
+                          "currency": "BDT",
+                          "amount": "450.00"
+                        }
+                      ],
+                      "warnings": [
+                        {
+                          "code": "duplicate_row",
+                          "row": 4,
+                          "of": 2
+                        }
+                      ],
+                      "createdAt": "2026-10-10T06:00:00.000Z",
+                      "confirmedAt": "2026-10-10T06:00:00.000Z",
+                      "finishedAt": null
+                    },
+                    "problems": [
+                      {
+                        "row": 5,
+                        "status": "INVALID",
+                        "issues": [
+                          {
+                            "field": "parcelWeightKg",
+                            "code": "not_a_number",
+                            "message": "Enter a number such as 2.5"
+                          }
+                        ]
+                      }
+                    ],
+                    "problemsTotal": 2,
+                    "sample": [
+                      {
+                        "row": 2,
+                        "deliveryContactName": "Rahim Uddin",
+                        "deliveryAddress": "Agrabad, Chattogram",
+                        "parcelWeightKg": 2.5,
+                        "estimatedPrice": "150.00",
+                        "currency": "BDT"
+                      }
+                    ],
+                    "createdShipments": []
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business state conflict or exhausted concurrency retries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Business state conflict or exhausted concurrency retries.",
+                  "errors": [
+                    {
+                      "code": "CONFLICT"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "errors": [
+                    {}
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shipments/imports/{id}/errors": {
+      "get": {
+        "operationId": "get__api_v1_shipments_imports_id_errors",
+        "tags": [
+          "shipments"
+        ],
+        "summary": "Download the rows an import could not create",
+        "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Returns the invalid and failed rows as CSV inside the JSON envelope (save content as filename): the upload's own columns plus row and error, so the file can be fixed and uploaded again; the row and error columns are ignored on upload. Text cells that could run as spreadsheet formulas are prefixed with an apostrophe, which the importer removes again. Starts with a byte order mark so spreadsheets read Bangla text correctly.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^c[a-z0-9]{24}$",
+              "example": "cm123456789012345678901234"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "export": {
+                          "type": "object",
+                          "properties": {
+                            "filename": {
+                              "type": "string"
+                            },
+                            "contentType": {
+                              "type": "string"
+                            },
+                            "content": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "filename",
+                            "contentType",
+                            "content"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "export"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "message",
+                    "data"
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "message": "Import error report prepared",
+                  "data": {
+                    "export": {
+                      "filename": "shipments-errors.csv",
+                      "contentType": "text/csv; charset=utf-8",
+                      "content": "pickupContactName,pickupContactPhone,pickupAddress,deliveryContactName,deliveryContactPhone,deliveryAddress,parcelWeightKg,packageDescription,parcelLengthCm,parcelWidthCm,parcelHeightCm,pickupScheduledAt,row,error\r\n"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Invalid input, malformed JSON, duplicate/unknown query parameter or invalid ID.",
+                  "errors": [
+                    {
+                      "path": "",
+                      "message": "Invalid input"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid authentication or inactive/deleted account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing/invalid authentication or inactive/deleted account.",
+                  "errors": [
+                    {
+                      "code": "UNAUTHENTICATED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role or origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Forbidden role or origin.",
+                  "errors": [
+                    {
+                      "code": "FORBIDDEN"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing, deleted or inaccessible resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Missing, deleted or inaccessible resource.",
+                  "errors": [
+                    {
+                      "code": "NOT_FOUND"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Rate limit exceeded.",
+                  "errors": [
+                    {
+                      "code": "RATE_LIMITED"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected internal error (details withheld).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Unexpected internal error (details withheld).",
+                  "errors": [
+                    {
+                      "code": "INTERNAL_SERVER_ERROR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required backend/configuration unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "success": false,
+                  "message": "Required backend/configuration unavailable.",
+                  "errors": [
+                    {
+                      "code": "SERVICE_UNAVAILABLE"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/shipments/{id}/label": {
       "get": {
         "operationId": "get__api_v1_shipments_id_label",
@@ -20099,7 +21769,7 @@
           "internal"
         ],
         "summary": "Send due notification emails",
-        "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+        "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response. The same sweep continues confirmed CSV shipment imports that were cut short and deletes unconfirmed import previews older than 24 hours.",
         "parameters": [
           {
             "name": "Authorization",
@@ -20165,10 +21835,26 @@
                             "retrying",
                             "dead"
                           ]
+                        },
+                        "imports": {
+                          "type": "object",
+                          "properties": {
+                            "batches": {
+                              "type": "integer"
+                            },
+                            "expired": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "batches",
+                            "expired"
+                          ]
                         }
                       },
                       "required": [
-                        "summary"
+                        "summary",
+                        "imports"
                       ]
                     }
                   },
@@ -20188,6 +21874,10 @@
                       "skipped": 0,
                       "retrying": 1,
                       "dead": 0
+                    },
+                    "imports": {
+                      "batches": 0,
+                      "expired": 0
                     }
                   }
                 }
@@ -20260,7 +21950,7 @@
           "internal"
         ],
         "summary": "Send due notification emails",
-        "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+        "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response. The same sweep continues confirmed CSV shipment imports that were cut short and deletes unconfirmed import previews older than 24 hours.",
         "parameters": [
           {
             "name": "Authorization",
@@ -20326,10 +22016,26 @@
                             "retrying",
                             "dead"
                           ]
+                        },
+                        "imports": {
+                          "type": "object",
+                          "properties": {
+                            "batches": {
+                              "type": "integer"
+                            },
+                            "expired": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "batches",
+                            "expired"
+                          ]
                         }
                       },
                       "required": [
-                        "summary"
+                        "summary",
+                        "imports"
                       ]
                     }
                   },
@@ -20349,6 +22055,10 @@
                       "skipped": 0,
                       "retrying": 1,
                       "dead": 0
+                    },
+                    "imports": {
+                      "batches": 0,
+                      "expired": 0
                     }
                   }
                 }

@@ -2182,6 +2182,262 @@
           "event": []
         },
         {
+          "name": "Upload a CSV to preview a bulk shipment import",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/imports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "imports"
+              ]
+            },
+            "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Checks and prices every row with the booking rules but creates nothing. Send multipart/form-data with the file, or the raw file as text/csv (optional ?fileName=). Columns are pickupContactName, pickupContactPhone, pickupAddress, deliveryContactName, deliveryContactPhone, deliveryAddress, parcelWeightKg (required) and packageDescription, parcelLengthCm, parcelWidthCm, parcelHeightCm, pickupScheduledAt (optional); headers match without regard to case, spaces or underscores, and Bangla digits are accepted in numbers and dates. Row numbers follow the spreadsheet (the header is row 1). Problems are listed per row and column with a stable code. File-level problems return 400 with errors[0].code one of empty_file, unterminated_quote, missing_columns, duplicate_column, too_many_rows, too_many_columns, cell_too_long, not_csv (params carry the details). 409 IMPORT_IN_PROGRESS while another import of yours is running; 413 above 1 MB; 429 after 5 uploads an hour. A new preview replaces your earlier unconfirmed one, and previews expire after 24 hours.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "CSV text (UTF-8) with a header row, up to 1 MB and 500 shipments."
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/imports",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "imports"
+                  ]
+                },
+                "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Checks and prices every row with the booking rules but creates nothing. Send multipart/form-data with the file, or the raw file as text/csv (optional ?fileName=). Columns are pickupContactName, pickupContactPhone, pickupAddress, deliveryContactName, deliveryContactPhone, deliveryAddress, parcelWeightKg (required) and packageDescription, parcelLengthCm, parcelWidthCm, parcelHeightCm, pickupScheduledAt (optional); headers match without regard to case, spaces or underscores, and Bangla digits are accepted in numbers and dates. Row numbers follow the spreadsheet (the header is row 1). Problems are listed per row and column with a stable code. File-level problems return 400 with errors[0].code one of empty_file, unterminated_quote, missing_columns, duplicate_column, too_many_rows, too_many_columns, cell_too_long, not_csv (params carry the details). 409 IMPORT_IN_PROGRESS while another import of yours is running; 413 above 1 MB; 429 after 5 uploads an hour. A new preview replaces your earlier unconfirmed one, and previews expire after 24 hours.",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "",
+                      "description": "CSV text (UTF-8) with a header row, up to 1 MB and 500 shipments."
+                    }
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Import preview ready\",\n  \"data\": {\n    \"import\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"fileName\": \"shipments.csv\",\n      \"status\": \"PREVIEW\",\n      \"totalRows\": 5,\n      \"validRows\": 3,\n      \"invalidRows\": 2,\n      \"createdCount\": 0,\n      \"failedCount\": 0,\n      \"pendingCount\": 3,\n      \"estimatedTotals\": [\n        {\n          \"currency\": \"BDT\",\n          \"amount\": \"450.00\"\n        }\n      ],\n      \"warnings\": [\n        {\n          \"code\": \"duplicate_row\",\n          \"row\": 4,\n          \"of\": 2\n        }\n      ],\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"confirmedAt\": null,\n      \"finishedAt\": null\n    },\n    \"problems\": [\n      {\n        \"row\": 5,\n        \"status\": \"INVALID\",\n        \"issues\": [\n          {\n            \"field\": \"parcelWeightKg\",\n            \"code\": \"not_a_number\",\n            \"message\": \"Enter a number such as 2.5\"\n          }\n        ]\n      }\n    ],\n    \"problemsTotal\": 2,\n    \"sample\": [\n      {\n        \"row\": 2,\n        \"deliveryContactName\": \"Rahim Uddin\",\n        \"deliveryAddress\": \"Agrabad, Chattogram\",\n        \"parcelWeightKg\": 2.5,\n        \"estimatedPrice\": \"150.00\",\n        \"currency\": \"BDT\"\n      }\n    ],\n    \"createdShipments\": []\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Read a shipment import",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/imports/{{shipmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "imports",
+                "{{shipmentId}}"
+              ]
+            },
+            "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Returns the summary with live counts (rows created, failed and still pending), up to 200 problem rows, the first 20 valid rows with their estimated price, and up to 50 created shipments. Poll this while status is PROCESSING; a stalled import is restarted by the poll. 410 IMPORT_EXPIRED for a preview older than 24 hours."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/imports/{{shipmentId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "imports",
+                    "{{shipmentId}}"
+                  ]
+                },
+                "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Returns the summary with live counts (rows created, failed and still pending), up to 200 problem rows, the first 20 valid rows with their estimated price, and up to 50 created shipments. Poll this while status is PROCESSING; a stalled import is restarted by the poll. 410 IMPORT_EXPIRED for a preview older than 24 hours."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Import fetched successfully\",\n  \"data\": {\n    \"import\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"fileName\": \"shipments.csv\",\n      \"status\": \"PREVIEW\",\n      \"totalRows\": 5,\n      \"validRows\": 3,\n      \"invalidRows\": 2,\n      \"createdCount\": 0,\n      \"failedCount\": 0,\n      \"pendingCount\": 3,\n      \"estimatedTotals\": [\n        {\n          \"currency\": \"BDT\",\n          \"amount\": \"450.00\"\n        }\n      ],\n      \"warnings\": [\n        {\n          \"code\": \"duplicate_row\",\n          \"row\": 4,\n          \"of\": 2\n        }\n      ],\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"confirmedAt\": null,\n      \"finishedAt\": null\n    },\n    \"problems\": [\n      {\n        \"row\": 5,\n        \"status\": \"INVALID\",\n        \"issues\": [\n          {\n            \"field\": \"parcelWeightKg\",\n            \"code\": \"not_a_number\",\n            \"message\": \"Enter a number such as 2.5\"\n          }\n        ]\n      }\n    ],\n    \"problemsTotal\": 2,\n    \"sample\": [\n      {\n        \"row\": 2,\n        \"deliveryContactName\": \"Rahim Uddin\",\n        \"deliveryAddress\": \"Agrabad, Chattogram\",\n        \"parcelWeightKg\": 2.5,\n        \"estimatedPrice\": \"150.00\",\n        \"currency\": \"BDT\"\n      }\n    ],\n    \"createdShipments\": []\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Confirm a shipment import",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/imports/{{shipmentId}}/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "imports",
+                "{{shipmentId}}",
+                "confirm"
+              ]
+            },
+            "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Moves PREVIEW to PROCESSING in one conditional update, so a second confirm gets 409 IMPORT_CONFLICT. The valid rows are then created in the background in batches of 25 through the same booking code as POST /shipments (pricing, history, audit and merchant webhooks included); each row is claimed inside its own creation transaction, so a shipment is never created twice. Shipments are created unpaid, and no booking email is sent per row. 409 IMPORT_EMPTY when no row is valid; 409 IMPORT_IN_PROGRESS while another import runs; 410 IMPORT_EXPIRED after 24 hours."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/imports/{{shipmentId}}/confirm",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "imports",
+                    "{{shipmentId}}",
+                    "confirm"
+                  ]
+                },
+                "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Moves PREVIEW to PROCESSING in one conditional update, so a second confirm gets 409 IMPORT_CONFLICT. The valid rows are then created in the background in batches of 25 through the same booking code as POST /shipments (pricing, history, audit and merchant webhooks included); each row is claimed inside its own creation transaction, so a shipment is never created twice. Shipments are created unpaid, and no booking email is sent per row. 409 IMPORT_EMPTY when no row is valid; 409 IMPORT_IN_PROGRESS while another import runs; 410 IMPORT_EXPIRED after 24 hours."
+              },
+              "status": "OK",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Import started\",\n  \"data\": {\n    \"import\": {\n      \"id\": \"cm123456789012345678901234\",\n      \"fileName\": \"shipments.csv\",\n      \"status\": \"PROCESSING\",\n      \"totalRows\": 5,\n      \"validRows\": 3,\n      \"invalidRows\": 2,\n      \"createdCount\": 0,\n      \"failedCount\": 0,\n      \"pendingCount\": 3,\n      \"estimatedTotals\": [\n        {\n          \"currency\": \"BDT\",\n          \"amount\": \"450.00\"\n        }\n      ],\n      \"warnings\": [\n        {\n          \"code\": \"duplicate_row\",\n          \"row\": 4,\n          \"of\": 2\n        }\n      ],\n      \"createdAt\": \"2026-10-10T06:00:00.000Z\",\n      \"confirmedAt\": \"2026-10-10T06:00:00.000Z\",\n      \"finishedAt\": null\n    },\n    \"problems\": [\n      {\n        \"row\": 5,\n        \"status\": \"INVALID\",\n        \"issues\": [\n          {\n            \"field\": \"parcelWeightKg\",\n            \"code\": \"not_a_number\",\n            \"message\": \"Enter a number such as 2.5\"\n          }\n        ]\n      }\n    ],\n    \"problemsTotal\": 2,\n    \"sample\": [\n      {\n        \"row\": 2,\n        \"deliveryContactName\": \"Rahim Uddin\",\n        \"deliveryAddress\": \"Agrabad, Chattogram\",\n        \"parcelWeightKg\": 2.5,\n        \"estimatedPrice\": \"150.00\",\n        \"currency\": \"BDT\"\n      }\n    ],\n    \"createdShipments\": []\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
+          "name": "Download the rows an import could not create",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shipments/imports/{{shipmentId}}/errors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "shipments",
+                "imports",
+                "{{shipmentId}}",
+                "errors"
+              ]
+            },
+            "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Returns the invalid and failed rows as CSV inside the JSON envelope (save content as filename): the upload's own columns plus row and error, so the file can be fixed and uploaded again; the row and error columns are ignored on upload. Text cells that could run as spreadsheet formulas are prefixed with an apostrophe, which the importer removes again. Starts with a byte order mark so spreadsheets read Bangla text correctly."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/shipments/imports/{{shipmentId}}/errors",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "shipments",
+                    "imports",
+                    "{{shipmentId}}",
+                    "errors"
+                  ]
+                },
+                "description": "CUSTOMER session only; merchant API keys are rejected with 403 API_KEY_NOT_ALLOWED. Another customer's import returns 404. Returns the invalid and failed rows as CSV inside the JSON envelope (save content as filename): the upload's own columns plus row and error, so the file can be fixed and uploaded again; the row and error columns are ignored on upload. Text cells that could run as spreadsheet formulas are prefixed with an apostrophe, which the importer removes again. Starts with a byte order mark so spreadsheets read Bangla text correctly."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Import error report prepared\",\n  \"data\": {\n    \"export\": {\n      \"filename\": \"shipments-errors.csv\",\n      \"contentType\": \"text/csv; charset=utf-8\",\n      \"content\": \"pickupContactName,pickupContactPhone,pickupAddress,deliveryContactName,deliveryContactPhone,deliveryAddress,parcelWeightKg,packageDescription,parcelLengthCm,parcelWidthCm,parcelHeightCm,pickupScheduledAt,row,error\\r\\n\"\n    }\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
           "name": "Download shipping label",
           "request": {
             "method": "GET",
@@ -5412,7 +5668,7 @@
                 "dispatch"
               ]
             },
-            "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+            "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response. The same sweep continues confirmed CSV shipment imports that were cut short and deletes unconfirmed import previews older than 24 hours.",
             "auth": {
               "type": "noauth"
             }
@@ -5441,7 +5697,7 @@
                     "dispatch"
                   ]
                 },
-                "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+                "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response. The same sweep continues confirmed CSV shipment imports that were cut short and deletes unconfirmed import previews older than 24 hours.",
                 "auth": {
                   "type": "noauth"
                 }
@@ -5458,7 +5714,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Notifications dispatched\",\n  \"data\": {\n    \"summary\": {\n      \"claimed\": 3,\n      \"sent\": 2,\n      \"skipped\": 0,\n      \"retrying\": 1,\n      \"dead\": 0\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Notifications dispatched\",\n  \"data\": {\n    \"summary\": {\n      \"claimed\": 3,\n      \"sent\": 2,\n      \"skipped\": 0,\n      \"retrying\": 1,\n      \"dead\": 0\n    },\n    \"imports\": {\n      \"batches\": 0,\n      \"expired\": 0\n    }\n  }\n}"
             }
           ],
           "event": []
@@ -5486,7 +5742,7 @@
                 "dispatch"
               ]
             },
-            "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+            "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response. The same sweep continues confirmed CSV shipment imports that were cut short and deletes unconfirmed import previews older than 24 hours.",
             "auth": {
               "type": "noauth"
             }
@@ -5515,7 +5771,7 @@
                     "dispatch"
                   ]
                 },
-                "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response.",
+                "description": "Scheduler-only retry sweeper; no user token. Claims due outbox rows with FOR UPDATE SKIP LOCKED (safe to run concurrently), sends up to 5 batches of 20, retries failures with exponential backoff and marks rows DEAD after 5 attempts. Status changes also trigger a send right after their response. The same sweep continues confirmed CSV shipment imports that were cut short and deletes unconfirmed import previews older than 24 hours.",
                 "auth": {
                   "type": "noauth"
                 }
@@ -5532,7 +5788,7 @@
                   "value": "no-store"
                 }
               ],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Notifications dispatched\",\n  \"data\": {\n    \"summary\": {\n      \"claimed\": 3,\n      \"sent\": 2,\n      \"skipped\": 0,\n      \"retrying\": 1,\n      \"dead\": 0\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Notifications dispatched\",\n  \"data\": {\n    \"summary\": {\n      \"claimed\": 3,\n      \"sent\": 2,\n      \"skipped\": 0,\n      \"retrying\": 1,\n      \"dead\": 0\n    },\n    \"imports\": {\n      \"batches\": 0,\n      \"expired\": 0\n    }\n  }\n}"
             }
           ],
           "event": []

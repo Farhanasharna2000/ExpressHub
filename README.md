@@ -32,6 +32,7 @@ and audit records.
 | Admin analytics | Bookings, deliveries, net revenue, on-time rate, delivery times and courier performance by day or week, compared with the previous period, with CSV export (see [Admin analytics](#admin-analytics)) |
 | Proof of delivery | Couriers confirm delivery with a photo and/or the recipient's signature from an installable, offline-tolerant courier app (see [Proof of delivery](#proof-of-delivery-and-the-courier-app)) |
 | Shipping labels | Printable 4 x 6 inch PDF labels with a tracking QR code, scanned by couriers with the phone camera (see [Shipping labels and scanning](#shipping-labels-and-scanning)) |
+| Bulk CSV import | Customers upload one spreadsheet to book up to 500 shipments at once: every row is checked and priced in a preview, then created in the background with progress, and the rows that failed download as a fixable CSV (see [Bulk CSV import](#bulk-csv-import)) |
 | Help centre and AI help chat | Public help articles at `/help`, and a help chat that answers only from them with cited sources, measured by an evaluation suite (see [AI help chat](#ai-help-chat)) |
 | Merchant API and webhooks | Customers create scoped API keys to book and track shipments from their own systems, and receive signed webhooks with retries and a delivery log (see [Merchant API and webhooks](#merchant-api-and-webhooks)) |
 
@@ -415,6 +416,65 @@ device's capture time is kept (within 7 days, and never in the future). Backgrou
 because the access token lives only in page memory, so uploads run from the open courier app.
 Queued items belong to the courier who captured them; another account on the same phone never sends them.
 
+## Bulk CSV import
+
+Customers who ship in volume open **My shipments → Import CSV** (or **Book a shipment → Import CSV**,
+`/customer/shipments/import`) and book many parcels from one spreadsheet.
+
+1. **Upload and preview.** Download the template, fill it in, and drop the file on the page. Every row is
+   checked with the same rules as the booking form and priced with the same pricing code. Nothing is
+   created yet. The preview shows how many rows are ready, the estimated total, warnings (a row with the
+   same details as an earlier one, columns that are ignored) and a table of problems by row and column.
+2. **Confirm.** The valid rows are created in the background in batches, with a progress bar that updates
+   every two seconds. You can leave the page; the import finishes and the shipments appear in
+   My shipments. A reload or a shared link (`?import=<id>`) continues where it was.
+3. **Result.** A summary, links to the new shipments, and **Download problem rows**: the invalid and failed
+   rows in the upload's own columns plus `row` and `error`, ready to fix and upload again (the `row` and
+   `error` columns are ignored on upload).
+
+Shipments are created unpaid, exactly as a single booking: pricing, status history, audit records and
+merchant webhooks all run. One booking email per row would flood the customer's inbox and the email
+quota, so imported shipments send none; later status emails are unchanged.
+
+### The file
+
+CSV in UTF-8, comma separated, with a header row. Headers match without regard to case, spaces or
+underscores (`Pickup contact name` works). Quoted values may contain commas, quotes (`""`) and line breaks.
+Numbers and dates may use Bangla digits. At most **500 shipments** and **1 MB** per file; unknown columns are
+ignored with a warning. See [`docs/sample-shipments.csv`](docs/sample-shipments.csv).
+
+| Column | Required | What to enter |
+| --- | --- | --- |
+| `pickupContactName` | Yes | Sender's name, 2 to 100 characters |
+| `pickupContactPhone` | Yes | Sender's phone, 5 to 30 characters |
+| `pickupAddress` | Yes | Where the parcel is collected, 5 to 500 characters |
+| `deliveryContactName` | Yes | Recipient's name, 2 to 100 characters |
+| `deliveryContactPhone` | Yes | Recipient's phone, 5 to 30 characters |
+| `deliveryAddress` | Yes | Where it is delivered, 5 to 500 characters |
+| `parcelWeightKg` | Yes | A plain number such as `2.5`, at most 3 decimal places |
+| `packageDescription` | No | Up to 1,000 characters |
+| `parcelLengthCm`, `parcelWidthCm`, `parcelHeightCm` | No | All three or none; at most 2 decimal places |
+| `pickupScheduledAt` | No | A future date and time with offset, such as `2026-12-01T10:00:00+06:00` |
+
+Row numbers match the spreadsheet: the header is row 1, the first shipment row 2. Spreadsheet formulas in
+the downloaded report are prefixed with an apostrophe so they are not run, and the importer removes that
+apostrophe again when the fixed file comes back.
+
+### How it works
+
+- `POST /shipments/imports` reads the file (multipart or `text/csv`), validates and prices every row, and
+  stores the result as a `PREVIEW` (`ShipmentImport` and `ShipmentImportRow`). A new preview replaces your
+  earlier unconfirmed one; previews expire after 24 hours and the scheduled sweeper deletes them.
+- `POST /shipments/imports/{id}/confirm` moves `PREVIEW` to `PROCESSING` in one conditional update, so a
+  double click or a second tab cannot start it twice, then creates rows in batches of 25 through
+  `createShipment`. Each row is claimed inside its own creation transaction, so concurrent workers (the
+  confirming request, the status poll and the sweeper can all run it) never create a shipment twice.
+- A row that was valid in the preview but cannot be created (for example its pickup time has passed) is
+  marked failed with the reason; the rest continue. If the account is closed mid-import, the rows left are
+  failed and the import ends.
+- Limits: 5 uploads an hour per customer and one running import at a time. The routes are customer
+  session only; merchant API keys are rejected.
+
 ## Shipping labels and scanning
 
 Customers and admins open a **Print label** button on shipment detail (hidden for cancelled
@@ -774,6 +834,7 @@ npm run test:notifications
 npm run test:analytics
 npm run test:proof
 npm run test:labels
+npm run test:imports
 npm run test:help
 npm run test:merchant
 npm run test:misc
@@ -799,6 +860,9 @@ calculations, CSV formula escaping, the cache and admin-only access.
 multipart limits and the courier upload queue (retry, permanent failure and already-delivered).
 `test:labels` renders a label (including text the PDF fonts cannot draw), checks text wrapping,
 decodes the label's QR code back to the public tracking link with `jsQR`, and checks scan parsing.
+`test:imports` covers the CSV parser (quotes, embedded line breaks, BOM, every line ending), header matching,
+row validation codes, Bangla digits, formula escaping in the error report, duplicate detection and the
+upload size limit.
 `test:help` covers article chunking, rank fusion, the similarity threshold, citation checks,
 fallbacks, input limits, prompt-injection handling and incremental indexing, with no network calls.
 `test:merchant` covers API key format, hashing and the route allowlist, the webhook signature test
@@ -850,6 +914,7 @@ npm run test:notifications:integration
 npm run test:analytics:integration
 npm run test:proof:integration
 npm run test:labels:integration
+npm run test:imports:integration
 npm run test:help:integration
 npm run test:merchant:integration
 ```
