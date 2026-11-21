@@ -30,5 +30,6 @@ export function ResourceSkeleton({ variant = "list", label }: {
 }
 
 export function ResourceRefresh() {
-  return <p role="status" aria-live="polite" className="text-xs text-muted-foreground">Updating…</p>;
+  const t = useTranslations("common");
+  return <p role="status" aria-live="polite" className="text-xs text-muted-foreground">{t("updating")}</p>;
 }

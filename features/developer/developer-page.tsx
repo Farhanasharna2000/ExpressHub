@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ApiKeysPanel } from "./api-keys-panel";
 import { WebhooksPanel } from "./webhooks-panel";
 
+import { useTranslations } from "next-intl";
 const REQUEST_EXAMPLE = `curl https://<your-expresshub-domain>/api/v1/shipments \\
   -H "Authorization: Bearer $EXPRESSHUB_API_KEY"`;
 
@@ -21,13 +22,14 @@ export function verifyExpressHubWebhook(rawBody, signatureHeader, secret) {
 }`;
 
 export function DeveloperPage() {
+  const t = useTranslations("developer");
   return (
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Integrations</p>
-          <h1>Developer settings</h1>
-          <p>Connect your own systems to ExpressHub with API keys and webhooks.</p>
+          <p className="eyebrow">{t("integrations")}</p>
+          <h1>{t("developerSettings")}</h1>
+          <p>{t("connectYourOwnSystems")}</p>
         </div>
       </div>
 
@@ -36,26 +38,28 @@ export function DeveloperPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><BookOpen className="size-4 text-primary" aria-hidden="true" /> Quick guide</CardTitle>
-          <CardDescription>What a key can do, and how to check that a webhook really came from ExpressHub.</CardDescription>
+          <CardTitle className="flex items-center gap-2 text-base"><BookOpen className="size-4 text-primary" aria-hidden="true" /> {t("quickGuide")}</CardTitle>
+          <CardDescription>{t("whatAKeyCan")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
           <ul className="list-disc space-y-1 pl-5">
-            <li><code>shipments:read</code>: list and view your shipments.</li>
-            <li><code>shipments:write</code>: book shipments and cancel ones that have not been picked up.</li>
-            <li><code>webhooks:manage</code>: add, change and test webhook endpoints. Keys can never create or revoke other keys.</li>
-            <li>Each key is limited to 120 requests a minute.</li>
+            <li>{t.rich("guideRead", { code: (chunks) => <code>{chunks}</code> })}</li>
+            <li>{t.rich("guideWrite", { code: (chunks) => <code>{chunks}</code> })}</li>
+            <li>{t.rich("guideManage", { code: (chunks) => <code>{chunks}</code> })}</li>
+            <li>{t("eachKeyIsLimited")}</li>
           </ul>
           <div className="space-y-1.5">
-            <h3 className="font-semibold">Calling the API</h3>
+            <h3 className="font-semibold">{t("callingTheApi")}</h3>
             <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs"><code>{REQUEST_EXAMPLE}</code></pre>
           </div>
           <div className="space-y-1.5">
-            <h3 className="font-semibold">Verifying a webhook (Node.js)</h3>
+            <h3 className="font-semibold">{t("verifyingAWebhookNode")}</h3>
             <p className="text-muted-foreground">
-              Each request has <code>ExpressHub-Signature: t=&lt;unix seconds&gt;,v1=&lt;hex&gt;</code>, an HMAC-SHA256 of
-              <code> &lt;t&gt;.&lt;raw body&gt;</code> with your signing secret. Use <code>ExpressHub-Event-Id</code> to ignore duplicates,
-              and reply with any 2xx status within 5 seconds.
+              {t.rich("guideVerify", {
+                signature: () => <code>ExpressHub-Signature: t=&lt;unix seconds&gt;,v1=&lt;hex&gt;</code>,
+                body: () => <code> &lt;t&gt;.&lt;raw body&gt;</code>,
+                event: () => <code>ExpressHub-Event-Id</code>,
+              })}
             </p>
             <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs"><code>{VERIFY_EXAMPLE}</code></pre>
           </div>
