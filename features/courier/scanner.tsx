@@ -11,6 +11,7 @@ import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage } from "@/lib/client/api";
 import { SCAN_INTERVAL_MS, courierLookupPath, trackingNumberFromScan } from "./scan-contracts";
 
+import { useTranslations } from "next-intl";
 type Detector = { detect(source: CanvasImageSource): Promise<{ rawValue: string }[]> };
 type DetectorConstructor = new (options: { formats: string[] }) => Detector;
 type Decode = (frame: HTMLVideoElement, canvas: HTMLCanvasElement) => Promise<string | null>;
@@ -40,6 +41,7 @@ async function createDecoder(): Promise<Decode> {
 type CameraState = "off" | "starting" | "scanning" | "denied" | "unavailable";
 
 export function CourierScanner() {
+  const t = useTranslations("courier");
   const { store } = useSession();
   const router = useRouter();
   const video = useRef<HTMLVideoElement>(null);
@@ -65,20 +67,20 @@ export function CourierScanner() {
     if (looking.current) return;
     const trackingNumber = trackingNumberFromScan(raw);
     if (!trackingNumber) {
-      setStatus("That is not an ExpressHub tracking number or label.");
+      setStatus(t("thatIsNotAn"));
       return;
     }
     looking.current = true;
     setBusy(true);
-    setStatus(`Looking up ${trackingNumber}…`);
+    setStatus(t("lookingUp", { tracking: trackingNumber }));
     try {
       const { shipment } = await store.api.request<{ shipment: { id: string } }>(courierLookupPath(trackingNumber));
       stopCamera();
-      setStatus("Parcel found. Opening the delivery…");
+      setStatus(t("parcelFoundOpeningThe"));
       router.push(`/courier/shipments/${encodeURIComponent(shipment.id)}`);
     } catch (error) {
       setStatus(error instanceof ApiError && error.status === 404
-        ? `${trackingNumber} isn't assigned to you. Check the label or ask dispatch.`
+        ? t("notAssigned", { tracking: trackingNumber })
         : errorMessage(error));
     } finally {
       looking.current = false;
@@ -89,11 +91,11 @@ export function CourierScanner() {
   async function startCamera() {
     if (!navigator.mediaDevices?.getUserMedia) {
       setCamera("unavailable");
-      setStatus("This browser can't use the camera. Type the tracking number instead.");
+      setStatus(t("thisBrowserCanT"));
       return;
     }
     setCamera("starting");
-    setStatus("Starting the camera…");
+    setStatus(t("startingTheCamera"));
     try {
       const media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
       stream.current = media;
@@ -103,7 +105,7 @@ export function CourierScanner() {
       await element.play();
       const decode = await createDecoder();
       setCamera("scanning");
-      setStatus("Point the camera at the QR code on the label.");
+      setStatus(t("pointTheCameraAt"));
       let last = 0;
       const tick = async (now: number) => {
         if (!stream.current) return;
@@ -120,8 +122,8 @@ export function CourierScanner() {
       const denied = error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError");
       setCamera(denied ? "denied" : "unavailable");
       setStatus(denied
-        ? "Camera permission was refused. Allow it in the browser settings, or type the tracking number."
-        : "No camera could be started. Type the tracking number instead.");
+        ? t("cameraPermissionWasRefused")
+        : t("noCameraCouldBe"));
     }
   }
 
@@ -146,24 +148,24 @@ export function CourierScanner() {
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">On the road</p>
-          <h1>Scan parcel</h1>
-          <p>Scan the QR code on a shipping label to open that delivery.</p>
+          <p className="eyebrow">{t("onTheRoad2")}</p>
+          <h1>{t("scanParcel")}</h1>
+          <p>{t("scanTheQrCode")}</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><ScanLine className="size-5" aria-hidden="true" />Camera</CardTitle>
-          <CardDescription>The camera image stays on this phone; only the tracking number is looked up.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><ScanLine className="size-5" aria-hidden="true" />{t("camera")}</CardTitle>
+          <CardDescription>{t("theCameraImageStays")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-xl border bg-muted">
-            <video ref={video} className={`size-full object-cover ${scanning ? "" : "hidden"}`} muted playsInline aria-label="Camera preview" />
+            <video ref={video} className={`size-full object-cover ${scanning ? "" : "hidden"}`} muted playsInline aria-label={t("cameraPreview")} />
             {!scanning && (
               <div className="flex size-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
                 <CameraOff className="size-8" aria-hidden="true" />
-                Camera is off
+                {t("cameraIsOff")}
               </div>
             )}
             {camera === "scanning" && <div className="pointer-events-none absolute inset-10 rounded-lg border-2 border-white/80" aria-hidden="true" />}
@@ -171,9 +173,9 @@ export function CourierScanner() {
           <canvas ref={canvas} className="hidden" aria-hidden="true" />
           <div className="flex flex-wrap justify-center gap-2">
             {scanning ? (
-              <Button type="button" variant="outline" size="lg" onClick={stopCamera}><CameraOff aria-hidden="true" />Stop camera</Button>
+              <Button type="button" variant="outline" size="lg" onClick={stopCamera}><CameraOff aria-hidden="true" />{t("stopCamera")}</Button>
             ) : (
-              <Button type="button" size="lg" onClick={() => void startCamera()} disabled={busy}><Camera aria-hidden="true" />Start camera</Button>
+              <Button type="button" size="lg" onClick={() => void startCamera()} disabled={busy}><Camera aria-hidden="true" />{t("startCamera")}</Button>
             )}
           </div>
         </CardContent>
@@ -181,13 +183,13 @@ export function CourierScanner() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Type the tracking number</CardTitle>
-          <CardDescription>Use this if the label is damaged or the camera isn&apos;t available.</CardDescription>
+          <CardTitle>{t("typeTheTrackingNumber")}</CardTitle>
+          <CardDescription>{t("useThisIfThe")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={submit}>
             <div className="flex-1 space-y-2">
-              <Label htmlFor="scan-tracking-number">Tracking number</Label>
+              <Label htmlFor="scan-tracking-number">{t("trackingNumber")}</Label>
               <Input
                 id="scan-tracking-number"
                 value={manual}
@@ -200,7 +202,7 @@ export function CourierScanner() {
             </div>
             <Button type="submit" size="lg" disabled={busy || !manual.trim()}>
               {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Search aria-hidden="true" />}
-              Open delivery
+              {t("openDelivery")}
             </Button>
           </form>
         </CardContent>

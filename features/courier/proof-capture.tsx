@@ -16,7 +16,12 @@ import { attemptDelivery, deliveryQueue, type PendingDelivery } from "./proof-qu
 import { useDeliveryQueue } from "./pwa";
 import { SignaturePad, type SignaturePadHandle } from "./signature-pad";
 
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
+import { translateKnownMessage } from "@/lib/i18n/bridge";
 export function DeliveryProofCard({ shipment, onDelivered }: { shipment: ShipmentDetail; onDelivered: () => void }) {
+  const t = useTranslations("courier");
+  const f = useFormat();
   const { store, user } = useSession();
   const ids = useId();
   const queued = useDeliveryQueue(user?.id).find((item) => item.shipmentId === shipment.id);
@@ -47,7 +52,7 @@ export function DeliveryProofCard({ shipment, onDelivered }: { shipment: Shipmen
       setPhoto(prepared);
       setPreview(URL.createObjectURL(prepared));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The photo could not be used. Try again.");
+      setError(cause instanceof Error ? cause.message : t("thePhotoCouldNot"));
     } finally {
       setPreparing(false);
     }
@@ -61,10 +66,10 @@ export function DeliveryProofCard({ shipment, onDelivered }: { shipment: Shipmen
   async function submit() {
     if (busy || !user) return;
     const name = recipientNameSchema.safeParse(recipientName);
-    if (!name.success) return setError(name.error.issues[0]?.message ?? "Enter the recipient's name");
-    if (typed && typedName.trim().length < 2) return setError("Type the recipient's name to sign for them");
+    if (!name.success) return setError(name.error.issues[0]?.message ?? t("enterTheRecipientS"));
+    if (typed && typedName.trim().length < 2) return setError(t("typeTheRecipientS"));
     const signed = typed || hasInk;
-    if (!photo && !signed) return setError("Add a photo of the delivery or the recipient's signature");
+    if (!photo && !signed) return setError(t("addAPhotoOf"));
 
     setBusy(true);
     setError(null);
@@ -84,16 +89,16 @@ export function DeliveryProofCard({ shipment, onDelivered }: { shipment: Shipmen
       };
       const result = navigator.onLine ? await attemptDelivery(store.api, item) : { outcome: "retry" as const, error: undefined };
       if (result.outcome === "delivered") {
-        toast.success("Delivered", `${shipment.trackingNumber} is marked delivered with proof.`);
+        toast.success(t("delivered"), t("markedDelivered", { tracking: shipment.trackingNumber }));
         onDelivered();
       } else if (result.outcome === "retry" && deliveryQueue.supported()) {
         await deliveryQueue.put({ ...item, attempts: 1 });
-        toast.success("Saved on this phone", "No connection right now. The delivery will upload automatically when you're back online.");
+        toast.success(t("savedOnThisPhone"), t("noConnectionRightNow"));
       } else {
         setError(errorMessage(result.error));
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The proof could not be saved. Try again.");
+      setError(cause instanceof Error ? cause.message : t("theProofCouldNot"));
     } finally {
       setBusy(false);
     }
@@ -117,22 +122,22 @@ export function DeliveryProofCard({ shipment, onDelivered }: { shipment: Shipmen
       <Card className="border-amber-300">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CloudUpload className="size-5 text-amber-600" aria-hidden="true" /> Waiting to upload
+            <CloudUpload className="size-5 text-amber-600" aria-hidden="true" /> {t("waitingToUpload")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm" aria-live="polite">
           <p>
-            Proof for <strong>{queued.recipientName}</strong> was captured {new Date(queued.capturedAt).toLocaleTimeString()} and is saved on this phone.
-            {queued.failed ? " The server rejected it." : " It uploads automatically when you're online."}
+            {t.rich("proofSaved", { b: (chunks) => <strong>{chunks}</strong>, name: queued.recipientName, time: f.locale === "en" ? new Date(queued.capturedAt).toLocaleTimeString() : f.clock(queued.capturedAt).split(", ").pop() ?? "" })}
+            {queued.failed ? t("theServerRejectedIt") : t("itUploadsAutomaticallyWhen")}
           </p>
-          {(error || queued.lastError) && <p role="alert" className="text-destructive">{error ?? queued.lastError}</p>}
+          {(error || queued.lastError) && <p role="alert" className="text-destructive">{translateKnownMessage(error ?? queued.lastError ?? "")}</p>}
           <div className="flex flex-wrap gap-2">
             <Button type="button" className="min-h-11" onClick={() => void retryQueued(queued)} disabled={busy}>
-              {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <CloudUpload className="size-4" aria-hidden="true" />} Try upload now
+              {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <CloudUpload className="size-4" aria-hidden="true" />} {t("tryUploadNow")}
             </Button>
             {queued.failed && (
               <Button type="button" variant="outline" className="min-h-11" onClick={() => void deliveryQueue.remove(queued.id)} disabled={busy}>
-                Discard and capture again
+                {t("discardAndCaptureAgain")}
               </Button>
             )}
           </div>
@@ -145,30 +150,30 @@ export function DeliveryProofCard({ shipment, onDelivered }: { shipment: Shipmen
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CheckCircle2 className="size-5 text-emerald-600" aria-hidden="true" /> Proof of delivery
+          <CheckCircle2 className="size-5 text-emerald-600" aria-hidden="true" /> {t("proofOfDelivery")}
         </CardTitle>
-        <p className="text-sm text-muted-foreground">Take a photo of the parcel at the door, or get the recipient&apos;s signature, then confirm delivery.</p>
+        <p className="text-sm text-muted-foreground">{t("takeAPhotoOf")}</p>
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor={`${ids}-name`}>Received by</Label>
+          <Label htmlFor={`${ids}-name`}>{t("receivedBy")}</Label>
           <TextInput id={`${ids}-name`} value={recipientName} onChange={(event) => setRecipientName(event.target.value)} autoComplete="off" maxLength={100} className="min-h-11 text-base" disabled={busy} />
         </div>
 
         <div className="space-y-2">
-          <span className="text-sm font-medium">Photo</span>
+          <span className="text-sm font-medium">{t("photo")}</span>
           {preview ? (
             <div className="space-y-2">
               {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
-              <img src={preview} alt="Delivery photo to be uploaded" className="max-h-64 rounded-lg border object-contain" />
+              <img src={preview} alt={t("deliveryPhotoToBe")} className="max-h-64 rounded-lg border object-contain" />
               <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={removePhoto} disabled={busy}>
-                <Trash2 className="size-4" aria-hidden="true" /> Remove photo
+                <Trash2 className="size-4" aria-hidden="true" /> {t("removePhoto")}
               </Button>
             </div>
           ) : (
             <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border px-4 py-3 text-sm font-medium focus-within:ring-2 focus-within:ring-ring">
               {preparing ? <Loader2 className="size-5 animate-spin" aria-hidden="true" /> : <Camera className="size-5" aria-hidden="true" />}
-              {preparing ? "Preparing photo…" : "Take or choose a photo"}
+              {preparing ? t("preparingPhoto") : t("takeOrChooseA")}
               <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(event) => void choosePhoto(event)} disabled={busy || preparing} />
             </label>
           )}
@@ -176,16 +181,16 @@ export function DeliveryProofCard({ shipment, onDelivered }: { shipment: Shipmen
 
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span id={`${ids}-signature`} className="text-sm font-medium">{typed ? "Signed by typed name" : "Recipient signature"}</span>
+            <span id={`${ids}-signature`} className="text-sm font-medium">{typed ? t("signedByTypedName") : t("recipientSignature")}</span>
             <Button type="button" variant="ghost" size="sm" className="min-h-11" onClick={() => { setTyped(!typed); setHasInk(false); }} disabled={busy}>
-              {typed ? <><PenLine className="size-4" aria-hidden="true" /> Draw a signature instead</> : <><Keyboard className="size-4" aria-hidden="true" /> Type the name instead</>}
+              {typed ? <><PenLine className="size-4" aria-hidden="true" /> {t("drawASignatureInstead")}</> : <><Keyboard className="size-4" aria-hidden="true" /> {t("typeTheNameInstead")}</>}
             </Button>
           </div>
           {typed ? (
             <div className="space-y-1">
-              <Label htmlFor={`${ids}-typed`} className="sr-only">Recipient name as signature</Label>
-              <TextInput id={`${ids}-typed`} value={typedName} onChange={(event) => setTypedName(event.target.value)} placeholder="Recipient's full name" maxLength={60} className="min-h-11 text-base" disabled={busy} />
-              <p className="text-xs text-muted-foreground">Use this when the recipient cannot sign on the screen.</p>
+              <Label htmlFor={`${ids}-typed`} className="sr-only">{t("recipientNameAsSignature")}</Label>
+              <TextInput id={`${ids}-typed`} value={typedName} onChange={(event) => setTypedName(event.target.value)} placeholder={t("recipientSFullName")} maxLength={60} className="min-h-11 text-base" disabled={busy} />
+              <p className="text-xs text-muted-foreground">{t("useThisWhenThe")}</p>
             </div>
           ) : (
             <SignaturePad ref={signatureRef} onChange={setHasInk} disabled={busy} labelId={`${ids}-signature`} />
@@ -193,15 +198,15 @@ export function DeliveryProofCard({ shipment, onDelivered }: { shipment: Shipmen
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`${ids}-note`}>Delivery note (optional)</Label>
-          <TextInput id={`${ids}-note`} value={note} onChange={(event) => setNote(event.target.value)} placeholder="For example: left with the security guard" maxLength={300} className="min-h-11 text-base" disabled={busy} />
+          <Label htmlFor={`${ids}-note`}>{t("deliveryNoteOptional")}</Label>
+          <TextInput id={`${ids}-note`} value={note} onChange={(event) => setNote(event.target.value)} placeholder={t("forExampleLeftWith")} maxLength={300} className="min-h-11 text-base" disabled={busy} />
         </div>
 
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
         <Button type="button" className="min-h-12 w-full text-base" onClick={() => void submit()} disabled={busy || preparing}>
           {busy ? <Loader2 className="size-5 animate-spin" aria-hidden="true" /> : <CheckCircle2 className="size-5" aria-hidden="true" />}
-          {busy ? "Saving proof…" : "Confirm delivery"}
+          {busy ? t("savingProof") : t("confirmDelivery")}
         </Button>
       </CardContent>
     </Card>

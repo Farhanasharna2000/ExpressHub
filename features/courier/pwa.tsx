@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useSession } from "@/features/auth/provider";
 import { deliveryQueue, flushDeliveryQueue, QUEUE_EVENT, type PendingDelivery } from "./proof-queue";
 
+import { useTranslations } from "next-intl";
 const RETRY_INTERVAL_MS = 60_000;
 
 export function useDeliveryQueue(courierId: string | undefined) {
@@ -27,6 +28,7 @@ export function useDeliveryQueue(courierId: string | undefined) {
 // phone is back online. Background Sync is not used: the access token lives only
 // in page memory, so uploads run from the open courier app.
 export function CourierPwa() {
+  const t = useTranslations("courier");
   const { store, user } = useSession();
   const courierId = user?.id;
   const items = useDeliveryQueue(courierId);
@@ -67,12 +69,12 @@ export function CourierPwa() {
     <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
       <span className="flex items-center gap-2">
         {sending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <CloudUpload className="size-4" aria-hidden="true" />}
-        {waiting.length > 0 && <span><strong>{waiting.length}</strong> {waiting.length === 1 ? "delivery is" : "deliveries are"} waiting to upload.</span>}
-        {failed.length > 0 && <span>{failed.length} could not be sent. Open the shipment to try again.</span>}
+        {waiting.length > 0 && <span>{t.rich("waitingUpload", { b: (chunks) => <strong>{chunks}</strong>, count: waiting.length })}</span>}
+        {failed.length > 0 && <span>{t("failedUpload", { count: failed.length })}</span>}
       </span>
       {waiting.length > 0 && (
         <Button type="button" size="sm" variant="outline" className="min-h-11" onClick={() => void flush()} disabled={sending}>
-          {sending ? "Uploading…" : "Upload now"}
+          {sending ? t("uploading") : t("uploadNow")}
         </Button>
       )}
     </div>

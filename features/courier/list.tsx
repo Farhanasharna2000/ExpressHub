@@ -30,6 +30,12 @@ import {
 } from "@/features/shipments/contracts";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
+
+type CourierT = ReturnType<typeof useTranslations<"courier">>;
+type Format = ReturnType<typeof useFormat>;
+
 const courierStatuses = [
   "CREATED",
   "PICKED_UP",
@@ -39,29 +45,29 @@ const courierStatuses = [
   "FAILED",
 ] as const;
 
-const friendlyCourierStatuses: Record<string, string> = {
-  CREATED: "Ready for pickup",
-  PICKED_UP: "Picked up",
-  IN_TRANSIT: "In transit",
-  OUT_FOR_DELIVERY: "Out for delivery",
-  DELIVERED: "Delivered",
-  FAILED: "Delivery issue",
-};
+const friendlyCourierStatuses = (t: CourierT): Record<string, string> => ({
+  CREATED: t("readyForPickup2"),
+  PICKED_UP: t("pickedUp"),
+  IN_TRANSIT: t("inTransit"),
+  OUT_FOR_DELIVERY: t("outForDelivery"),
+  DELIVERED: t("delivered"),
+  FAILED: t("deliveryIssue"),
+});
 
-const quickCourierPresets = [
-  { label: "All Deliveries", value: "", dotColor: "bg-muted-foreground" },
-  { label: "Ready for Pickup", value: "CREATED", dotColor: "bg-blue-500" },
-  { label: "Picked Up", value: "PICKED_UP", dotColor: "bg-sky-500" },
-  { label: "In Transit", value: "IN_TRANSIT", dotColor: "bg-amber-500" },
-  { label: "Out for Delivery", value: "OUT_FOR_DELIVERY", dotColor: "bg-purple-500" },
-  { label: "Delivered", value: "DELIVERED", dotColor: "bg-emerald-500" },
-  { label: "Delivery Issue", value: "FAILED", dotColor: "bg-red-500" },
+const quickCourierPresets = (t: CourierT) => [
+  { label: t("allDeliveries"), value: "", dotColor: "bg-muted-foreground" },
+  { label: t("readyForPickup"), value: "CREATED", dotColor: "bg-blue-500" },
+  { label: t("pickedUp2"), value: "PICKED_UP", dotColor: "bg-sky-500" },
+  { label: t("inTransit2"), value: "IN_TRANSIT", dotColor: "bg-amber-500" },
+  { label: t("outForDelivery2"), value: "OUT_FOR_DELIVERY", dotColor: "bg-purple-500" },
+  { label: t("delivered"), value: "DELIVERED", dotColor: "bg-emerald-500" },
+  { label: t("deliveryIssue2"), value: "FAILED", dotColor: "bg-red-500" },
 ];
 
-const columns: Column<Shipment>[] = [
+const courierColumns = (t: CourierT, f: Format): Column<Shipment>[] => [
   {
     key: "tracking",
-    label: "Tracking number",
+    label: t("trackingNumber"),
     render: (shipment) => (
       <Link
         className="font-semibold break-all text-primary hover:underline"
@@ -73,7 +79,7 @@ const columns: Column<Shipment>[] = [
   },
   {
     key: "route",
-    label: "Pickup → Delivery",
+    label: t("pickupDelivery"),
     render: (shipment) => (
       <div className="space-y-1 text-sm">
         <div className="flex items-start gap-1">
@@ -93,30 +99,30 @@ const columns: Column<Shipment>[] = [
   },
   {
     key: "status",
-    label: "Delivery status",
+    label: t("deliveryStatus"),
     render: (shipment) => <StatusBadge status={shipment.status} />,
   },
   {
     key: "payment",
-    label: "Payment",
+    label: t("payment"),
     render: (shipment) => <StatusBadge status={shipment.paymentStatus} />,
   },
   {
     key: "date",
-    label: "Assigned / Created",
+    label: t("assignedCreated"),
     render: (shipment) => (
       <time dateTime={shipment.createdAt} className="text-xs text-muted-foreground">
-        {dateTime(shipment.createdAt)}
+        {f.dateTime(shipment.createdAt)}
       </time>
     ),
   },
   {
     key: "action",
-    label: "Action",
+    label: t("action"),
     render: (shipment) => (
       <Button asChild size="sm" variant="outline">
         <Link href={`/courier/shipments/${encodeURIComponent(shipment.id)}`}>
-          View & Update
+          {t("viewUpdate")}
         </Link>
       </Button>
     ),
@@ -124,6 +130,12 @@ const columns: Column<Shipment>[] = [
 ];
 
 export function CourierShipmentListView({ recent = false }: { recent?: boolean }) {
+  const t = useTranslations("courier");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const columns = courierColumns(t, f);
+  const friendly = friendlyCourierStatuses(t);
+  const presets = quickCourierPresets(t);
   const params = useSearchParams();
   const serialized = recent ? "limit=5&sortBy=createdAt&order=desc" : params.toString();
 
@@ -133,7 +145,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
     } catch (err) {
       return {
         value: null,
-        error: err instanceof Error ? err.message : "Invalid filter parameters",
+        error: err instanceof Error ? err.message : t("invalidFilterParameters"),
       };
     }
   }, [serialized]);
@@ -182,7 +194,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
       update(key, value ? localToISO(value) : "");
       setDateError("");
     } catch (err) {
-      setDateError(err instanceof Error ? err.message : "Invalid date/time");
+      setDateError(err instanceof Error ? err.message : t("invalidDateTime"));
     }
   }
 
@@ -214,13 +226,13 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">On the Road</p>
+          <p className="eyebrow">{t("onTheRoad")}</p>
           {/* Embedded on the dashboard, which already has the page's h1. */}
-          {recent ? <h2>Recent Deliveries</h2> : <h1>Assigned Shipments</h1>}
+          {recent ? <h2>{t("recentDeliveries")}</h2> : <h1>{t("assignedShipments")}</h1>}
           <p>
             {recent
-              ? "Your most recently assigned shipments and upcoming stops."
-              : "Review your delivery route, update transit states, and record proof of delivery."}
+              ? t("yourMostRecentlyAssigned")
+              : t("reviewYourDeliveryRoute")}
           </p>
         </div>
       </div>
@@ -235,7 +247,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
               <div>
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-base font-bold text-foreground">
-                    Filter Assignments
+                    {t("filterAssignments")}
                   </CardTitle>
                   {activeCount > 0 ? (
                     <Badge variant="secondary" className="bg-[#e5ecdf] text-[#196547] border-[#196547]/20 font-semibold text-[11px] px-2">
@@ -243,12 +255,12 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                     </Badge>
                   ) : (
                     <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
-                      Live courier queue
+                      {t("liveCourierQueue")}
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Filter assignments by delivery status, search recipient details, or narrow by assignment dates.
+                  {t("filterAssignmentsByDelivery")}
                 </p>
               </div>
             </div>
@@ -263,7 +275,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                   className="h-8 text-xs text-muted-foreground hover:text-destructive font-medium cursor-pointer"
                 >
                   <RotateCcw className="size-3.5 mr-1" aria-hidden="true" />
-                  Reset filters
+                  {t("resetFilters")}
                 </Button>
               )}
             </div>
@@ -273,9 +285,9 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
           <div className="border-b border-border/60 bg-background/50 px-5 py-2.5 sm:px-6">
             <div className="quick-filter-options">
               <span className="text-xs font-semibold text-muted-foreground mr-1 flex items-center gap-1">
-                <Filter className="size-3 text-muted-foreground" /> Status:
+                <Filter className="size-3 text-muted-foreground" /> {tf("statusLabel")}
               </span>
-              {quickCourierPresets.map((preset) => {
+              {presets.map((preset) => {
                 const isActive = (params.get("status") ?? "") === preset.value;
                 return (
                   <button
@@ -308,8 +320,8 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
               <div className="sm:col-span-2 relative min-w-0">
                 <Input
                   id="courier-search"
-                  label="Search deliveries"
-                  placeholder="Tracking number, recipient, address..."
+                  label={t("searchDeliveries")}
+                  placeholder={t("trackingNumberRecipientAddress")}
                   maxLength={100}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -324,8 +336,8 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       update("q", "", true);
                     }}
                     className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    title="Clear search"
-                    aria-label="Clear search"
+                    title={t("clearSearch")}
+                    aria-label={t("clearSearch")}
                   >
                     <X className="size-3.5" aria-hidden="true" />
                   </button>
@@ -335,14 +347,14 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
               <div>
                 <Select
                   id="courier-status"
-                  label="Delivery status"
+                  label={t("deliveryStatus")}
                   value={params.get("status") ?? ""}
                   onChange={(e) => update("status", e.target.value)}
                 >
-                  <option value="">All statuses</option>
+                  <option value="">{t("allStatuses")}</option>
                   {courierStatuses.map((st) => (
                     <option key={st} value={st}>
-                      {friendlyCourierStatuses[st] ?? statusLabel(st)}
+                      {friendly[st] ?? statusLabel(st)}
                     </option>
                   ))}
                 </Select>
@@ -351,12 +363,12 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
               <div>
                 <Select
                   id="sort-order"
-                  label="Display order"
+                  label={t("displayOrder")}
                   value={params.get("order") ?? "desc"}
                   onChange={(e) => update("order", e.target.value)}
                 >
-                  <option value="desc">Newest first (Recently assigned)</option>
-                  <option value="asc">Oldest first (Earliest assigned)</option>
+                  <option value="desc">{t("newestFirstRecentlyAssigned")}</option>
+                  <option value="asc">{t("oldestFirstEarliestAssigned")}</option>
                 </Select>
               </div>
             </div>
@@ -367,7 +379,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                 <div className="sm:col-span-1">
                   <Input
                     id="created-from"
-                    label="Assigned from"
+                    label={t("assignedFrom")}
                     type="datetime-local"
                     value={toLocalInput(params.get("from") ?? "")}
                     onChange={(e) => dateFilter("from", e.target.value)}
@@ -377,7 +389,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                 <div className="sm:col-span-1">
                   <Input
                     id="created-to"
-                    label="Assigned to"
+                    label={t("assignedTo")}
                     type="datetime-local"
                     value={toLocalInput(params.get("to") ?? "")}
                     onChange={(e) => dateFilter("to", e.target.value)}
@@ -387,18 +399,18 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                 <div className="sm:col-span-1">
                   <Select
                     id="sort-by"
-                    label="Sort by"
+                    label={t("sortBy")}
                     value={params.get("sortBy") ?? "createdAt"}
                     onChange={(e) => update("sortBy", e.target.value)}
                   >
-                    <option value="createdAt">Assignment Date</option>
-                    <option value="updatedAt">Last Status Update</option>
+                    <option value="createdAt">{t("assignmentDate")}</option>
+                    <option value="updatedAt">{t("lastStatusUpdate")}</option>
                   </Select>
                 </div>
 
                 <div className="sm:col-span-1 pb-1">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-xs text-muted-foreground mr-1 font-medium">Quick dates:</span>
+                    <span className="text-xs text-muted-foreground mr-1 font-medium">{t("quickDates")}</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -408,7 +420,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       }}
                       className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                     >
-                      Today
+                      {t("today")}
                     </button>
                     <button
                       type="button"
@@ -419,7 +431,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                       }}
                       className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                     >
-                      7 days
+                      {t("n7Days")}
                     </button>
                     {(params.get("from") || params.get("to")) && (
                       <button
@@ -433,7 +445,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                         }}
                         className="text-xs px-2 py-1 rounded-md text-destructive hover:bg-destructive/10 font-medium transition-colors cursor-pointer"
                       >
-                        Clear
+                        {t("clear")}
                       </button>
                     )}
                   </div>
@@ -444,11 +456,11 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
             {/* Active Filter Chips Bar */}
             {filtered && (
               <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/60">
-                <span className="text-xs font-semibold text-muted-foreground mr-1">Active filters:</span>
+                <span className="text-xs font-semibold text-muted-foreground mr-1">{t("activeFilters")}</span>
 
                 {search.trim() && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
-                    <span>Search: &ldquo;{search.trim()}&rdquo;</span>
+                    <span>{tf("searchChip", { value: search.trim() })}</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -456,8 +468,8 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                         update("q", "", true);
                       }}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
-                      title="Remove search filter"
-                      aria-label="Remove search filter"
+                      title={t("removeSearchFilter")}
+                      aria-label={t("removeSearchFilter")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -466,13 +478,13 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
 
                 {params.get("status") && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20 font-medium">
-                    <span>Status: {friendlyCourierStatuses[params.get("status")!] ?? statusLabel(params.get("status")!)}</span>
+                    <span>{tf("statusChip", { value: friendly[params.get("status")!] ?? statusLabel(params.get("status")!) })}</span>
                     <button
                       type="button"
                       onClick={() => update("status", "")}
                       className="text-primary hover:text-primary/70 cursor-pointer"
-                      title="Remove status filter"
-                      aria-label="Remove status filter"
+                      title={t("removeStatusFilter")}
+                      aria-label={t("removeStatusFilter")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -481,13 +493,13 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
 
                 {params.get("from") && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
-                    <span>From: {new Date(params.get("from")!).toLocaleDateString()}</span>
+                    <span>{tf("fromChip", { value: f.locale === "en" ? new Date(params.get("from")!).toLocaleDateString() : f.date(params.get("from")!) })}</span>
                     <button
                       type="button"
                       onClick={() => update("from", "")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
-                      title="Remove start date filter"
-                      aria-label="Remove start date filter"
+                      title={t("removeStartDateFilter")}
+                      aria-label={t("removeStartDateFilter")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -496,13 +508,13 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
 
                 {params.get("to") && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
-                    <span>To: {new Date(params.get("to")!).toLocaleDateString()}</span>
+                    <span>{tf("toChip", { value: f.locale === "en" ? new Date(params.get("to")!).toLocaleDateString() : f.date(params.get("to")!) })}</span>
                     <button
                       type="button"
                       onClick={() => update("to", "")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
-                      title="Remove end date filter"
-                      aria-label="Remove end date filter"
+                      title={t("removeEndDateFilter")}
+                      aria-label={t("removeEndDateFilter")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -511,13 +523,13 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
 
                 {params.get("sortBy") && params.get("sortBy") !== "createdAt" && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
-                    <span>Sorted by: Last Updated</span>
+                    <span>{t("sortedByLastUpdated")}</span>
                     <button
                       type="button"
                       onClick={() => update("sortBy", "createdAt")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
-                      title="Reset sorting"
-                      aria-label="Reset sorting"
+                      title={t("resetSorting")}
+                      aria-label={t("resetSorting")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -526,13 +538,13 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
 
                 {params.get("order") && params.get("order") === "asc" && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
-                    <span>Order: Oldest first</span>
+                    <span>{t("orderOldestFirst")}</span>
                     <button
                       type="button"
                       onClick={() => update("order", "desc")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
-                      title="Reset order"
-                      aria-label="Reset order"
+                      title={t("resetOrder")}
+                      aria-label={t("resetOrder")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -546,7 +558,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                   onClick={clear}
                   className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive cursor-pointer ml-auto"
                 >
-                  Clear all
+                  {t("clearAll")}
                 </Button>
               </div>
             )}
@@ -558,11 +570,11 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/40 text-xs text-muted-foreground">
                 <p className="flex items-center gap-1.5">
                   <Clock3 className="size-3.5" aria-hidden="true" />
-                  Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  {tf("timezone", { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
                 </p>
                 {data?.pagination && (
                   <p className="font-medium text-foreground">
-                    Showing {data.shipments.length} of {data.pagination.total} {data.pagination.total === 1 ? "delivery" : "deliveries"}
+                    {t("showing", { shown: data.shipments.length, total: data.pagination.total })}
                   </p>
                 )}
               </div>
@@ -573,10 +585,10 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
 
       {query.error && (
         <ErrorNotice
-          title="Filter error"
+          title={t("filterError")}
           action={
             <Button variant="outline" onClick={clear}>
-              Reset filters
+              {t("resetFilters")}
             </Button>
           }
         >
@@ -586,10 +598,10 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
 
       {!!error && (
         <ErrorNotice
-          title="Could not load assignments"
+          title={t("couldNotLoadAssignments")}
           action={
             <Button variant="outline" onClick={reload} disabled={delay > 0}>
-              {delay ? `Retry in ${delay}s` : "Try again"}
+              {delay ? tf("retryIn", { seconds: f.digits(delay) }) : t("tryAgain")}
             </Button>
           }
         >
@@ -598,13 +610,13 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
       )}
 
       {refreshing && <ResourceRefresh />}
-      {loading && <ResourceSkeleton variant="list" label="Loading assigned shipments…" />}
+      {loading && <ResourceSkeleton variant="list" label={t("loadingAssignedShipments")} />}
 
       {data && (
         <Card>
           <CardContent className="shipment-results">
             <ResponsiveTable
-              caption={recent ? "Recent deliveries" : "Assigned shipments"}
+              caption={recent ? t("recentDeliveries2") : t("assignedShipments2")}
               columns={columns}
               rows={data.shipments}
               rowKey={(shipment) => shipment.id}
@@ -612,26 +624,26 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
                 <EmptyState
                   title={
                     data.pagination.total > 0
-                      ? "No shipments on this page"
+                      ? t("noShipmentsOnThis")
                       : filtered
-                        ? "No matching assignments"
-                        : "No assignments yet"
+                        ? t("noMatchingAssignments")
+                        : t("noAssignmentsYet")
                   }
                   description={
                     data.pagination.total > 0
-                      ? "Return to the first page to view your assignments."
+                      ? t("returnToTheFirst")
                       : filtered
-                        ? "Try clearing filters to see all assigned shipments."
-                        : "You currently have no assigned deliveries. Check back when an Admin assigns shipments to you."
+                        ? t("tryClearingFiltersTo")
+                        : t("youCurrentlyHaveNo")
                   }
                   action={
                     data.pagination.total > 0 ? (
                       <Button variant="outline" onClick={() => update("page", "1")}>
-                        Go to first page
+                        {t("goToFirstPage")}
                       </Button>
                     ) : filtered ? (
                       <Button variant="outline" onClick={clear}>
-                        Clear filters
+                        {t("clearFilters")}
                       </Button>
                     ) : undefined
                   }
@@ -649,7 +661,7 @@ export function CourierShipmentListView({ recent = false }: { recent?: boolean }
             {recent && (
               <div className="mt-6">
                 <Button asChild variant="outline">
-                  <Link href="/courier/shipments">View all assignments</Link>
+                  <Link href="/courier/shipments">{t("viewAllAssignments")}</Link>
                 </Button>
               </div>
             )}
