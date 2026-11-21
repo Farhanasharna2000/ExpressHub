@@ -1,6 +1,7 @@
 "use client";
 
-import type { RefObject } from "react";
+import { useRef, type RefObject } from "react";
+import type { Locale } from "@/lib/i18n/config";
 import { gsap, MOTION_OK, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { SplitText } from "@/lib/gsap-hero";
 
@@ -16,15 +17,19 @@ const MAX_MAGNET_PX = 8;
 
 // The visible headline is split into masked characters. Screen readers read one label
 // made from the lines joined by spaces; SplitText's own label would run the lines together.
-function splitHeadline(title: HTMLElement, timeline: gsap.core.Timeline) {
+function splitHeadline(title: HTMLElement, timeline: gsap.core.Timeline, locale: Locale) {
   const lines = [...title.querySelectorAll<HTMLElement>(".hero-line")];
   const label = lines.map((line) => line.textContent?.trim()).filter(Boolean).join(" ");
-  const split = SplitText.create(title, { type: "words,chars", mask: "chars", aria: "auto" });
+  // A Bangla conjunct such as ক্ল is several code points that must stay in one box to join,
+  // so Bangla reveals by whole word; Latin text still reveals letter by letter.
+  const unit = locale === "bn" ? "words" : "chars";
+  const split = SplitText.create(title, { type: unit === "words" ? "words" : "words,chars", mask: unit, aria: "auto" });
   if (label) title.setAttribute("aria-label", label);
 
-  timeline.fromTo(split.chars, { yPercent: 110 }, { yPercent: 0, duration: 0.7, stagger: 0.022, ease: "power4.out" }, 0.15);
+  const pieces = unit === "words" ? split.words : split.chars;
+  timeline.fromTo(pieces, { yPercent: 110 }, { yPercent: 0, duration: unit === "words" ? 0.6 : 0.7, stagger: unit === "words" ? 0.1 : 0.022, ease: "power4.out" }, 0.15);
   const accent = title.querySelector(".hero-accent");
-  const accentChars = accent ? split.chars.filter((char) => accent.contains(char)) : [];
+  const accentChars = accent ? pieces.filter((piece) => accent.contains(piece)) : [];
   if (accentChars.length) {
     // A light wave runs through the key phrase once, then it settles on the brand colour.
     timeline.to(accentChars, { color: "#3fae7d", duration: 0.28, stagger: 0.035, yoyo: true, repeat: 1, ease: "sine.inOut" }, ">-0.15");
@@ -123,8 +128,13 @@ function magnetic(buttons: HTMLElement[]) {
   return () => cleanups.forEach((cleanup) => cleanup());
 }
 
-export function useHeroShowpiece(scope: RefObject<HTMLElement | null>, signedIn: boolean) {
+export function useHeroShowpiece(scope: RefObject<HTMLElement | null>, signedIn: boolean, locale: Locale) {
+  const lastLocale = useRef<Locale | null>(null);
   useGSAP(() => {
+    // Switching language swaps the text at once. The reveal and the route replay belong to
+    // page load and sign-in only, so they are skipped when just the locale changed.
+    const localeChanged = lastLocale.current !== null && lastLocale.current !== locale;
+    lastLocale.current = locale;
     const root = scope.current;
     const hero = root?.querySelector<HTMLElement>(".hero");
     const title = root?.querySelector<HTMLElement>("[data-hero=title]");
@@ -139,12 +149,14 @@ export function useHeroShowpiece(scope: RefObject<HTMLElement | null>, signedIn:
       if (!motion) return;
       const cleanups: (() => void)[] = [];
 
-      const intro = gsap.timeline();
-      cleanups.push(splitHeadline(title, intro));
+      if (!localeChanged) {
+        const intro = gsap.timeline();
+        cleanups.push(splitHeadline(title, intro, locale));
+      }
 
       const route = routeTimeline(stage);
       if (route) {
-        gsap.delayedCall(0.6, () => { route.restart(); });
+        if (!localeChanged) gsap.delayedCall(0.6, () => { route.restart(); });
         // Replays once each time the hero scrolls back into view.
         ScrollTrigger.create({ trigger: stage, start: "top bottom", end: "bottom top", onEnterBack: () => route.restart() });
         const onVisibility = () => (document.hidden ? route.pause() : route.resume());
@@ -159,5 +171,5 @@ export function useHeroShowpiece(scope: RefObject<HTMLElement | null>, signedIn:
       }
       return () => cleanups.forEach((cleanup) => cleanup());
     });
-  }, { scope, dependencies: [signedIn], revertOnUpdate: true });
+  }, { scope, dependencies: [signedIn, locale], revertOnUpdate: true });
 }

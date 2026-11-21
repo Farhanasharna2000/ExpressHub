@@ -4,7 +4,7 @@ import { ArrowUpRight, Check } from "lucide-react";
 import Image from "next/image";
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
-import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
+import { useAppLocale, useFormat, useStatusLabel } from "@/lib/i18n/use-format";
 import { ButtonLink, StatusBadge } from "@/components/ui/primitives";
 import {
   MotionFloat,
@@ -64,12 +64,13 @@ function useHomeAnimations(scope: React.RefObject<HTMLDivElement | null>, signed
 export default function Home() {
   const t = useTranslations("home");
   const f = useFormat();
+  const locale = useAppLocale();
   const statusLabel = useStatusLabel();
   const { user, status } = useSession();
   const isAuthenticated = status === "authenticated" && Boolean(user);
   const scope = useRef<HTMLDivElement>(null);
   useHomeAnimations(scope, isAuthenticated);
-  useHeroShowpiece(scope, isAuthenticated);
+  useHeroShowpiece(scope, isAuthenticated, locale);
 
   return (
     <div className="page-stack" ref={scope}>
@@ -81,7 +82,8 @@ export default function Home() {
                 <span className="w-2 h-2 rounded-full bg-[#196547]" />
                 {t("welcomeBack", { name: user.name, role: statusLabel(user.role) })}
               </div>
-              <h1 data-hero="title">
+              {/* Keyed: the reveal rebuilds this markup, so a text change must mount a new h1. */}
+              <h1 key={`signed-in-${locale}`} data-hero="title">
                 <span className="hero-line">{t("signedInLine1")}</span>
                 <span className="hero-line">{t("signedInLine2")}</span>
                 <span className="hero-line hero-accent">{t("signedInLine3")}</span>
@@ -116,7 +118,7 @@ export default function Home() {
                 <span className="w-2 h-2 rounded-full bg-[#196547] animate-pulse" />
                 {t("badge")}
               </div>
-              <h1 data-hero="title">
+              <h1 key={`signed-out-${locale}`} data-hero="title">
                 <span className="hero-line">{t("line1")}</span>
                 <span className="hero-line">{t("line2")}</span>
                 <span className="hero-line hero-accent">{t("line3")}</span>
@@ -161,7 +163,8 @@ export default function Home() {
               {/* The outer group holds the position; the inner one is what animates. */}
               <g transform="translate(318 82)">
                 <g className="journey-route-chip">
-                  <rect x="-40" y="-12" width="80" height="24" rx="12" />
+                  {/* Sized for the text: "ডেলিভারি সম্পন্ন" is wider than "Delivered". */}
+                  <rect x={locale === "bn" ? -54 : -40} y="-12" width={locale === "bn" ? 108 : 80} height="24" rx="12" />
                   <text x="0" y="4" textAnchor="middle">{t("deliveredChip")}</text>
                 </g>
               </g>
