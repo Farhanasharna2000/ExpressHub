@@ -20,11 +20,11 @@ import {
 import { Pagination } from "@/components/ui/interactive";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import { errorMessage } from "@/lib/client/api";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
 import {
   dateTime,
-  money,
   parsePaymentFilters,
-  statusLabel,
   type Payment,
   type PaymentsListResponse,
 } from "./contracts";
@@ -39,26 +39,21 @@ const paymentStatuses: PaymentStatus[] = [
 ];
 
 const quickPaymentPresets = [
-  { label: "All Payments", value: "", dotColor: "bg-muted-foreground" },
-  { label: "Paid", value: "PAID", dotColor: "bg-emerald-500" },
-  { label: "Pending", value: "PENDING", dotColor: "bg-amber-500" },
-  { label: "Refunded", value: "REFUNDED", dotColor: "bg-sky-500" },
-  { label: "Refund Pending", value: "REFUND_PENDING", dotColor: "bg-purple-500" },
-  { label: "Failed", value: "FAILED", dotColor: "bg-red-500" },
-];
+  { key: "all", value: "", dotColor: "bg-muted-foreground" },
+  { key: "PAID", value: "PAID", dotColor: "bg-emerald-500" },
+  { key: "PENDING", value: "PENDING", dotColor: "bg-amber-500" },
+  { key: "REFUNDED", value: "REFUNDED", dotColor: "bg-sky-500" },
+  { key: "REFUND_PENDING", value: "REFUND_PENDING", dotColor: "bg-purple-500" },
+  { key: "FAILED", value: "FAILED", dotColor: "bg-red-500" },
+] as const;
 
-const friendlyPaymentNames: Record<string, string> = {
-  PAID: "Paid",
-  PENDING: "Pending verification",
-  REFUNDED: "Refunded",
-  REFUND_PENDING: "Refund pending",
-  FAILED: "Payment failed",
-};
+type Label = ReturnType<typeof useTranslations<"payments.list">>;
+type Format = ReturnType<typeof useFormat>;
 
-const columns: Column<Payment>[] = [
+const paymentColumns = (t: Label, f: Format, when: (iso: string) => string): Column<Payment>[] => [
   {
     key: "id",
-    label: "Payment ID",
+    label: t("colId"),
     render: (payment) => (
       <Link
         href={`/customer/payments/${encodeURIComponent(payment.id)}`}
@@ -70,7 +65,7 @@ const columns: Column<Payment>[] = [
   },
   {
     key: "shipment",
-    label: "Shipment",
+    label: t("colShipment"),
     render: (payment) => (
       <Link
         href={`/customer/shipments/${encodeURIComponent(payment.shipmentId)}`}
@@ -82,30 +77,37 @@ const columns: Column<Payment>[] = [
   },
   {
     key: "amount",
-    label: "Amount",
+    label: t("colAmount"),
     render: (payment) => (
       <span className="font-semibold whitespace-nowrap">
-        {money(payment.amount, payment.currency)}
+        {f.money(payment.amount, payment.currency)}
       </span>
     ),
   },
   {
     key: "status",
-    label: "Status",
+    label: t("colStatus"),
     render: (payment) => <StatusBadge status={payment.status} />,
   },
   {
     key: "date",
-    label: "Date",
+    label: t("colDate"),
     render: (payment) => (
       <span className="text-xs text-muted-foreground whitespace-nowrap">
-        {dateTime(payment.paidAt || payment.createdAt)}
+        {when(payment.paidAt || payment.createdAt)}
       </span>
     ),
   },
 ];
 
 export function PaymentsListView() {
+  const t = useTranslations("payments.list");
+  const tp = useTranslations("payments");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const when = (iso: string) => (f.locale === "en" ? dateTime(iso) : f.dateTime(iso));
+  const columns = paymentColumns(t, f, when);
+  const statusName = (st: PaymentStatus) => tp(`statusName.${st}`);
   const router = useRouter();
   const searchParams = useSearchParams();
   const filters = parsePaymentFilters(searchParams);
@@ -168,9 +170,9 @@ export function PaymentsListView() {
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Billing & Transactions</p>
-          <h1>My payments</h1>
-          <p>Review payment records, verify transaction receipts, and track refund requests.</p>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h1>{t("title")}</h1>
+          <p>{t("intro")}</p>
         </div>
         <Button
           variant="outline"
@@ -179,7 +181,7 @@ export function PaymentsListView() {
           className="gap-2 cursor-pointer"
         >
           <RefreshCw className={loading || refreshing ? "animate-spin size-4" : "size-4"} />
-          {loading ? "Updating payments…" : "Refresh"}
+          {loading ? t("updating") : t("refresh")}
         </Button>
       </div>
 
@@ -192,20 +194,20 @@ export function PaymentsListView() {
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base font-bold text-foreground">
-                  Filter Payments
+                  {t("filterTitle")}
                 </CardTitle>
                 {activeCount > 0 ? (
                   <Badge variant="secondary" className="bg-[#e5ecdf] text-[#196547] border-[#196547]/20 font-semibold text-[11px] px-2">
-                    {activeCount} {activeCount === 1 ? "filter" : "filters"} applied
+                    {tf("applied", { count: activeCount })}
                   </Badge>
                 ) : (
                   <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
-                    Live transaction history
+                    {t("live")}
                   </span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Quickly filter by payment status or search by shipment ID reference.
+                {t("filterText")}
               </p>
             </div>
           </div>
@@ -220,7 +222,7 @@ export function PaymentsListView() {
                 className="h-8 text-xs text-muted-foreground hover:text-destructive font-medium cursor-pointer"
               >
                 <RotateCcw className="size-3.5 mr-1" aria-hidden="true" />
-                Reset filters
+                {tf("reset")}
               </Button>
             )}
           </div>
@@ -230,13 +232,13 @@ export function PaymentsListView() {
         <div className="border-b border-border/60 bg-background/50 px-5 py-2.5 sm:px-6">
           <div className="quick-filter-options">
             <span className="text-xs font-semibold text-muted-foreground mr-1 flex items-center gap-1">
-              <Filter className="size-3 text-muted-foreground" /> Status:
+              <Filter className="size-3 text-muted-foreground" /> {tf("statusLabel")}
             </span>
             {quickPaymentPresets.map((preset) => {
               const isActive = (filters.status ?? "") === preset.value;
               return (
                 <button
-                  key={preset.label}
+                  key={preset.key}
                   type="button"
                   aria-pressed={isActive}
                   onClick={() => update("status", preset.value)}
@@ -252,7 +254,7 @@ export function PaymentsListView() {
                       isActive ? "bg-white" : preset.dotColor
                     }`}
                   />
-                  <span>{preset.label}</span>
+                  <span>{t(`preset.${preset.key}`)}</span>
                 </button>
               );
             })}
@@ -264,8 +266,8 @@ export function PaymentsListView() {
             <div className="relative min-w-0">
               <Input
                 id="payment-shipment-id"
-                label="Search by shipment ID"
-                placeholder="Enter shipment ID reference..."
+                label={t("searchLabel")}
+                placeholder={t("searchPlaceholder")}
                 maxLength={100}
                 value={shipmentSearch}
                 onChange={(e) => setShipmentSearch(e.target.value)}
@@ -280,8 +282,8 @@ export function PaymentsListView() {
                     update("shipmentId", "");
                   }}
                   className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  title="Clear search"
-                  aria-label="Clear search"
+                  title={tf("clearSearch")}
+                  aria-label={tf("clearSearch")}
                 >
                   <X className="size-3.5" aria-hidden="true" />
                 </button>
@@ -290,14 +292,14 @@ export function PaymentsListView() {
 
             <Select
               id="payment-status-filter"
-              label="Payment status"
+              label={t("statusFilter")}
               value={filters.status ?? ""}
               onChange={(e) => update("status", e.target.value)}
             >
-              <option value="">All payment statuses</option>
+              <option value="">{t("allStatuses")}</option>
               {paymentStatuses.map((st) => (
                 <option key={st} value={st}>
-                  {friendlyPaymentNames[st] ?? statusLabel(st)}
+                  {statusName(st)}
                 </option>
               ))}
             </Select>
@@ -306,17 +308,17 @@ export function PaymentsListView() {
           {/* Active Filter Chips Bar */}
           {isFiltered && (
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/60">
-              <span className="text-xs font-semibold text-muted-foreground mr-1">Active filters:</span>
+              <span className="text-xs font-semibold text-muted-foreground mr-1">{tf("active")}</span>
 
               {filters.status && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20 font-medium">
-                  <span>Status: {friendlyPaymentNames[filters.status] ?? statusLabel(filters.status)}</span>
+                  <span>{tf("statusChip", { value: statusName(filters.status) })}</span>
                   <button
                     type="button"
                     onClick={() => update("status", "")}
                     className="text-primary hover:text-primary/70 cursor-pointer"
-                    title="Remove status filter"
-                    aria-label="Remove status filter"
+                    title={tf("removeStatus")}
+                    aria-label={tf("removeStatus")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -325,7 +327,7 @@ export function PaymentsListView() {
 
               {filters.shipmentId && (
                 <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
-                  <span>Shipment: &ldquo;{filters.shipmentId}&rdquo;</span>
+                  <span>{t("shipmentChip", { value: filters.shipmentId })}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -333,8 +335,8 @@ export function PaymentsListView() {
                       update("shipmentId", "");
                     }}
                     className="text-muted-foreground hover:text-foreground cursor-pointer"
-                    title="Remove shipment filter"
-                    aria-label="Remove shipment filter"
+                    title={t("removeShipment")}
+                    aria-label={t("removeShipment")}
                   >
                     <X className="size-3" aria-hidden="true" />
                   </button>
@@ -348,17 +350,17 @@ export function PaymentsListView() {
                 onClick={clearFilters}
                 className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive cursor-pointer ml-auto"
               >
-                Clear all
+                {tf("clearAll")}
               </Button>
             </div>
           )}
 
           {/* Result count */}
           <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs text-muted-foreground">
-            <span>Instant Stripe-verified settlements</span>
+            <span>{t("verified")}</span>
             {pagination.total > 0 && (
               <span className="font-medium text-foreground">
-                Showing {payments.length} of {pagination.total} {pagination.total === 1 ? "payment" : "payments"}
+                {t("showing", { shown: payments.length, total: pagination.total })}
               </span>
             )}
           </div>
@@ -366,11 +368,11 @@ export function PaymentsListView() {
       </Card>
 
       {refreshing && <ResourceRefresh />}
-      {loading && <ResourceSkeleton variant="list" label="Loading your payment history…" />}
+      {loading && <ResourceSkeleton variant="list" label={t("loadingLabel")} />}
 
       {!!error && (
         <ErrorNotice
-          title="Could not load payment records"
+          title={t("loadFailed")}
           action={
             <Button
               variant="outline"
@@ -378,7 +380,7 @@ export function PaymentsListView() {
               disabled={delay > 0}
               className="mt-2"
             >
-              {delay > 0 ? `Retry in ${delay}s` : "Try again"}
+              {delay > 0 ? tf("retryIn", { seconds: f.digits(delay) }) : tf("tryAgain")}
             </Button>
           }
         >
@@ -390,7 +392,7 @@ export function PaymentsListView() {
         <Card>
           <CardContent className="shipment-results p-4 sm:p-6">
             <ResponsiveTable
-              caption="Your payment transactions"
+              caption={t("caption")}
               columns={columns}
               rows={payments}
               rowKey={(p) => p.id}
@@ -398,30 +400,30 @@ export function PaymentsListView() {
                 <EmptyState
                   title={
                     pagination.total > 0
-                      ? "No payments on this page"
+                      ? t("emptyPage")
                       : isFiltered
-                      ? "No matching payments"
-                      : "No payments recorded yet"
+                      ? t("emptyFiltered")
+                      : t("empty")
                   }
                   description={
                     pagination.total > 0
-                      ? "Return to the first page to view your payments."
+                      ? t("emptyPageText")
                       : isFiltered
-                      ? "Try selecting another status or clear the filter."
-                      : "Payments for your shipments will appear here."
+                      ? t("emptyFilteredText")
+                      : t("emptyText")
                   }
                   action={
                     pagination.total > 0 ? (
                       <Button variant="outline" onClick={() => update("page", "1")}>
-                        Go to first page
+                        {tf("goToFirstPage")}
                       </Button>
                     ) : isFiltered ? (
                       <Button variant="outline" onClick={clearFilters}>
-                        Clear filters
+                        {tf("clearFilters")}
                       </Button>
                     ) : (
                       <Button asChild>
-                        <Link href="/customer/shipments/new">Book a shipment</Link>
+                        <Link href="/customer/shipments/new">{t("book")}</Link>
                       </Button>
                     )
                   }

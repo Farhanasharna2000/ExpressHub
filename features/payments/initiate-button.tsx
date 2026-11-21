@@ -7,6 +7,9 @@ import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage } from "@/lib/client/api";
 import { useRetryDelay } from "@/features/shipments/use-resource";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
+import { localize } from "@/lib/i18n/bridge";
 import {
   getIdempotencyKey,
   savePendingPayment,
@@ -30,6 +33,8 @@ export function PayWithStripeButton({
   className = "",
   size = "default",
 }: PayButtonProps) {
+  const t = useTranslations("payments.pay");
+  const f = useFormat();
   const { store } = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -85,14 +90,14 @@ export function PayWithStripeButton({
       // If checkoutUrl is null, payment is already settled or closed
       throw new ApiError(
         409,
-        "This payment has already been completed or the session has expired. Check your payment history."
+        localize("payments.pay.alreadyDone", "This payment has already been completed or the session has expired. Check your payment history.")
       );
     } catch (err) {
       pending.current = false;
       setBusy(false);
       setError(err);
       toast.error(
-        "Could not start payment",
+        t("startFailed"),
         errorMessage(err).replace(/\.{2,}/g, ".")
       );
     }
@@ -110,15 +115,14 @@ export function PayWithStripeButton({
         {busy ? (
           <>
             <Loader2 className="size-4 animate-spin" />
-            Opening secure payment page…
+            {t("opening")}
           </>
         ) : delay > 0 ? (
-          `Try again in ${delay}s`
+          t("tryAgainIn", { seconds: f.digits(delay) })
         ) : (
           <>
             <CreditCard className="size-4" />
-            Pay with Stripe
-            {price ? ` (${currency.toUpperCase()} ${price})` : ""}
+            {price ? t("payAmount", { amount: f.money(String(price), currency.toUpperCase()) }) : t("pay")}
           </>
         )}
       </Button>
