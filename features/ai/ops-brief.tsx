@@ -6,11 +6,12 @@ import { Loader2, RefreshCw, Sparkles, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "@/features/auth/provider";
-import { dateTime, statusLabel } from "@/features/shipments/contracts";
+import { useFormat, useStatusLabel } from "@/lib/i18n/use-format";
 import { useResource } from "@/features/shipments/use-resource";
 import { aiErrorMessage } from "./ai-error";
 import { bangladeshDate, briefFigures, briefShipments, latestBrief, type OpsBrief } from "./contracts";
 
+import { useTranslations } from "next-intl";
 export function OpsBriefCard() {
   const { data: status } = useResource<{ opsBrief?: boolean }>("/ai/status");
   if (!status?.opsBrief) return null;
@@ -18,6 +19,7 @@ export function OpsBriefCard() {
 }
 
 function OpsBriefPanel() {
+  const t = useTranslations("ai");
   const { store } = useSession();
   const { data, loading, error: readError, reload } = useResource<{ brief: OpsBrief | null }>("/ai/ops-brief");
   const [generated, setGenerated] = useState<OpsBrief | null>(null);
@@ -45,15 +47,15 @@ function OpsBriefPanel() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="size-4 text-primary" aria-hidden="true" /> Daily operations brief
+              <Sparkles className="size-4 text-primary" aria-hidden="true" /> {t("dailyBrief")}
             </CardTitle>
             <CardDescription>
-              An AI summary of today&apos;s figures with suggested next steps. Check the numbers beside it before acting.
+              {t("dailyBriefText")}
             </CardDescription>
           </div>
           {brief && (
             <Button type="button" variant="outline" size="sm" onClick={() => void generate(true)} disabled={busy}>
-              <RefreshCw className={busy ? "animate-spin" : undefined} aria-hidden="true" /> Refresh brief
+              <RefreshCw className={busy ? "animate-spin" : undefined} aria-hidden="true" /> {t("refreshBrief")}
             </Button>
           )}
         </div>
@@ -71,10 +73,10 @@ function OpsBriefPanel() {
           <div className="flex flex-wrap items-center gap-3">
             <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
               <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              Couldn&apos;t check for today&apos;s saved brief. {aiErrorMessage(readError)}
+              {t("savedBriefFailed", { message: aiErrorMessage(readError) })}
             </p>
             <Button type="button" variant="outline" size="sm" onClick={reload}>
-              <RefreshCw aria-hidden="true" /> Try again
+              <RefreshCw aria-hidden="true" /> {t("tryAgain")}
             </Button>
           </div>
         )}
@@ -83,9 +85,9 @@ function OpsBriefPanel() {
           <div className="flex flex-wrap items-center gap-3">
             <Button type="button" onClick={() => void generate(false)} disabled={busy || loading}>
               {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Sparkles aria-hidden="true" />}
-              {busy ? "Reading today's figures…" : "Prepare today's brief"}
+              {busy ? t("readingTodaySFigures") : t("prepareTodaySBrief")}
             </Button>
-            <span className="text-xs text-muted-foreground">Prepared once a day and saved for you. Shipment figures are sent to our AI provider; customer details are not.</span>
+            <span className="text-xs text-muted-foreground">{t("preparedOnceADay")}</span>
           </div>
         )}
 
@@ -96,6 +98,10 @@ function OpsBriefPanel() {
 }
 
 function BriefBody({ brief }: { brief: OpsBrief }) {
+  const t = useTranslations("ai");
+  const f = useFormat();
+  const statusLabel = useStatusLabel();
+  const reasons: Record<string, string> = { "Needs a courier": t("reason.needsCourier"), Failed: t("reason.failed"), Delayed: t("reason.delayed") };
   const shipments = briefShipments(brief.facts);
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -105,12 +111,12 @@ function BriefBody({ brief }: { brief: OpsBrief }) {
 
         {brief.brief.actions.length > 0 && (
           <div>
-            <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Suggested next steps</h3>
+            <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{t("suggestedNextSteps")}</h3>
             <ol className="space-y-2">
               {brief.brief.actions.map((action, index) => (
                 <li key={`${index}-${action.title}`} className="flex gap-2.5">
                   <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary" aria-hidden="true">
-                    {index + 1}
+                    {f.digits(index + 1)}
                   </span>
                   <span>
                     <span className="font-medium">{action.title}</span>
@@ -125,24 +131,24 @@ function BriefBody({ brief }: { brief: OpsBrief }) {
         {brief.brief.unverified.length > 0 && (
           <p className="flex items-start gap-2 rounded-md bg-amber-50 px-2.5 py-2 text-xs text-amber-800">
             <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            Not found in today&apos;s figures: {brief.brief.unverified.join(", ")}. Rely on the figures beside the brief for these.
+            {t("unverified", { items: brief.brief.unverified.join(", ") })}
           </p>
         )}
 
         <p className="text-xs text-muted-foreground">
-          Prepared {dateTime(brief.generatedAt)} with {brief.model}
-          {brief.cached ? " · saved brief" : ""}
+          {t("prepared", { time: f.dateTime(brief.generatedAt), model: brief.model })}
+          {brief.cached ? t("savedBrief") : ""}
         </p>
       </div>
 
       <div className="space-y-3">
         <div className="rounded-lg border bg-background p-3">
-          <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Based on these figures</h3>
+          <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{t("basedOnTheseFigures")}</h3>
           <dl className="grid grid-cols-2 gap-2">
             {briefFigures(brief.facts).map((figure) => (
               <div key={figure.label} className="rounded-md bg-muted/40 px-2.5 py-2">
-                <dt className="text-[11px] text-muted-foreground">{figure.label}</dt>
-                <dd className={`text-lg font-bold ${figure.alert ? "text-destructive" : ""}`}>{figure.value}</dd>
+                <dt className="text-[11px] text-muted-foreground">{t(`figure.${figure.key}`, { hours: f.digits(brief.facts.delayThresholdHours) })}</dt>
+                <dd className={`text-lg font-bold ${figure.alert ? "text-destructive" : ""}`}>{f.number(figure.value)}</dd>
               </div>
             ))}
           </dl>
@@ -150,7 +156,7 @@ function BriefBody({ brief }: { brief: OpsBrief }) {
 
         {shipments.length > 0 && (
           <div className="rounded-lg border bg-background p-3">
-            <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Shipments to check</h3>
+            <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{t("shipmentsToCheck")}</h3>
             <ul className="space-y-1.5 text-xs">
               {shipments.map((shipment) => (
                 <li key={shipment.id} className="flex items-center justify-between gap-2">
@@ -161,7 +167,7 @@ function BriefBody({ brief }: { brief: OpsBrief }) {
                     {shipment.trackingNumber}
                   </Link>
                   <span className="shrink-0 text-muted-foreground">
-                    {shipment.reason} · {statusLabel(shipment.status)} · {shipment.hoursSinceUpdate}h
+                    {reasons[shipment.reason] ?? shipment.reason} · {statusLabel(shipment.status)} · {t("hours", { hours: f.digits(shipment.hoursSinceUpdate) })}
                   </span>
                 </li>
               ))}

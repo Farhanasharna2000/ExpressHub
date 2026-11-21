@@ -105,15 +105,15 @@ export type OpsBrief = {
 // The figures shown beside the brief, in the order the brief prioritises them.
 export function briefFigures(facts: OpsBrief["facts"]) {
   return [
-    { label: "Paid, no courier", value: facts.unassignedPaid.count, alert: facts.unassignedPaid.count > 0 },
-    { label: "Failed deliveries", value: facts.failed.count, alert: facts.failed.count > 0 },
-    { label: `No update in ${facts.delayThresholdHours}h`, value: facts.delayed.count, alert: facts.delayed.count > 0 },
-    { label: "Pending payments", value: facts.payments.pending, alert: false },
-    { label: "Booked today", value: facts.today.created, alert: false },
-    { label: "Delivered today", value: facts.today.delivered, alert: false },
-    { label: "Active shipments", value: facts.shipments.active, alert: false },
-    { label: "Active couriers", value: facts.couriers.active, alert: false },
-  ];
+    { key: "paidNoCourier", label: "Paid, no courier", value: facts.unassignedPaid.count, alert: facts.unassignedPaid.count > 0 },
+    { key: "failedDeliveries", label: "Failed deliveries", value: facts.failed.count, alert: facts.failed.count > 0 },
+    { key: "noUpdate", label: `No update in ${facts.delayThresholdHours}h`, value: facts.delayed.count, alert: facts.delayed.count > 0 },
+    { key: "pendingPayments", label: "Pending payments", value: facts.payments.pending, alert: false },
+    { key: "bookedToday", label: "Booked today", value: facts.today.created, alert: false },
+    { key: "deliveredToday", label: "Delivered today", value: facts.today.delivered, alert: false },
+    { key: "activeShipments", label: "Active shipments", value: facts.shipments.active, alert: false },
+    { key: "activeCouriers", label: "Active couriers", value: facts.couriers.active, alert: false },
+  ] as const;
 }
 
 // Shipments the admin may want to open, without repeats, most urgent group first.

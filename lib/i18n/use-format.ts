@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
+import { locationAge } from "@/lib/courier-location";
 import { type Locale, isLocale, defaultLocale } from "@/lib/i18n/config";
 import {
   formatClockDate, formatDate, formatDateTime, formatMoney, formatNumber, formatPercent, formatRelativeMinutes, localizeDigits,
@@ -25,6 +26,12 @@ export function useFormat() {
     percent: (ratio: number, digits?: number) => formatPercent(ratio, locale, digits),
     minutesAgo: (minutes: number) => formatRelativeMinutes(minutes, locale),
     digits: (value: string | number) => localizeDigits(String(value), locale),
+    // "just now" / "7 min ago" for a recent timestamp.
+    age: (updatedAt: string, now = Date.now()) => {
+      if (locale === "en") return locationAge(updatedAt, now);
+      const seconds = Math.max(0, Math.round((now - Date.parse(updatedAt)) / 1000));
+      return seconds < 45 ? "এইমাত্র" : formatRelativeMinutes(seconds / 60, locale);
+    },
   }), [locale]);
 }
 

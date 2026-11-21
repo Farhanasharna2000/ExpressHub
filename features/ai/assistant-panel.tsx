@@ -21,6 +21,7 @@ import {
 } from "./contracts";
 
 
+import { useTranslations } from "next-intl";
 export function AssistantLauncher() {
   const { user } = useSession();
   const { data } = useResource<{ assistant: boolean }>("/ai/status");
@@ -48,6 +49,8 @@ function SuggestionChips({ items, onPick, disabled }: { items: string[]; onPick:
 }
 
 function TypingIndicator({ seconds }: { seconds: number }) {
+  const t = useTranslations("ai");
+  const waiting: Record<string, string> = { "Checking your shipments…": t("waiting.checking"), "Reading the tracking details…": t("waiting.reading"), "Almost done…": t("waiting.almost") };
   return (
     <div className="flex items-center gap-2 self-start rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm text-muted-foreground">
       <span className="flex gap-1" aria-hidden="true">
@@ -55,12 +58,18 @@ function TypingIndicator({ seconds }: { seconds: number }) {
           <span key={delay} className="size-1.5 animate-bounce rounded-full bg-primary/70" style={{ animationDelay: `${delay}ms` }} />
         ))}
       </span>
-      <span>{waitingMessage(seconds)}</span>
+      <span>{waiting[waitingMessage(seconds)] ?? waitingMessage(seconds)}</span>
     </div>
   );
 }
 
 function AssistantPanel({ role, name }: { role: string; name?: string }) {
+  const t = useTranslations("ai");
+  const courier = role === "COURIER";
+  const first = name?.trim().split(/\s+/)[0];
+  const hello = t(courier ? "greetingCourier" : "greetingCustomer", { name: first ? ` ${first}` : "" });
+  const starters = courier ? [t("suggest.courier1"), t("suggest.courier2"), t("suggest.courier3")] : [t("suggest.customer1"), t("suggest.customer2"), t("suggest.customer3")];
+  const followUps = courier ? [t("suggest.courierFollow1"), t("suggest.courierFollow2")] : [t("suggest.customerFollow1"), t("suggest.customerFollow2")];
   const { store } = useSession();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -141,7 +150,7 @@ function AssistantPanel({ role, name }: { role: string; name?: string }) {
         aria-haspopup="dialog"
       >
         <MessageCircle className="size-5" aria-hidden="true" />
-        Ask assistant
+        {t("askAssistant")}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
@@ -157,26 +166,26 @@ function AssistantPanel({ role, name }: { role: string; name?: string }) {
                 <span className="flex size-8 items-center justify-center rounded-full bg-primary/10">
                   <Bot className="size-4 text-primary" aria-hidden="true" />
                 </span>
-                Shipment assistant
+                {t("shipmentAssistant")}
               </DialogTitle>
               {messages.length > 0 && (
                 <Button type="button" variant="ghost" size="xs" onClick={startOver} disabled={busy}>
-                  <RotateCcw aria-hidden="true" /> New chat
+                  <RotateCcw aria-hidden="true" /> {t("newChat")}
                 </Button>
               )}
             </div>
             <DialogDescription className="text-left text-xs">
-              Answers come from your account. The assistant can look things up but cannot make changes.
+              {t("answersComeFromYour")}
             </DialogDescription>
           </DialogHeader>
 
           <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1" aria-live="polite">
             <p className="max-w-[90%] self-start rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm">
-              <span className="sr-only">Assistant: </span>
-              {greeting(name, role)}
+              <span className="sr-only">{t("assistant")} </span>
+              {hello}
             </p>
             {messages.length === 0 && (
-              <SuggestionChips items={assistantSuggestions(role)} onPick={(text) => void send(text)} disabled={busy} />
+              <SuggestionChips items={starters} onPick={(text) => void send(text)} disabled={busy} />
             )}
 
             {messages.map((message, index) => (
@@ -188,7 +197,7 @@ function AssistantPanel({ role, name }: { role: string; name?: string }) {
                       : "rounded-2xl rounded-bl-sm bg-muted px-3 py-2 text-sm whitespace-pre-wrap"
                   }
                 >
-                  <span className="sr-only">{message.role === "user" ? "You: " : "Assistant: "}</span>
+                  <span className="sr-only">{message.role === "user" ? t("you") : t("assistant2")}</span>
                   {message.content}
                 </p>
                 {message.role === "assistant" && Boolean(message.shipments?.length) && (
@@ -200,7 +209,7 @@ function AssistantPanel({ role, name }: { role: string; name?: string }) {
                         onClick={() => setOpen(false)}
                         className="inline-flex items-center gap-1 rounded-full border border-primary/30 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                       >
-                        <Package className="size-3" aria-hidden="true" /> View {shipment.trackingNumber}
+                        <Package className="size-3" aria-hidden="true" /> {t("viewTracking", { tracking: shipment.trackingNumber })}
                       </Link>
                     ))}
                   </div>
@@ -211,14 +220,14 @@ function AssistantPanel({ role, name }: { role: string; name?: string }) {
             {busy && <TypingIndicator seconds={waited} />}
 
             {!busy && last?.role === "assistant" && (
-              <SuggestionChips items={followUpSuggestions(role)} onPick={(text) => void send(text)} disabled={busy} />
+              <SuggestionChips items={followUps} onPick={(text) => void send(text)} disabled={busy} />
             )}
 
             {error && (
               <div role="alert" className="flex flex-col gap-2 self-start rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
                 <span>{error.text}</span>
                 <Button type="button" variant="outline" size="xs" className="self-start" onClick={() => void send(error.retry)}>
-                  <RotateCcw aria-hidden="true" /> Try again
+                  <RotateCcw aria-hidden="true" /> {t("tryAgain")}
                 </Button>
               </div>
             )}
@@ -226,7 +235,7 @@ function AssistantPanel({ role, name }: { role: string; name?: string }) {
 
           <form onSubmit={onSubmit} className="flex flex-col gap-1">
             <div className="flex items-end gap-2">
-              <label htmlFor="assistant-input" className="sr-only">Message the assistant</label>
+              <label htmlFor="assistant-input" className="sr-only">{t("messageTheAssistant")}</label>
               <textarea
                 ref={inputRef}
                 id="assistant-input"
@@ -235,14 +244,14 @@ function AssistantPanel({ role, name }: { role: string; name?: string }) {
                 onKeyDown={onKeyDown}
                 maxLength={MAX_ASSISTANT_INPUT}
                 rows={1}
-                placeholder="Ask about a shipment or tracking number…"
+                placeholder={t("askAboutAShipment")}
                 className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               />
-              <Button type="submit" size="icon-lg" className="rounded-xl" disabled={busy || !draft.trim()} aria-label="Send message">
+              <Button type="submit" size="icon-lg" className="rounded-xl" disabled={busy || !draft.trim()} aria-label={t("sendMessage")}>
                 <Send aria-hidden="true" />
               </Button>
             </div>
-            <p className="text-[11px] text-muted-foreground">Enter to send, Shift + Enter for a new line</p>
+            <p className="text-[11px] text-muted-foreground">{t("enterToSendShift")}</p>
           </form>
         </DialogContent>
       </Dialog>

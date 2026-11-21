@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useResource } from "@/features/shipments/use-resource";
 import { CourierLocationCard } from "./courier-location-card";
 
+import { useTranslations } from "next-intl";
 export const LOCATION_POLL_MS = 15_000;
 
 type Location = { lat: number; lng: number; updatedAt: string; exact: boolean; accuracy?: number };
@@ -22,9 +23,10 @@ export function usePolling(reload: () => void, intervalMs: number, enabled: bool
 // The courier's position on a shipment detail page. The API decides precision: exact
 // for admins, rounded for the customer, nothing unless the shipment is out for delivery.
 export function ShipmentCourierMap({ shipmentId, status }: { shipmentId: string; status: string }) {
+  const t = useTranslations("maps");
   const active = status === "OUT_FOR_DELIVERY";
   const { data, reload } = useResource<{ location: Location | null }>(active ? `/shipments/${encodeURIComponent(shipmentId)}/courier-location` : null);
   usePolling(reload, LOCATION_POLL_MS, active);
   if (!active || !data?.location) return null;
-  return <CourierLocationCard location={data.location} title={data.location.exact ? "Courier's live location" : "Courier location"} />;
+  return <CourierLocationCard location={data.location} title={data.location.exact ? t("courierSLiveLocation") : t("courierLocation")} />;
 }
