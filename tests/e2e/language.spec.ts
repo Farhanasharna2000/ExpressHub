@@ -33,7 +33,8 @@ test("public pages switch to Bangla, keep it after reload, and switch back", asy
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   const heading = page.locator('h1[data-hero="title"]');
-  const englishHeading = (await heading.innerText()).trim();
+  // textContent, like toHaveText below; innerText adds line breaks that depend on layout.
+  const englishHeading = ((await heading.textContent()) ?? "").trim();
   expect(englishHeading).not.toMatch(BANGLA_SCRIPT);
 
   await switchTo(page, "bn");
