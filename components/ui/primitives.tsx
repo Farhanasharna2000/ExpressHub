@@ -1,5 +1,6 @@
 import { PackageOpen, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { translateKnownMessage } from "@/lib/i18n/bridge";
 import { Button as ShadcnButton } from "./button";
 import { Input as ShadcnInput } from "./input";
 import { Label } from "./label";
@@ -25,10 +26,10 @@ function descriptionIds(id: string, hint?: string, error?: string, extra?: strin
   return [extra, hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
 }
 export function Input({ id, label, hint, error, ...props }: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> } & Field) {
-  return <div className="field"><Label htmlFor={id}>{label}</Label><ShadcnInput {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])} />{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{error}</small>}</div>;
+  return <div className="field"><Label htmlFor={id}>{label}</Label><ShadcnInput {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])} />{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{translateKnownMessage(error)}</small>}</div>;
 }
 export function Select({ id, label, hint, error, children, ...props }: Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> & { ref?: Ref<HTMLSelectElement> } & Field) {
-  return <div className="field"><Label htmlFor={id}>{label}</Label><NativeSelect {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])}>{children}</NativeSelect>{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{error}</small>}</div>;
+  return <div className="field"><Label htmlFor={id}>{label}</Label><NativeSelect {...props} id={id} aria-invalid={error ? true : props["aria-invalid"]} aria-describedby={descriptionIds(id, hint, error, props["aria-describedby"])}>{children}</NativeSelect>{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <small className="field-error" id={`${id}-error`} role="alert">{translateKnownMessage(error)}</small>}</div>;
 }
 export function StatusBadge({ status }: { status: ShipmentStatus | PaymentStatus }) {
   const t = useTranslations("status");

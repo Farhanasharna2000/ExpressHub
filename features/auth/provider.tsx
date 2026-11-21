@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import {
   SessionStore,
@@ -53,6 +54,7 @@ export function useSession() {
   return { ...state, store };
 }
 export function AuthGate({ children }: { children: ReactNode }) {
+  const t = useTranslations("authGate");
   const { status, user, error, revision, store } = useSession();
   const path = usePathname();
   const router = useRouter();
@@ -67,15 +69,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return (
       <main id="main-content" className="narrow-page">
         <ErrorNotice
-          title="Unable to restore your session"
+          title={t("restoreFailed")}
           action={
-            <Button onClick={() => void store.restore()}>Try again</Button>
+            <Button onClick={() => void store.restore()}>{t("tryAgain")}</Button>
           }
         >
           {errorMessage(error)}
         </ErrorNotice>
         <ButtonLink href="/login" secondary>
-          Go to sign in
+          {t("goToSignIn")}
         </ButtonLink>
       </main>
     );
@@ -84,9 +86,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       <main id="main-content" className="flex min-h-dvh items-center justify-center px-4 text-center">
         <LoadingState
           label={
-            status === "anonymous"
-              ? "Taking you to sign in…"
-              : "Loading…"
+            status === "anonymous" ? t("redirecting") : t("loading")
           }
         />
       </main>
@@ -95,14 +95,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return (
       <main id="main-content" className="narrow-page">
         <ErrorNotice
-          title="Access denied"
+          title={t("accessDenied")}
           action={
             <ButtonLink href={roleHome(user.role)}>
-              Go to your workspace
+              {t("goToWorkspace")}
             </ButtonLink>
           }
         >
-          This area is not available for your account.
+          {t("notAvailable")}
         </ErrorNotice>
       </main>
     );

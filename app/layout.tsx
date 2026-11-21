@@ -7,6 +7,7 @@ import "./globals.css";
 import { SessionProvider } from "@/features/auth/provider";
 import { Toaster } from "@/components/ui/toast";
 import { MotionProvider } from "@/components/motion-provider";
+import { I18nBridge } from "@/lib/i18n/i18n-bridge";
 
 // Bundled at build time (no runtime request to Google), used only for Bangla text.
 const bangla = Noto_Sans_Bengali({ subsets: ["bengali"], display: "swap", variable: "--font-bangla" });
@@ -37,6 +38,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           {t("skipToContent")}
         </a>
         <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Dhaka">
+          <I18nBridge />
           <MotionProvider>
             <SessionProvider>
               {children}

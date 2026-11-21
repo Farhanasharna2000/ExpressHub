@@ -7,6 +7,9 @@ import { useForm, type FieldValues, type Path, type UseFormReturn } from "react-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
+import { translateKnownMessage } from "@/lib/i18n/bridge";
+import { useStatusLabel } from "@/lib/i18n/use-format";
 import {
   Camera,
   Eye,
@@ -91,6 +94,7 @@ function useFeedback<T extends FieldValues, Output extends FieldValues>(
   form: UseFormReturn<T, unknown, Output>,
   formRef: RefObject<HTMLFormElement | null>
 ) {
+  const t = useTranslations("auth");
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
   const [error, setError] = useState<unknown>(null);
@@ -112,7 +116,7 @@ function useFeedback<T extends FieldValues, Output extends FieldValues>(
       form.setError(name as Path<T>, { type: "server", message });
     }
     if (!fields || Object.keys(fields).length === 0) {
-      toast.error("We couldn't complete that request", errorMessage(error), {
+      toast.error(t("requestFailed"), errorMessage(error), {
         dataAttribute: { "data-form-error": "true" },
       });
     }
@@ -156,22 +160,24 @@ function FormError({
   error: unknown;
   remaining: number;
 }) {
+  const t = useTranslations("auth");
   if (!error && remaining <= 0) return null;
   const message =
     remaining > 0
-      ? `Too many requests. Please wait ${remaining}s before trying again.`
+      ? t("tooManyWait", { seconds: remaining })
       : errorMessage(error);
   if (!message) return null;
 
   return (
     <Alert variant="destructive" data-form-error="true" tabIndex={-1}>
-      <AlertTitle>Error</AlertTitle>
+      <AlertTitle>{t("errorTitle")}</AlertTitle>
       <AlertDescription>{message}</AlertDescription>
     </Alert>
   );
 }
 
 export function AuthForm({ register = false }: { register?: boolean }) {
+  const t = useTranslations("auth");
   const { store, status, user, error: sessionError } = useSession();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -207,8 +213,8 @@ export function AuthForm({ register = false }: { register?: boolean }) {
     }
     if (logoutFailed || feedback.error || lastSessionNotice.current === sessionError) return;
     lastSessionNotice.current = sessionError;
-    toast.error("Session notice", errorMessage(sessionError), { id: "auth-session-notice" });
-  }, [sessionError, logoutFailed, feedback.error]);
+    toast.error(t("sessionNotice"), errorMessage(sessionError), { id: "auth-session-notice" });
+  }, [sessionError, logoutFailed, feedback.error, t]);
 
   useEffect(() => {
     if (status === "authenticated" && user) {
@@ -235,8 +241,8 @@ export function AuthForm({ register = false }: { register?: boolean }) {
         password: demo.password,
       });
       toast.success(
-        `Welcome, ${demo.label}`,
-        `Signed in as ${current.name || current.email}. Opening ${demo.roleName} workspace`
+        t("demoWelcome", { role: t(`demoRole.${demo.role}`) }),
+        t("demoSignedIn", { name: current.name || current.email, role: t(`demoRole.${demo.role}`) })
       );
       router.replace(
         safeReturnUrl(
@@ -265,10 +271,10 @@ export function AuthForm({ register = false }: { register?: boolean }) {
         input
       );
       toast.success(
-        register ? "Account created" : "Welcome back",
+        register ? t("accountCreated") : t("welcomeBack"),
         register
-          ? "Welcome to ExpressHub! Opening your dashboard."
-          : `Signed in as ${current.name || current.email}.`
+          ? t("accountCreatedText")
+          : t("signedInAs", { name: current.name || current.email })
       );
       form.reset();
       router.replace(
@@ -286,7 +292,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
 
   if (status === "loading" || status === "authenticated") {
     return (
-      <LoadingState label="Loading" />
+      <LoadingState label={t("loading")} />
     );
   }
 
@@ -314,7 +320,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
             >
               <Image
                 src={register ? "/storyset-signup.svg" : "/storyset-login.svg"}
-                alt={register ? "Sign up illustration" : "Login illustration"}
+                alt={register ? t("signUpIllustration") : t("loginIllustration")}
                 width={320}
                 height={320}
                 unoptimized
@@ -325,12 +331,10 @@ export function AuthForm({ register = false }: { register?: boolean }) {
 
             <div className="mt-4 space-y-1.5 relative z-10">
               <h3 className="text-lg font-bold text-foreground">
-                {register ? "Join ExpressHub" : "Welcome Back"}
+                {register ? t("joinTitle") : t("welcomeTitle")}
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-[260px] mx-auto">
-                {register
-                  ? "Book doorstep pickups, track parcels live, and manage deliveries effortlessly."
-                  : "Access your logistics workspace, courier routes, and real-time updates."}
+                {register ? t("joinText") : t("welcomeText")}
               </p>
             </div>
 
@@ -352,7 +356,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                   >
                     <Image
                       src={register ? "/storyset-signup.svg" : "/storyset-login.svg"}
-                      alt={register ? "Sign up illustration" : "Login illustration"}
+                      alt={register ? t("signUpIllustration") : t("loginIllustration")}
                       width={120}
                       height={120}
                       unoptimized
@@ -364,12 +368,10 @@ export function AuthForm({ register = false }: { register?: boolean }) {
 
                 <div>
                   <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
-                    <h2>{register ? "Create your account" : "Sign in"}</h2>
+                    <h2>{register ? t("createTitle") : t("signInTitle")}</h2>
                   </CardTitle>
                   <CardDescription className="text-xs text-muted-foreground mt-1">
-                    {register
-                      ? "Enter your details below to get started with ExpressHub"
-                      : "Welcome back! Please enter your details to continue"}
+                    {register ? t("createDescription") : t("signInDescription")}
                   </CardDescription>
                 </div>
               </CardHeader>
@@ -377,10 +379,9 @@ export function AuthForm({ register = false }: { register?: boolean }) {
               <CardContent className="px-6 pb-0 space-y-4">
                 {logoutFailed && (
                   <Alert variant="destructive">
-                    <AlertTitle>Sign-out was not confirmed</AlertTitle>
+                    <AlertTitle>{t("logoutFailedTitle")}</AlertTitle>
                     <AlertDescription className="text-xs">
-                      Your session was cleared on this page, but the server could not
-                      revoke the cookie. Retry sign-out before leaving a shared device.
+                      {t("logoutFailedText")}
                       <div className="mt-2">
                         <Button
                           type="button"
@@ -399,7 +400,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                             }
                           }}
                         >
-                          Retry sign-out
+                          {t("retrySignOut")}
                         </Button>
                       </div>
                     </AlertDescription>
@@ -411,9 +412,9 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                   <div className="rounded-xl border border-border/80 bg-muted/40 p-3 space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-muted-foreground flex items-center gap-1.5 text-primary">
-                        <Sparkles className="size-3.5" aria-hidden="true" /> Demo Sign-in
+                        <Sparkles className="size-3.5" aria-hidden="true" /> {t("demoTitle")}
                       </span>
-                      <span className="text-[11px] text-muted-foreground">1-click access</span>
+                      <span className="text-[11px] text-muted-foreground">{t("demoHint")}</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       {DEMO_ROLES.map((demo) => {
@@ -425,7 +426,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                             disabled={feedback.busy || Boolean(demoRoleBusy)}
                             onClick={() => void handleDemoLogin(demo)}
                             className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg border border-border/60 bg-background hover:bg-muted text-xs font-semibold text-foreground transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
-                            title={`Sign in as ${demo.roleName} (${demo.email})`}
+                            title={t("demoButtonTitle", { role: t(`demoRole.${demo.role}`), email: demo.email })}
                           >
                             {isBusy ? (
                               <Loader2 className="size-3 animate-spin text-primary" />
@@ -440,7 +441,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                                 }`}
                               />
                             )}
-                            <span>{demo.roleName}</span>
+                            <span>{t(`demoRole.${demo.role}`)}</span>
                           </button>
                         );
                       })}
@@ -462,8 +463,8 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                       <Input
                         id="name"
                         {...form.register("name")}
-                        label="Full name"
-                        placeholder="e.g. Sarah Jenkins"
+                        label={t("fullName")}
+                        placeholder={t("namePlaceholder")}
                         autoComplete="name"
                         required
                         maxLength={100}
@@ -477,7 +478,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                     <Input
                       id="email"
                       {...form.register("email")}
-                      label="Email address"
+                      label={t("email")}
                       placeholder="you@example.com"
                       type="email"
                       autoComplete="email"
@@ -492,9 +493,9 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                     <Input
                       id="password"
                       {...form.register("password")}
-                      label="Password"
+                      label={t("password")}
                       type={visible ? "text" : "password"}
-                      placeholder={register ? "At least 12 characters" : "••••••••••••"}
+                      placeholder={register ? t("passwordPlaceholder") : "••••••••••••"}
                       autoComplete={register ? "new-password" : "current-password"}
                       required
                       error={form.formState.errors.password?.message}
@@ -505,7 +506,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                       variant="ghost"
                       size="sm"
                       className="password-toggle absolute right-1 bottom-1 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                      aria-label={visible ? "Hide password" : "Show password"}
+                      aria-label={visible ? t("hidePassword") : t("showPassword")}
                       aria-pressed={visible}
                       onClick={() => setVisible(!visible)}
                     >
@@ -518,7 +519,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                       <Input
                         id="phone"
                         {...form.register("phone")}
-                        label="Phone number (optional)"
+                        label={t("phoneOptional")}
                         placeholder="+880 1700 000000"
                         type="tel"
                         autoComplete="tel"
@@ -538,11 +539,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                       <Loader2 className="size-4 animate-spin mr-2" aria-hidden="true" />
                     ) : null}
                     <span>
-                      {feedback.busy
-                        ? "Please wait…"
-                        : register
-                        ? "Create account"
-                        : "Sign in"}
+                      {feedback.busy ? t("pleaseWait") : register ? t("createAccount") : t("signIn")}
                     </span>
                   </Button>
                 </form>
@@ -551,22 +548,22 @@ export function AuthForm({ register = false }: { register?: boolean }) {
               <CardFooter className="justify-center border-t border-border/60 py-4 px-6 text-xs text-muted-foreground">
                 {register ? (
                   <span>
-                    Already have an account?{" "}
+                    {t("haveAccount")}{" "}
                     <Link
                       href="/login"
                       className="font-semibold text-primary hover:underline"
                     >
-                      Sign in
+                      {t("signIn")}
                     </Link>
                   </span>
                 ) : (
                   <span>
-                    Don&apos;t have an account?{" "}
+                    {t("noAccount")}{" "}
                     <Link
                       href="/register"
                       className="font-semibold text-primary hover:underline"
                     >
-                      Create account
+                      {t("createAccount")}
                     </Link>
                   </span>
                 )}
@@ -580,6 +577,8 @@ export function AuthForm({ register = false }: { register?: boolean }) {
 }
 
 export function ProfileForm() {
+  const t = useTranslations("auth");
+  const statusLabel = useStatusLabel();
   const { user, store } = useSession();
   const formRef = useRef<HTMLFormElement>(null);
   const form = useForm<z.input<typeof profileFormFields>, unknown, z.output<typeof profileFormFields>>({
@@ -628,9 +627,9 @@ export function ProfileForm() {
     try {
       setPhotoDraft(await prepareProfilePhoto(file));
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Could not load this photo.";
+      const msg = translateKnownMessage(error instanceof Error ? error.message : "Could not load this photo.");
       setPhotoError(msg);
-      toast.error("Profile photo error", msg);
+      toast.error(t("photoError"), msg);
     } finally {
       photoPending.current = false;
       setPhotoBusy(false);
@@ -660,7 +659,7 @@ export function ProfileForm() {
       });
       setPhotoError("");
       setSaved(true);
-      toast.success("Profile updated", "Your changes have been saved.");
+      toast.success(t("profileUpdated"), t("profileUpdatedText"));
     } catch (error) {
       feedback.fail(error);
     } finally {
@@ -673,9 +672,9 @@ export function ProfileForm() {
     <div className="page-stack">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Account settings</p>
-          <h1>Your profile</h1>
-          <p>Manage your photo and personal details.</p>
+          <p className="eyebrow">{t("profileEyebrow")}</p>
+          <h1>{t("profileTitle")}</h1>
+          <p>{t("profileDescription")}</p>
         </div>
       </div>
       <form
@@ -694,7 +693,7 @@ export function ProfileForm() {
                 {photo ? (
                   <Image
                     src={photo}
-                    alt="Your profile photo"
+                    alt={t("photoAlt")}
                     width={112}
                     height={112}
                     unoptimized
@@ -712,7 +711,7 @@ export function ProfileForm() {
               <h2 className="break-words text-xl font-semibold">{user.name}</h2>
               <p className="mt-1 break-all text-sm text-muted-foreground">{user.email}</p>
               <span className="mt-3 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold capitalize text-primary">
-                {user.role.toLowerCase()}
+                {statusLabel(user.role)}
               </span>
             </div>
             <div className="space-y-3 border-t pt-5">
@@ -723,7 +722,7 @@ export function ProfileForm() {
                 accept="image/jpeg,image/png,image/webp,image/jpg,image/pjpeg,.jpg,.jpeg,.png,.webp"
                 className="sr-only"
                 tabIndex={-1}
-                aria-label="Profile photo"
+                aria-label={t("photoLabel")}
                 disabled={feedback.busy || photoBusy}
                 aria-invalid={Boolean(photoError || form.formState.errors.avatar?.message)}
                 aria-describedby="profile-photo-help profile-photo-error"
@@ -741,7 +740,7 @@ export function ProfileForm() {
                 ) : (
                   <Upload className="size-4" aria-hidden="true" />
                 )}
-                {photoBusy ? "Preparing photo..." : photo ? "Change photo" : "Upload photo"}
+                {photoBusy ? t("preparingPhoto") : photo ? t("changePhoto") : t("uploadPhoto")}
               </Button>
               {photo && (
                 <Button
@@ -756,20 +755,20 @@ export function ProfileForm() {
                   }}
                 >
                   <Trash2 className="size-3.5" aria-hidden="true" />
-                  Remove photo
+                  {t("removePhoto")}
                 </Button>
               )}
 
               <p id="profile-photo-help" className="text-xs leading-relaxed text-muted-foreground">
-                JPG, PNG or WebP. Up to 5 MB.<br />
-                Save changes to update your photo.
+                {t("photoHelp")}<br />
+                {t("photoSaveHint")}
               </p>
               <p
                 id="profile-photo-error"
                 role={photoError || form.formState.errors.avatar?.message ? "alert" : undefined}
                 className="text-sm text-destructive"
               >
-                {photoError || form.formState.errors.avatar?.message}
+                {photoError || translateKnownMessage(form.formState.errors.avatar?.message ?? "")}
               </p>
             </div>
           </CardContent>
@@ -778,10 +777,10 @@ export function ProfileForm() {
           <CardHeader className="border-b pb-5">
             <CardTitle className="flex items-center gap-2">
               <UserRound className="size-5 text-primary" aria-hidden="true" />
-              <h2 className="text-lg">Personal information</h2>
+              <h2 className="text-lg">{t("personalInfo")}</h2>
             </CardTitle>
             <CardDescription>
-              Keep your contact details up to date for your deliveries.
+              {t("personalInfoText")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 py-6">
@@ -789,7 +788,7 @@ export function ProfileForm() {
             <Input
               id="profile-name"
               {...form.register("name")}
-              label="Full name"
+              label={t("fullName")}
               autoComplete="name"
               maxLength={100}
               required
@@ -800,7 +799,7 @@ export function ProfileForm() {
               <Input
                 id="profile-email"
                 {...form.register("email")}
-                label="Email address"
+                label={t("email")}
                 type="email"
                 autoComplete="email"
                 maxLength={254}
@@ -811,7 +810,7 @@ export function ProfileForm() {
               <Input
                 id="profile-phone"
                 {...form.register("phone")}
-                label="Phone number (optional)"
+                label={t("phoneOptional")}
                 type="tel"
                 autoComplete="tel"
                 maxLength={30}
@@ -824,7 +823,7 @@ export function ProfileForm() {
                 <Input
                   id="profile-current-password"
                   {...form.register("currentPassword")}
-                  label="Current password"
+                  label={t("currentPassword")}
                   type="password"
                   autoComplete="current-password"
                   maxLength={200}
@@ -833,7 +832,7 @@ export function ProfileForm() {
                   error={form.formState.errors.currentPassword?.message}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Changing your email signs you out on your other devices.
+                  {t("emailChangeHint")}
                 </p>
               </div>
             )}
@@ -841,7 +840,7 @@ export function ProfileForm() {
               <BellRing className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
               <div className="flex-1">
                 <label htmlFor="profile-email-notifications" className="flex cursor-pointer items-center justify-between gap-3 text-sm font-medium">
-                  Shipment status emails
+                  {t("statusEmails")}
                   <input
                     id="profile-email-notifications"
                     type="checkbox"
@@ -852,16 +851,16 @@ export function ProfileForm() {
                   />
                 </label>
                 <p id="profile-email-notifications-hint" className="mt-1 text-xs text-muted-foreground">
-                  Email me when a shipment is booked, picked up, out for delivery, delivered or fails.
+                  {t("statusEmailsHint")}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-4">
               <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
               <div>
-                <p className="text-sm font-medium">Account access</p>
+                <p className="text-sm font-medium">{t("accountAccess")}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Your {user.role.toLowerCase()} role is managed by your administrator.
+                  {t("accountAccessText", { role: statusLabel(user.role) })}
                 </p>
               </div>
             </div>
@@ -877,7 +876,7 @@ export function ProfileForm() {
               ) : (
                 <Save className="size-4" aria-hidden="true" />
               )}
-              {feedback.busy ? "Saving..." : "Save changes"}
+              {feedback.busy ? t("saving") : t("saveChanges")}
             </Button>
           </CardFooter>
         </Card>
@@ -886,6 +885,7 @@ export function ProfileForm() {
   );
 }
 export function AccountMenu() {
+  const t = useTranslations("auth");
   const { user, store } = useSession();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -907,7 +907,7 @@ export function AccountMenu() {
         <Link
           href="/profile"
           className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-[#e5ecdf]/60 transition-colors border border-[var(--line)] text-inherit no-underline"
-          title={`View profile (${user.email})`}
+          title={t("viewProfile", { email: user.email })}
         >
           <div className="size-7 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0 border border-[var(--line)]">
             <Image
@@ -931,7 +931,7 @@ export function AccountMenu() {
         onClick={logout}
       >
         <LogOut className="size-3.5" aria-hidden="true" />
-        {busy ? "Signing out..." : "Sign out"}
+        {busy ? t("signingOut") : t("signOut")}
       </Button>
     </div>
   );
