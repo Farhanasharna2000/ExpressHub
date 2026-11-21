@@ -85,5 +85,140 @@
     "DEAD": "Failed",
     "SKIPPED": "Skipped",
     "DISMISSED": "Dismissed"
+  },
+  "home": {
+    "welcomeBack": "Welcome back, {name} • {role}",
+    "signedInLine1": "Your parcels.",
+    "signedInLine2": "Your route.",
+    "signedInLine3": "Always in sync.",
+    "signedInText": "Signed in as an active {role}. Jump straight into your workspace to book parcels, track live milestone transitions, or monitor logistics telemetry.",
+    "openWorkspace": {
+      "ADMIN": "Open Command Center",
+      "COURIER": "Open Courier Portal",
+      "CUSTOMER": "Open Customer Workspace"
+    },
+    "bookParcel": "Book a parcel",
+    "viewDeliveries": "View deliveries",
+    "fleetShipments": "Fleet shipments",
+    "badge": "Next-Gen Express Logistics",
+    "line1": "Big plans.",
+    "line2": "Small parcels.",
+    "line3": "All connected.",
+    "intro": "A simpler, modern way to move what matters. Bring your bookings, real-time tracking, Stripe-verified payments, and courier operations together in one unified platform.",
+    "bookFirst": "Book your first parcel",
+    "howItWorks": "How it works",
+    "checkTracking": "Real-Time Tracking",
+    "checkStripe": "Stripe Checkout",
+    "checkAudit": "Full Audit Trails",
+    "trackTitle": "Track a parcel",
+    "journeyEyebrow": "The delivery journey",
+    "deliveredChip": "Delivered",
+    "heroImageAlt": "ExpressHub courier holding a package and clipboard",
+    "liveBadge": "Live Express Courier",
+    "journeyTitle1": "From your doorstep",
+    "journeyTitle2": "to theirs.",
+    "journeyStep1": "Book with your parcel weight",
+    "journeyStep2": "Pay securely with Stripe Checkout",
+    "journeyStep3": "Follow real-time milestone transitions",
+    "liveVerified": "Live verified status",
+    "howItWorksLabel": "How delivery works",
+    "metricsEyebrow": "Performance & Reliability",
+    "metricsTitle": "Engineered for modern enterprise logistics.",
+    "metricOnTime": "On-Time Delivery",
+    "metricOnTimeText": "Guaranteed parcel routing SLAs",
+    "metricLatency": "API Latency",
+    "metricLatencyText": "Optimized PostgreSQL queries",
+    "metricStripe": "Stripe Verified",
+    "metricStripeText": "Cryptographic webhook verification",
+    "metricEndpoints": "REST Endpoints",
+    "metricEndpointsText": "Strict OpenAPI 3.0 contract",
+    "rolesEyebrow": "One platform. Three perspectives.",
+    "rolesTitle": "A purpose built workspace for every role.",
+    "customerTitle": "Customer Workspace",
+    "customerText": "Get weight-based shipping quotes, book doorstep pickups, complete instant Stripe checkout, and follow chronological event timelines.",
+    "customerBadge": "Customer Experience",
+    "customerImageAlt": "3D illustration of customer booking parcel on mobile device",
+    "courierTitle": "Courier Workspace",
+    "courierText": "Access assigned delivery batches, execute status progressions from pickup to proof of delivery, and submit mandatory transit notes.",
+    "courierBadge": "Courier Operations",
+    "courierImageAlt": "3D illustration of express courier van in transit",
+    "adminTitle": "Admin Command Center",
+    "adminText": "Assign couriers with optimistic concurrency protection, monitor fleet telemetry, manage user access, and inspect immutable audit logs.",
+    "adminBadge": "Operations & Control",
+    "adminImageAlt": "3D illustration of logistics operations analytics command center",
+    "yourWorkspace": "Your Active Workspace",
+    "activeSession": "Active Session • {role}",
+    "continueTitle": "Ready to continue your logistics operations?",
+    "continueText": "Your account is active. Jump directly into your dedicated workspace to book deliveries, execute milestone status progressions, or update your profile.",
+    "goToWorkspace": "Go to your workspace",
+    "securityEyebrow": "Security & Compliance",
+    "ctaTitle": "Ready to experience frictionless parcel logistics?",
+    "ctaText": "Create an account in seconds. Book your first parcel, test the milestone delivery lifecycle, and track updates in real time with enterprise-grade security.",
+    "createAccount": "Create an account",
+    "roleWord": {
+      "ADMIN": "admin",
+      "COURIER": "courier",
+      "CUSTOMER": "customer"
+    }
+  },
+  "common": {
+    "loading": "Loading…",
+    "loadingWorkspace": "Loading your workspace…",
+    "somethingWrong": "Something went wrong",
+    "close": "Close",
+    "reviewDetails": "Review the details before continuing.",
+    "dismissNotification": "Dismiss notification",
+    "notifications": "Notifications",
+    "pagination": {
+      "label": "Pagination",
+      "rowsPerPage": "Rows per page",
+      "previous": "Previous",
+      "next": "Next",
+      "goToPage": "Go to page {page}",
+      "noResults": "No results",
+      "status": "Page {page} of {pages}, {total, plural, one {# result} other {# results}}"
+    }
+  },
+  "tracker": {
+    "eyebrow": "Real-Time Simulation",
+    "title": "Interactive Journey Tracker",
+    "pause": "Pause Demo",
+    "play": "Simulate Journey",
+    "liveStatus": "Live Status",
+    "estimatedDelivery": "Estimated Delivery",
+    "trackingNumber": "Tracking Number",
+    "verifiedMilestone": "Verified Hub Milestone",
+    "steps": {
+      "CREATED": {
+        "label": "Shipment Booked",
+        "sub": "Sender doorstep pickup scheduled",
+        "eta": "Ready for pickup",
+        "note": "Volume quote computed and parcel registered in hub queue."
+      },
+      "PICKED_UP": {
+        "label": "Picked Up by Courier",
+        "sub": "Assigned courier verified package barcode",
+        "eta": "Estimated 24h",
+        "note": "Courier collected parcel from sender address."
+      },
+      "IN_TRANSIT": {
+        "label": "In Transit Across Hubs",
+        "sub": "Moving along central logistics express corridor",
+        "eta": "Estimated 12h",
+        "note": "Processed through central distribution hub with tamper seals intact."
+      },
+      "OUT_FOR_DELIVERY": {
+        "label": "Out for Final Delivery",
+        "sub": "Courier is in recipient neighborhood",
+        "eta": "Estimated 45 mins",
+        "note": "Courier on final route. Recipient contact confirmed."
+      },
+      "DELIVERED": {
+        "label": "Delivered & Verified",
+        "sub": "Signed with recipient confirmation proof",
+        "eta": "Completed",
+        "note": "Delivered to recipient with digital proof of delivery."
+      }
+    }
   }
 }

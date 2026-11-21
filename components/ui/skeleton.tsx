@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
@@ -5,13 +6,14 @@ export function Skeleton({ className, ...props }: ComponentProps<"div">) {
   return <div {...props} aria-hidden="true" className={cn("rounded-md bg-muted motion-safe:animate-pulse", className)} />;
 }
 
-export function ResourceSkeleton({ variant = "list", label = "Loading…" }: {
+export function ResourceSkeleton({ variant = "list", label }: {
   variant?: "list" | "detail" | "dashboard";
   label?: string;
 }) {
+  const t = useTranslations("common");
   return (
     <div role="status" aria-live="polite" aria-busy="true" data-skeleton={variant} className="w-full space-y-4">
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{label ?? t("loading")}</span>
       <div aria-hidden="true" className="space-y-4">
         {variant === "dashboard" && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }, (_, index) => <div key={index} className="space-y-4 rounded-xl border bg-card p-6"><Skeleton className="h-4 w-2/3" /><Skeleton className="h-9 w-20" /><Skeleton className="h-3 w-3/4" /></div>)}

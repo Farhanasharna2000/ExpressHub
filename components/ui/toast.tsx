@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
@@ -181,6 +182,7 @@ export function useToast() {
 }
 
 export function Toaster() {
+  const t = useTranslations("common");
   const { toasts } = useToast();
   const visibleToasts = toasts.filter(
     (item) => item.tone === "success" || item.tone === "error" || item.tone === "info"
@@ -256,7 +258,7 @@ export function Toaster() {
                 )}
               </div>
               <Toast.Close
-                aria-label="Dismiss notification"
+                aria-label={t("dismissNotification")}
                 className="rounded p-1 text-muted-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground"
               >
                 <X className="size-4" aria-hidden="true" />
@@ -265,7 +267,7 @@ export function Toaster() {
           );
         })}
         <Toast.Viewport
-          aria-label="Notifications"
+          aria-label={t("notifications")}
           className="fixed top-20 right-4 z-[100] m-0 flex w-[calc(100vw-2rem)] max-w-sm list-none flex-col gap-3 p-0 outline-none pointer-events-none"
         />
       </Portal.Root>
