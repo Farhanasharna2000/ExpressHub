@@ -6,7 +6,8 @@ import { BadgeCheck, ImageOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "@/features/auth/provider";
 import type { DeliveryProofSummary, ProofKind } from "@/lib/delivery-proof";
-import { dateTime } from "./contracts";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
 
 // Images need the bearer token, so they are fetched as blobs and shown via object URLs.
 function useProofImage(shipmentId: string, kind: ProofKind, enabled: boolean) {
@@ -34,21 +35,24 @@ function useProofImage(shipmentId: string, kind: ProofKind, enabled: boolean) {
 }
 
 function ProofImage({ shipmentId, kind, alt, enabled }: { shipmentId: string; kind: ProofKind; alt: string; enabled: boolean }) {
+  const t = useTranslations("proof");
   const { url, failed } = useProofImage(shipmentId, kind, enabled);
   if (!enabled) return null;
   if (failed) {
     return (
       <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <ImageOff className="size-4" aria-hidden="true" /> The {kind} could not be loaded.
+        <ImageOff className="size-4" aria-hidden="true" /> {t("loadFailed", { kind: t(kind) })}
       </p>
     );
   }
-  if (!url) return <div className="h-40 w-full animate-pulse rounded-lg bg-muted" aria-label={`Loading ${kind}`} role="img" />;
+  if (!url) return <div className="h-40 w-full animate-pulse rounded-lg bg-muted" aria-label={t("loadingKind", { kind: t(kind) })} role="img" />;
   // eslint-disable-next-line @next/next/no-img-element -- authorised blob URL, not optimisable by next/image
   return <img src={url} alt={alt} className="max-h-72 w-full rounded-lg border bg-white object-contain" />;
 }
 
 export function DeliveryProofView({ shipmentId, proof, celebrate = false }: { shipmentId: string; proof: DeliveryProofSummary; celebrate?: boolean }) {
+  const t = useTranslations("proof");
+  const f = useFormat();
   const scope = useRef<HTMLDivElement>(null);
   useGSAP(() => {
     if (!celebrate) return;
@@ -71,28 +75,30 @@ export function DeliveryProofView({ shipmentId, proof, celebrate = false }: { sh
             <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path data-anim="check" d="M4.5 12.5l5 5L19.5 7" />
             </svg>
-            Delivery confirmed
+            {t("confirmed")}
           </p>
         )}
         <CardTitle className="flex items-center gap-2">
-          <BadgeCheck className="size-5 text-emerald-600" aria-hidden="true" /> Proof of delivery
+          <BadgeCheck className="size-5 text-emerald-600" aria-hidden="true" /> {t("title")}
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Received by <strong className="text-foreground">{proof.recipientName}</strong> on{" "}
-          <time dateTime={proof.capturedAt}>{dateTime(proof.capturedAt)}</time>
+          {t.rich("receivedBy", {
+            name: () => <strong className="text-foreground">{proof.recipientName}</strong>,
+            time: () => <time dateTime={proof.capturedAt}>{f.dateTime(proof.capturedAt)}</time>,
+          })}
         </p>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
         {proof.hasPhoto && (
           <figure className="space-y-2">
-            <ProofImage shipmentId={shipmentId} kind="photo" alt={`Photo taken at delivery for ${proof.recipientName}`} enabled />
-            <figcaption className="text-xs text-muted-foreground">Delivery photo</figcaption>
+            <ProofImage shipmentId={shipmentId} kind="photo" alt={t("photoAlt", { name: proof.recipientName })} enabled />
+            <figcaption className="text-xs text-muted-foreground">{t("photoCaption")}</figcaption>
           </figure>
         )}
         {proof.hasSignature && (
           <figure className="space-y-2">
-            <ProofImage shipmentId={shipmentId} kind="signature" alt={`Signature of ${proof.recipientName}`} enabled />
-            <figcaption className="text-xs text-muted-foreground">Recipient signature</figcaption>
+            <ProofImage shipmentId={shipmentId} kind="signature" alt={t("signatureAlt", { name: proof.recipientName })} enabled />
+            <figcaption className="text-xs text-muted-foreground">{t("signatureCaption")}</figcaption>
           </figure>
         )}
       </CardContent>

@@ -12,15 +12,19 @@ import { Input } from "@/components/ui/primitives";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { ApiError, errorMessage, fieldErrors } from "@/lib/client/api";
-import { bookingPayload, bookingSchema, bookingFormSchema, emptyDraft, dateTime, type BookingDraft, type Shipment } from "./contracts";
+import { bookingPayload, bookingSchema, bookingFormSchema, emptyDraft, type BookingDraft, type Shipment } from "./contracts";
 import { useRetryDelay } from "./use-resource";
 import { WeightInput } from "./weight-input";
 import { BookingAssist } from "@/features/ai/booking-assist";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
 
-const steps = ["Pickup", "Delivery", "Parcel", "Review"];
+const steps = ["0", "1", "2", "3"] as const;
 const fieldStep = (key: string) => key.startsWith("pickup") && key !== "pickupScheduledAt" ? 0 : key.startsWith("delivery") ? 1 : 2;
 
 export function ShipmentBooking() {
+  const t = useTranslations("booking");
+  const f = useFormat();
   const { store } = useSession();
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -82,7 +86,7 @@ export function ShipmentBooking() {
       const payload = bookingSchema.parse(bookingPayload(draft));
       submitting.current = true; setBusy(true);
       const { shipment } = await store.api.request<{ shipment: Shipment }>("/shipments", { method: "POST", body: payload });
-      toast.success("Shipment booked", "Your shipment has been created successfully.");
+      toast.success(t("booked"), t("bookedText"));
       // Keep submission locked through navigation; the server is the source of price and currency.
       router.replace(`/customer/shipments/${encodeURIComponent(shipment.id)}`);
     } catch (failure) {
@@ -97,15 +101,13 @@ export function ShipmentBooking() {
       // is already displayed directly under the input field. Do not display a redundant generic toast.
       if (!hasFieldErrors || isUncertain) {
         toast.error(
-          isUncertain ? "Check your shipments before booking again" : errorMessage(failure),
-          isUncertain
-            ? "We couldn’t confirm whether this shipment was created. Check your shipment list first to avoid a duplicate booking."
-            : undefined,
+          isUncertain ? t("uncertainTitle") : errorMessage(failure),
+          isUncertain ? t("uncertainText") : undefined,
           {
             dataAttribute: { "data-booking-error": "true" },
             action: isUncertain ? (
               <Button asChild variant="outline" size="sm">
-                <Link href="/customer/shipments">Check my shipments</Link>
+                <Link href="/customer/shipments">{t("checkShipments")}</Link>
               </Button>
             ) : undefined,
           }
@@ -115,41 +117,41 @@ export function ShipmentBooking() {
   }
 
   return <div className="page-stack">
-    <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> My shipments</Link>
-    <div className="page-heading"><div><p className="eyebrow">Make your next move</p><h1>Book a shipment</h1><p>A few details to get your parcel on its way.</p></div></div>
+    <Link href="/customer/shipments" className="back-link"><ArrowLeft className="inline size-4" aria-hidden="true" /> {t("back")}</Link>
+    <div className="page-heading"><div><p className="eyebrow">{t("eyebrow")}</p><h1>{t("title")}</h1><p>{t("intro")}</p></div></div>
     <BookingAssist onApply={applyDraft} onBusyChange={setAiBusy} disabled={busy || uncertain} />
-    <ol className="shipment-steps" aria-label="Booking progress">{steps.map((name, index) => <li key={name} aria-current={step === index ? "step" : undefined}><span>{index < step ? <Check className="size-4" aria-hidden="true" /> : index + 1}</span>{name}</li>)}</ol>
+    <ol className="shipment-steps" aria-label={t("progress")}>{steps.map((name, index) => <li key={name} aria-current={step === index ? "step" : undefined}><span>{index < step ? <Check className="size-4" aria-hidden="true" /> : f.digits(index + 1)}</span>{t(`steps.${name}`)}</li>)}</ol>
     <form ref={formRef} onSubmit={form.handleSubmit(submit, invalid)} noValidate aria-busy={busy} className="booking-layout">
-      <Card><CardHeader><CardTitle><h2 ref={heading} tabIndex={-1}>{["Where should we pick up?", "Where is it going?", "Tell us about your parcel", "Review your shipment"][step]}</h2></CardTitle><CardDescription>{["Add the sender’s contact details and pickup address.", "Add the recipient’s contact details and full delivery address.", "Enter the parcel weight and an optional description.", "Check the details below before creating your shipment."][step]}</CardDescription></CardHeader>
+      <Card><CardHeader><CardTitle><h2 ref={heading} tabIndex={-1}>{t(`stepTitle.${steps[step]}`)}</h2></CardTitle><CardDescription>{t(`stepText.${steps[step]}`)}</CardDescription></CardHeader>
         <CardContent className="space-y-6">
-          {step === 0 && <div className="form-grid">{input("pickupContactName", "Pickup contact name", { required: true, maxLength: 100 })}{input("pickupContactPhone", "Pickup phone", { type: "tel", required: true, maxLength: 30 })}{input("pickupAddress", "Pickup address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
-          {step === 1 && <div className="form-grid">{input("deliveryContactName", "Recipient name", { required: true, maxLength: 100 })}{input("deliveryContactPhone", "Recipient phone", { type: "tel", required: true, maxLength: 30 })}{input("deliveryAddress", "Delivery address", { required: true, maxLength: 500, hint: "Include building, street, area, and city." })}</div>}
-          {step === 2 && <div className="form-grid"><Controller name="parcelWeightKg" control={form.control} render={({ field, fieldState }) => <WeightInput {...field} disabled={locked} error={fieldState.error?.message} />} />{input("packageDescription", "Parcel description (optional)", { maxLength: 1000 })}{input("pickupScheduledAt", "Preferred pickup time (optional)", { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : `Choose a future time in your device timezone: ${timezone}.` })}</div>}
+          {step === 0 && <div className="form-grid">{input("pickupContactName", t("pickupName"), { required: true, maxLength: 100 })}{input("pickupContactPhone", t("pickupPhone"), { type: "tel", required: true, maxLength: 30 })}{input("pickupAddress", t("pickupAddress"), { required: true, maxLength: 500, hint: t("addressHint") })}</div>}
+          {step === 1 && <div className="form-grid">{input("deliveryContactName", t("recipientName"), { required: true, maxLength: 100 })}{input("deliveryContactPhone", t("recipientPhone"), { type: "tel", required: true, maxLength: 30 })}{input("deliveryAddress", t("deliveryAddress"), { required: true, maxLength: 500, hint: t("addressHint") })}</div>}
+          {step === 2 && <div className="form-grid"><Controller name="parcelWeightKg" control={form.control} render={({ field, fieldState }) => <WeightInput {...field} disabled={locked} error={fieldState.error?.message} />} />{input("packageDescription", t("description"), { maxLength: 1000 })}{input("pickupScheduledAt", t("pickupTime"), { type: "datetime-local", hint: errors.pickupScheduledAt ? undefined : t("pickupTimeHint", { zone: timezone }) })}</div>}
           {step === 3 && (
             <div className="space-y-5">
               <div className="grid gap-4 md:grid-cols-2">
-                <ReviewAddress title="Pickup" name={draft.pickupContactName} phone={draft.pickupContactPhone} address={draft.pickupAddress} disabled={locked} onEdit={() => setStep(0)} />
-                <ReviewAddress title="Delivery" name={draft.deliveryContactName} phone={draft.deliveryContactPhone} address={draft.deliveryAddress} disabled={locked} onEdit={() => setStep(1)} />
+                <ReviewAddress title={t("pickupSection")} name={draft.pickupContactName} phone={draft.pickupContactPhone} address={draft.pickupAddress} disabled={locked} onEdit={() => setStep(0)} />
+                <ReviewAddress title={t("deliverySection")} name={draft.deliveryContactName} phone={draft.deliveryContactPhone} address={draft.deliveryAddress} disabled={locked} onEdit={() => setStep(1)} />
               </div>
 
               <section className="overflow-hidden rounded-xl border bg-background" aria-labelledby="review-parcel-title">
                 <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-5 py-3">
-                  <h3 id="review-parcel-title" className="flex items-center gap-2 text-base font-semibold"><Package className="size-4 text-primary" aria-hidden="true" />Parcel details</h3>
-                  <Button type="button" variant="ghost" size="sm" disabled={locked} onClick={() => setStep(2)} aria-label="Edit parcel details"><Pencil className="size-3.5" aria-hidden="true" />Edit</Button>
+                  <h3 id="review-parcel-title" className="flex items-center gap-2 text-base font-semibold"><Package className="size-4 text-primary" aria-hidden="true" />{t("parcelDetails")}</h3>
+                  <Button type="button" variant="ghost" size="sm" disabled={locked} onClick={() => setStep(2)} aria-label={t("editParcel")}><Pencil className="size-3.5" aria-hidden="true" />{t("edit")}</Button>
                 </div>
                 <div className="space-y-5 p-5">
                   <dl className="grid gap-5 sm:grid-cols-2">
                     <div>
-                      <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Scale className="size-4" aria-hidden="true" />Weight</dt>
-                      <dd className="mt-2 text-lg font-semibold">{draft.parcelWeightKg} <span className="text-sm font-normal text-muted-foreground">kg</span></dd>
+                      <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Scale className="size-4" aria-hidden="true" />{t("weight")}</dt>
+                      <dd className="mt-2 text-lg font-semibold">{f.digits(draft.parcelWeightKg)} <span className="text-sm font-normal text-muted-foreground">{t("kg")}</span></dd>
                     </div>
                   </dl>
-                  {draft.packageDescription && <div className="border-t pt-4"><p className="text-xs font-medium text-muted-foreground">Description</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed">{draft.packageDescription}</p></div>}
+                  {draft.packageDescription && <div className="border-t pt-4"><p className="text-xs font-medium text-muted-foreground">{t("descriptionLabel")}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed">{draft.packageDescription}</p></div>}
                   <div className="flex items-start gap-3 rounded-lg bg-muted/40 p-4">
                     <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground">Preferred pickup</p>
-                      <p className="mt-1 text-sm font-semibold">{draft.pickupScheduledAt ? dateTime(new Date(draft.pickupScheduledAt).toISOString()) : "No preferred time"}</p>
+                      <p className="text-xs font-medium text-muted-foreground">{t("preferredPickup")}</p>
+                      <p className="mt-1 text-sm font-semibold">{draft.pickupScheduledAt ? f.dateTime(new Date(draft.pickupScheduledAt).toISOString()) : t("noPreferredTime")}</p>
                       {draft.pickupScheduledAt && <p className="mt-1 text-xs text-muted-foreground">{timezone}</p>}
                     </div>
                   </div>
@@ -157,22 +159,22 @@ export function ShipmentBooking() {
               </section>
             </div>
           )}
-          <div className="flex flex-wrap justify-between gap-3 border-t pt-6"><Button type="button" variant="outline" disabled={step === 0 || locked} onClick={() => { setStep(step - 1); form.clearErrors(); setError(null); }}><ArrowLeft />Back</Button><Button type="submit" className="min-h-11" disabled={locked || delay > 0}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{busy ? "Creating shipment…" : step === 3 ? "Create shipment" : "Continue"}</Button></div>
+          <div className="flex flex-wrap justify-between gap-3 border-t pt-6"><Button type="button" variant="outline" disabled={step === 0 || locked} onClick={() => { setStep(step - 1); form.clearErrors(); setError(null); }}><ArrowLeft />{t("backButton")}</Button><Button type="submit" className="min-h-11" disabled={locked || delay > 0}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{busy ? t("creating") : step === 3 ? t("create") : t("continue")}</Button></div>
         </CardContent>
       </Card>
       <Card className="self-start border-primary/15 bg-primary/5 shadow-none">
         <CardHeader>
           <span className="flex size-10 items-center justify-center rounded-xl bg-background text-primary"><CreditCard className="size-5" aria-hidden="true" /></span>
-          <CardTitle>{step === 3 ? "Booking & payment" : "Before you book"}</CardTitle>
+          <CardTitle>{step === 3 ? t("sideTitleReview") : t("sideTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5 text-sm">
           <div>
-            <p className="font-semibold">Price shown after booking</p>
-            <p className="mt-1 leading-relaxed text-muted-foreground">Create your shipment to see the final price and pay securely with Stripe.</p>
+            <p className="font-semibold">{t("priceTitle")}</p>
+            <p className="mt-1 leading-relaxed text-muted-foreground">{t("priceText")}</p>
           </div>
           <div className="border-t border-primary/15 pt-4">
-            <p className="font-semibold">Check your details</p>
-            <p className="mt-1 leading-relaxed text-muted-foreground">Addresses and parcel details cannot be changed after booking.</p>
+            <p className="font-semibold">{t("checkTitle")}</p>
+            <p className="mt-1 leading-relaxed text-muted-foreground">{t("checkText")}</p>
           </div>
         </CardContent>
       </Card>
@@ -182,11 +184,12 @@ export function ShipmentBooking() {
 function ReviewAddress({ title, name, phone, address, disabled, onEdit }: {
   title: string; name: string; phone: string; address: string; disabled: boolean; onEdit: () => void;
 }) {
+  const t = useTranslations("booking");
   return (
-    <section className="min-w-0 overflow-hidden rounded-xl border bg-background" aria-label={`${title} details`}>
+    <section className="min-w-0 overflow-hidden rounded-xl border bg-background" aria-label={t("sectionDetails", { section: title })}>
       <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-5 py-3">
         <h3 className="flex items-center gap-2 text-base font-semibold"><MapPin className="size-4 text-primary" aria-hidden="true" />{title}</h3>
-        <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={onEdit} aria-label={`Edit ${title.toLowerCase()} details`}><Pencil className="size-3.5" aria-hidden="true" />Edit</Button>
+        <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={onEdit} aria-label={t("editSection", { section: title })}><Pencil className="size-3.5" aria-hidden="true" />{t("edit")}</Button>
       </div>
       <div className="space-y-3 break-words p-5">
         <p className="font-semibold">{name}</p>

@@ -33,23 +33,25 @@ import {
 import { Pagination } from "@/components/ui/interactive";
 import { queryString, errorMessage } from "@/lib/client/api";
 import {
-  dateTime,
   localToISO,
-  money,
   paymentStatuses,
   readShipmentQuery,
   shipmentStatuses,
-  statusLabel,
   toLocalInput,
   type Shipment,
   type ShipmentList,
 } from "./contracts";
 import { useResource, useRetryDelay } from "./use-resource";
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
+import { translateKnownMessage } from "@/lib/i18n/bridge";
 
-const columns: Column<Shipment>[] = [
+type ColumnKey = "tracking" | "route" | "shipment" | "payment" | "price" | "created";
+function shipmentColumns(label: (key: ColumnKey) => string, f: ReturnType<typeof useFormat>): Column<Shipment>[] {
+  return [
   {
     key: "tracking",
-    label: "Tracking number",
+    label: label("tracking"),
     render: (shipment) => (
       <Link
         className="font-semibold break-all text-primary hover:underline"
@@ -61,7 +63,7 @@ const columns: Column<Shipment>[] = [
   },
   {
     key: "route",
-    label: "Pickup → Delivery",
+    label: label("route"),
     render: (shipment) => (
       <div className="shipment-route">
         <span title={shipment.pickupAddress}>{shipment.pickupAddress}</span>
@@ -74,65 +76,51 @@ const columns: Column<Shipment>[] = [
   },
   {
     key: "status",
-    label: "Shipment",
+    label: label("shipment"),
     render: (shipment) => <StatusBadge status={shipment.status} />,
   },
   {
     key: "payment",
-    label: "Payment",
+    label: label("payment"),
     render: (shipment) => <StatusBadge status={shipment.paymentStatus} />,
   },
   {
     key: "price",
-    label: "Price",
+    label: label("price"),
     render: (shipment) => (
       <span className="whitespace-nowrap font-medium">
-        {money(shipment.price, shipment.currency)}
+        {f.money(shipment.price, shipment.currency)}
       </span>
     ),
   },
   {
     key: "date",
-    label: "Created",
+    label: label("created"),
     render: (shipment) => (
       <time dateTime={shipment.createdAt} className="text-muted-foreground text-xs">
-        {dateTime(shipment.createdAt)}
+        {f.dateTime(shipment.createdAt)}
       </time>
     ),
   },
 ];
-
-const friendlyStatusNames: Record<string, string> = {
-  CREATED: "Order placed",
-  PICKED_UP: "Picked up",
-  IN_TRANSIT: "In transit",
-  OUT_FOR_DELIVERY: "Out for delivery",
-  DELIVERED: "Delivered",
-  FAILED: "Delivery issue",
-  RETURNED: "Returned",
-  CANCELLED: "Cancelled",
-};
-
-const friendlyPaymentNames: Record<string, string> = {
-  PAID: "Paid",
-  PENDING: "Pending payment",
-  FAILED: "Payment failed",
-  REFUND_PENDING: "Refund pending",
-  REFUNDED: "Refunded",
-};
+}
 
 const quickStatusPresets = [
-  { label: "All Shipments", value: "", dotColor: "bg-muted-foreground" },
-  { label: "Order Placed", value: "CREATED", dotColor: "bg-blue-500" },
-  { label: "Picked Up", value: "PICKED_UP", dotColor: "bg-sky-500" },
-  { label: "In Transit", value: "IN_TRANSIT", dotColor: "bg-amber-500" },
-  { label: "Out for Delivery", value: "OUT_FOR_DELIVERY", dotColor: "bg-purple-500" },
-  { label: "Delivered", value: "DELIVERED", dotColor: "bg-emerald-500" },
-  { label: "Delivery Issue", value: "FAILED", dotColor: "bg-red-500" },
-  { label: "Cancelled", value: "CANCELLED", dotColor: "bg-neutral-400" },
-];
+  { key: "all", value: "", dotColor: "bg-muted-foreground" },
+  { key: "CREATED", value: "CREATED", dotColor: "bg-blue-500" },
+  { key: "PICKED_UP", value: "PICKED_UP", dotColor: "bg-sky-500" },
+  { key: "IN_TRANSIT", value: "IN_TRANSIT", dotColor: "bg-amber-500" },
+  { key: "OUT_FOR_DELIVERY", value: "OUT_FOR_DELIVERY", dotColor: "bg-purple-500" },
+  { key: "DELIVERED", value: "DELIVERED", dotColor: "bg-emerald-500" },
+  { key: "FAILED", value: "FAILED", dotColor: "bg-red-500" },
+  { key: "CANCELLED", value: "CANCELLED", dotColor: "bg-neutral-400" },
+] as const;
 
 export function ShipmentListView({ recent = false }: { recent?: boolean }) {
+  const t = useTranslations("shipments");
+  const tf = useTranslations("filters");
+  const f = useFormat();
+  const columns = useMemo(() => shipmentColumns((key) => t(`columns.${key}`), f), [t, f]);
   const params = useSearchParams();
   const serialized = recent ? "limit=5&sortBy=createdAt&order=desc" : params.toString();
   const query = useMemo(() => {
@@ -185,7 +173,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
       update(key, value ? localToISO(value) : "");
       setDateError("");
     } catch (error) {
-      setDateError(error instanceof Error ? error.message : "Invalid date/time");
+      setDateError(translateKnownMessage(error instanceof Error ? error.message : "Invalid date/time"));
     }
   }
 
@@ -228,27 +216,27 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
           <div className="space-y-3 max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#196547]/10 text-[#196547] text-xs font-bold uppercase tracking-wider">
               <span className="size-2 rounded-full bg-[#196547] animate-pulse" />
-              Customer Delivery Portal
+              {t("portalBadge")}
             </div>
             <h2 className="text-xl md:text-2xl font-bold text-ink">
-              Smart Parcel Booking & Live Milestone Tracking
+              {t("portalTitle")}
             </h2>
             <p className="text-sm text-text-muted leading-relaxed">
-              Create doorstep pickup requests, settle payments with Stripe Checkout, and follow real-time courier milestone updates.
+              {t("portalText")}
             </p>
             <div className="flex flex-wrap gap-3 pt-1 text-xs">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-line font-semibold text-ink">
-                <Package className="size-3.5 text-primary" /> Weight-based pricing
+                <Package className="size-3.5 text-primary" /> {t("weightPricing")}
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-line font-semibold text-ink">
-                <ShieldCheck className="size-3.5 text-emerald-600" /> Stripe Verified Payments
+                <ShieldCheck className="size-3.5 text-emerald-600" /> {t("stripeVerified")}
               </span>
             </div>
           </div>
           <div className="relative shrink-0 w-full md:w-72 h-44 rounded-xl overflow-hidden border border-line/80 shadow-md bg-white">
             <Image
               src="/courier-customer.jpg"
-              alt="Customer workspace overview"
+              alt={t("overviewImageAlt")}
               fill
               sizes="(max-width: 768px) 100vw, 288px"
               className="object-cover object-top transition-transform duration-500 hover:scale-105"
@@ -259,18 +247,16 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
 
       <div className="page-heading">
         <div>
-          <p className="eyebrow">Your parcels, in one place</p>
-          <h1>{recent ? "Your deliveries, together" : "My shipments"}</h1>
+          <p className="eyebrow">{t("eyebrow")}</p>
+          <h1>{recent ? t("recentTitle") : t("title")}</h1>
           <p>
-            {recent
-              ? "Your five most recent shipments. Ready for the next delivery?"
-              : "Search, track, and manage your deliveries."}
+            {recent ? t("recentText") : t("text")}
           </p>
         </div>
         <Button asChild className="min-h-11">
           <Link href="/customer/shipments/new">
             <Plus />
-            Book a shipment
+            {t("book")}
           </Link>
         </Button>
       </div>
@@ -285,20 +271,20 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
               <div>
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-base font-bold text-foreground">
-                    Filter Shipments
+                    {tf("title")}
                   </CardTitle>
                   {activeCount > 0 ? (
                     <Badge variant="secondary" className="bg-[#e5ecdf] text-[#196547] border-[#196547]/20 font-semibold text-[11px] px-2">
-                      {activeCount} {activeCount === 1 ? "filter" : "filters"} applied
+                      {tf("applied", { count: activeCount })}
                     </Badge>
                   ) : (
                     <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">
-                      Quick parcel search
+                      {tf("quickSearch")}
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Filter by status, search by tracking number or address, or select a booking date.
+                  {tf("description")}
                 </p>
               </div>
             </div>
@@ -313,7 +299,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                   className="h-8 text-xs text-muted-foreground hover:text-destructive font-medium cursor-pointer"
                 >
                   <RotateCcw className="size-3.5 mr-1" aria-hidden="true" />
-                  Reset filters
+                  {tf("reset")}
                 </Button>
               )}
             </div>
@@ -323,13 +309,13 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
           <div className="border-b border-border/60 bg-background/50 px-5 py-2.5 sm:px-6">
             <div className="quick-filter-options">
               <span className="text-xs font-semibold text-muted-foreground mr-1 flex items-center gap-1">
-                <Filter className="size-3 text-muted-foreground" /> Status:
+                <Filter className="size-3 text-muted-foreground" /> {tf("statusLabel")}
               </span>
               {quickStatusPresets.map((preset) => {
                 const isActive = (params.get("status") ?? "") === preset.value;
                 return (
                   <button
-                    key={preset.label}
+                    key={preset.key}
                     type="button"
                     aria-pressed={isActive}
                     onClick={() => update("status", preset.value)}
@@ -345,7 +331,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                         isActive ? "bg-white" : preset.dotColor
                       }`}
                     />
-                    <span>{preset.label}</span>
+                    <span>{t(`presets.${preset.key}`)}</span>
                   </button>
                 );
               })}
@@ -358,8 +344,8 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
               <div className="relative min-w-0">
                 <Input
                   id="shipment-search"
-                  label="Search shipments"
-                  placeholder="Tracking number, recipient, address..."
+                  label={t("searchLabel")}
+                  placeholder={t("searchPlaceholder")}
                   maxLength={100}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -374,8 +360,8 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                       update("q", "", true);
                     }}
                     className="absolute bottom-3.5 right-3 size-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    title="Clear search"
-                    aria-label="Clear search"
+                    title={tf("clearSearch")}
+                    aria-label={tf("clearSearch")}
                   >
                     <X className="size-3.5" aria-hidden="true" />
                   </button>
@@ -384,28 +370,28 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
 
               <Select
                 id="shipment-status"
-                label="Delivery status"
+                label={t("deliveryStatus")}
                 value={params.get("status") ?? ""}
                 onChange={(e) => update("status", e.target.value)}
               >
-                <option value="">All statuses</option>
+                <option value="">{tf("allStatuses")}</option>
                 {shipmentStatuses.map((st) => (
                   <option key={st} value={st}>
-                    {friendlyStatusNames[st] ?? statusLabel(st)}
+                    {t(`friendlyStatus.${st}`)}
                   </option>
                 ))}
               </Select>
 
               <Select
                 id="payment-status"
-                label="Payment status"
+                label={t("paymentStatus")}
                 value={params.get("paymentStatus") ?? ""}
                 onChange={(e) => update("paymentStatus", e.target.value)}
               >
-                <option value="">All payments</option>
+                <option value="">{tf("allPayments")}</option>
                 {paymentStatuses.map((st) => (
                   <option key={st} value={st}>
-                    {friendlyPaymentNames[st] ?? statusLabel(st)}
+                    {t(`friendlyPayment.${st}`)}
                   </option>
                 ))}
               </Select>
@@ -417,7 +403,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                 <div className="sm:col-span-1">
                   <Input
                     id="created-from"
-                    label="Booked from"
+                    label={t("bookedFrom")}
                     type="datetime-local"
                     value={toLocalInput(params.get("from") ?? "")}
                     onChange={(e) => dateFilter("from", e.target.value)}
@@ -427,7 +413,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                 <div className="sm:col-span-1">
                   <Input
                     id="created-to"
-                    label="Booked to"
+                    label={t("bookedTo")}
                     type="datetime-local"
                     value={toLocalInput(params.get("to") ?? "")}
                     onChange={(e) => dateFilter("to", e.target.value)}
@@ -436,7 +422,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
 
                 <div className="sm:col-span-2 pb-1">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-xs text-muted-foreground mr-1 font-medium">Quick dates:</span>
+                    <span className="text-xs text-muted-foreground mr-1 font-medium">{tf("quickDates")}</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -446,7 +432,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                       }}
                       className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                     >
-                      Today
+                      {tf("today")}
                     </button>
                     <button
                       type="button"
@@ -457,7 +443,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                       }}
                       className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                     >
-                      Last 7 days
+                      {tf("last7")}
                     </button>
                     <button
                       type="button"
@@ -468,7 +454,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                       }}
                       className="text-xs px-2.5 py-1 rounded-md border border-input bg-background hover:bg-muted font-medium transition-colors cursor-pointer"
                     >
-                      Last 30 days
+                      {tf("last30")}
                     </button>
                     {(params.get("from") || params.get("to")) && (
                       <button
@@ -482,7 +468,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                         }}
                         className="text-xs px-2 py-1 rounded-md text-destructive hover:bg-destructive/10 font-medium transition-colors cursor-pointer ml-1"
                       >
-                        Clear dates
+                        {tf("clearDates")}
                       </button>
                     )}
                   </div>
@@ -491,25 +477,25 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                 <div className="sm:col-span-1">
                   <Select
                     id="sort-by"
-                    label="Sort by"
+                    label={tf("sortBy")}
                     value={params.get("sortBy") ?? "createdAt"}
                     onChange={(e) => update("sortBy", e.target.value)}
                   >
-                    <option value="createdAt">Created date</option>
-                    <option value="updatedAt">Last updated</option>
-                    <option value="price">Price</option>
+                    <option value="createdAt">{tf("createdDate")}</option>
+                    <option value="updatedAt">{tf("lastUpdated")}</option>
+                    <option value="price">{tf("price")}</option>
                   </Select>
                 </div>
 
                 <div className="sm:col-span-1">
                   <Select
                     id="sort-order"
-                    label="Order"
+                    label={tf("order")}
                     value={params.get("order") ?? "desc"}
                     onChange={(e) => update("order", e.target.value)}
                   >
-                    <option value="desc">Descending</option>
-                    <option value="asc">Ascending</option>
+                    <option value="desc">{tf("descending")}</option>
+                    <option value="asc">{tf("ascending")}</option>
                   </Select>
                 </div>
               </div>
@@ -518,11 +504,11 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
             {/* Active Filter Chips Bar */}
             {filtered && (
               <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/60">
-                <span className="text-xs font-semibold text-muted-foreground mr-1">Active filters:</span>
+                <span className="text-xs font-semibold text-muted-foreground mr-1">{tf("active")}</span>
 
                 {search.trim() && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
-                    <span>Search: &ldquo;{search.trim()}&rdquo;</span>
+                    <span>{tf("searchChip", { value: search.trim() })}</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -530,8 +516,8 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                         update("q", "", true);
                       }}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
-                      title="Remove search filter"
-                      aria-label="Remove search filter"
+                      title={tf("removeSearch")}
+                      aria-label={tf("removeSearch")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -540,13 +526,13 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
 
                 {params.get("status") && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20 font-medium">
-                    <span>Status: {friendlyStatusNames[params.get("status")!] ?? statusLabel(params.get("status")!)}</span>
+                    <span>{tf("statusChip", { value: t(`friendlyStatus.${params.get("status") as (typeof shipmentStatuses)[number]}`) })}</span>
                     <button
                       type="button"
                       onClick={() => update("status", "")}
                       className="text-primary hover:text-primary/70 cursor-pointer"
-                      title="Remove status filter"
-                      aria-label="Remove status filter"
+                      title={tf("removeStatus")}
+                      aria-label={tf("removeStatus")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -555,13 +541,13 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
 
                 {params.get("paymentStatus") && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200 font-medium">
-                    <span>Payment: {friendlyPaymentNames[params.get("paymentStatus")!] ?? statusLabel(params.get("paymentStatus")!)}</span>
+                    <span>{tf("paymentChip", { value: t(`friendlyPayment.${params.get("paymentStatus") as (typeof paymentStatuses)[number]}`) })}</span>
                     <button
                       type="button"
                       onClick={() => update("paymentStatus", "")}
                       className="text-emerald-800 hover:text-emerald-950 cursor-pointer"
-                      title="Remove payment filter"
-                      aria-label="Remove payment filter"
+                      title={tf("removePayment")}
+                      aria-label={tf("removePayment")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -570,13 +556,13 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
 
                 {params.get("from") && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
-                    <span>From: {new Date(params.get("from")!).toLocaleDateString()}</span>
+                    <span>{tf("fromChip", { value: f.date(params.get("from")!) })}</span>
                     <button
                       type="button"
                       onClick={() => update("from", "")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
-                      title="Remove start date filter"
-                      aria-label="Remove start date filter"
+                      title={tf("removeFrom")}
+                      aria-label={tf("removeFrom")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -585,13 +571,13 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
 
                 {params.get("to") && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-muted text-foreground px-2.5 py-1 rounded-full border border-border">
-                    <span>To: {new Date(params.get("to")!).toLocaleDateString()}</span>
+                    <span>{tf("toChip", { value: f.date(params.get("to")!) })}</span>
                     <button
                       type="button"
                       onClick={() => update("to", "")}
                       className="text-muted-foreground hover:text-foreground cursor-pointer"
-                      title="Remove end date filter"
-                      aria-label="Remove end date filter"
+                      title={tf("removeTo")}
+                      aria-label={tf("removeTo")}
                     >
                       <X className="size-3" aria-hidden="true" />
                     </button>
@@ -605,7 +591,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
                   onClick={clear}
                   className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive cursor-pointer ml-auto"
                 >
-                  Clear all
+                  {tf("clearAll")}
                 </Button>
               </div>
             )}
@@ -617,11 +603,11 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/40 text-xs text-muted-foreground">
                 <p className="flex items-center gap-1.5">
                   <Clock3 className="size-3.5" aria-hidden="true" />
-                  Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  {tf("timezone", { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
                 </p>
                 {data?.pagination && (
                   <p className="font-medium text-foreground">
-                    Showing {data.shipments.length} of {data.pagination.total} {data.pagination.total === 1 ? "parcel" : "parcels"}
+                    {t("showing", { shown: f.digits(data.shipments.length), total: data.pagination.total })}
                   </p>
                 )}
               </div>
@@ -632,23 +618,23 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
 
       {query.error && (
         <ErrorNotice
-          title="Check the list filters"
+          title={tf("checkFilters")}
           action={
             <Button variant="outline" onClick={clear}>
-              Reset filters
+              {tf("reset")}
             </Button>
           }
         >
-          {query.error}
+          {translateKnownMessage(query.error)}
         </ErrorNotice>
       )}
 
       {!!error && (
         <ErrorNotice
-          title="Could not load shipments"
+          title={t("loadFailed")}
           action={
             <Button variant="outline" onClick={reload} disabled={delay > 0}>
-              {delay ? `Retry in ${delay}s` : "Try again"}
+              {delay ? tf("retryIn", { seconds: delay }) : tf("tryAgain")}
             </Button>
           }
         >
@@ -657,44 +643,36 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
       )}
 
       {refreshing && <ResourceRefresh />}
-      {loading && <ResourceSkeleton variant="list" label="Loading shipments…" />}
+      {loading && <ResourceSkeleton variant="list" label={t("loading")} />}
 
       {data && (
         <Card>
           <CardContent className="shipment-results">
             <ResponsiveTable
-              caption={recent ? "Recent shipments" : "Your shipments"}
+              caption={recent ? t("recentCaption") : t("caption")}
               columns={columns}
               rows={data.shipments}
               rowKey={(shipment) => shipment.id}
               empty={
                 <EmptyState
                   title={
-                    data.pagination.total > 0
-                      ? "No shipments on this page"
-                      : filtered
-                      ? "No matching shipments"
-                      : "Your first shipment starts here"
+                    data.pagination.total > 0 ? t("noneOnPage") : filtered ? t("noneMatching") : t("firstTitle")
                   }
                   description={
-                    data.pagination.total > 0
-                      ? "Return to the first page to see available records."
-                      : filtered
-                      ? "Try another search or clear your filters."
-                      : "Book a shipment to start following its journey."
+                    data.pagination.total > 0 ? tf("noneOnPage") : filtered ? tf("noneMatching") : t("firstText")
                   }
                   action={
                     data.pagination.total > 0 ? (
                       <Button variant="outline" onClick={() => update("page", "1")}>
-                        Go to first page
+                        {tf("goToFirstPage")}
                       </Button>
                     ) : filtered ? (
                       <Button variant="outline" onClick={clear}>
-                        Clear filters
+                        {tf("clearFilters")}
                       </Button>
                     ) : (
                       <Button asChild>
-                        <Link href="/customer/shipments/new">Book a shipment</Link>
+                        <Link href="/customer/shipments/new">{t("book")}</Link>
                       </Button>
                     )
                   }
@@ -712,7 +690,7 @@ export function ShipmentListView({ recent = false }: { recent?: boolean }) {
             {recent && (
               <div className="mt-6">
                 <Button asChild variant="outline">
-                  <Link href="/customer/shipments">View all shipments</Link>
+                  <Link href="/customer/shipments">{t("viewAll")}</Link>
                 </Button>
               </div>
             )}
