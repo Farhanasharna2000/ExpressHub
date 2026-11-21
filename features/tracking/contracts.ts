@@ -1,4 +1,6 @@
 import { TRACKING_NUMBER_PATTERN, type PublicTracking, type PublicTrackingEvent } from "@/validators/track";
+import type { Locale } from "@/lib/i18n/config";
+import { formatClockDate, localizeDigits } from "@/lib/i18n/format";
 
 export type { PublicTracking, PublicTrackingEvent };
 
@@ -106,20 +108,23 @@ function formatParts(value: string, timeZone: string, withYear: boolean) {
   return `${date}, ${part.hour}:${part.minute} ${part.dayPeriod?.toUpperCase() ?? ""}`.trimEnd();
 }
 
-export const trackingTime = (value: string, timeZone = DEFAULT_TIME_ZONE) => formatParts(value, timeZone, true);
+// Bangla uses the shared formatter (Bangla digits, month and day period) with the same layout.
+export const trackingTime = (value: string, timeZone = DEFAULT_TIME_ZONE, locale: Locale = "en") =>
+  locale === "bn" ? formatClockDate(value, "bn", timeZone, true) : formatParts(value, timeZone, true);
 
 // Compact form under the progress steps ("19 Nov, 5:09 PM"); the full date is in the title.
-export const trackingShortTime = (value: string, timeZone = DEFAULT_TIME_ZONE) => formatParts(value, timeZone, false);
+export const trackingShortTime = (value: string, timeZone = DEFAULT_TIME_ZONE, locale: Locale = "en") =>
+  locale === "bn" ? formatClockDate(value, "bn", timeZone, false) : formatParts(value, timeZone, false);
 
 // "Asia/Dhaka, GMT+6" — the zone name plus its current offset, for the note under the history.
-export function timeZoneLabel(timeZone: string, now = new Date()) {
+export function timeZoneLabel(timeZone: string, now = new Date(), locale: Locale = "en"): string {
   try {
     const offset = new Intl.DateTimeFormat("en-GB", { timeZone, timeZoneName: "shortOffset" })
       .formatToParts(now)
       .find((part) => part.type === "timeZoneName")?.value;
-    return offset ? `${timeZone}, ${offset}` : timeZone;
+    return localizeDigits(offset ? `${timeZone}, ${offset}` : timeZone, locale);
   } catch {
-    return timeZoneLabel(DEFAULT_TIME_ZONE, now);
+    return timeZoneLabel(DEFAULT_TIME_ZONE, now, locale);
   }
 }
 

@@ -352,5 +352,86 @@
     "accessDenied": "Access denied",
     "goToWorkspace": "Go to your workspace",
     "notAvailable": "This area is not available for your account."
+  },
+  "tracking": {
+    "eyebrow": "Public tracking",
+    "title": "Track your parcel",
+    "trackingNumber": "Tracking number",
+    "statusUpdated": "Status updated: {status}",
+    "currentStatus": "Current status",
+    "offPathFallback": "This shipment is {status}.",
+    "deliveryProgress": "Delivery progress",
+    "notYet": "not yet",
+    "timeZoneNote": "Times are shown in your time zone ({zone}).",
+    "trackingHistory": "Tracking history",
+    "otherUpdates": "Other updates",
+    "trackAnother": "Track another parcel",
+    "connection": {
+      "connecting": "Connecting…",
+      "live": "Live updates on",
+      "reconnecting": "Reconnecting…",
+      "ended": "Final status"
+    },
+    "status": {
+      "CREATED": "Booked",
+      "PICKED_UP": "Picked up",
+      "IN_TRANSIT": "In transit",
+      "OUT_FOR_DELIVERY": "Out for delivery",
+      "DELIVERED": "Delivered",
+      "FAILED": "Delivery failed",
+      "RETURNED": "Returned to sender",
+      "CANCELLED": "Cancelled"
+    },
+    "message": {
+      "CREATED": "Booked and waiting for the courier to collect it.",
+      "PICKED_UP": "The courier has collected the parcel.",
+      "IN_TRANSIT": "The parcel is moving through our delivery network.",
+      "OUT_FOR_DELIVERY": "The courier is on the way to the delivery address.",
+      "DELIVERED": "The parcel has been delivered.",
+      "FAILED": "The last delivery attempt did not succeed. The courier team will arrange the next step.",
+      "RETURNED": "The parcel has been returned to the sender.",
+      "CANCELLED": "This shipment was cancelled before collection."
+    },
+    "event": {
+      "HUB_TRANSFER": "Arrived at a hub",
+      "DELIVERY_ATTEMPT": "Delivery attempted",
+      "CUSTOMER_CANCELLED": "Cancelled by sender",
+      "updated": "Shipment updated"
+    },
+    "form": {
+      "invalid": "Enter a tracking number like EH- followed by 24 letters and numbers.",
+      "label": "Track a parcel",
+      "submit": "Track"
+    },
+    "page": {
+      "metaTitle": "Track a parcel",
+      "metaDescription": "Enter your ExpressHub tracking number to see live delivery status.",
+      "title": "Track a parcel",
+      "intro": "No account needed. Status updates appear live while the page is open.",
+      "detailMetaTitle": "Tracking {trackingNumber}",
+      "detailMetaDescription": "Live delivery status for an ExpressHub parcel.",
+      "notFoundTitle": "We couldn't find that parcel",
+      "notFoundText": "Check the tracking number on your booking confirmation and try again."
+    }
+  },
+  "pages": {
+    "notFoundTitle": "This page is off the route",
+    "notFoundText": "The page could not be found. Head home to find your next step.",
+    "backHome": "Back to home",
+    "errorText": "We could not display this page. Try again or return to the home page.",
+    "tryAgain": "Try again",
+    "paymentReturned": "Payment returned",
+    "checkoutCancelled": "Checkout cancelled",
+    "verifyingPayment": "Verifying payment session…",
+    "checkingPayment": "Checking payment session…"
+  },
+  "helpPage": {
+    "metaTitle": "Help centre",
+    "metaDescription": "Answers about booking, pricing, payments, tracking, cancellations and refunds at ExpressHub.",
+    "eyebrow": "Help centre",
+    "title": "How can we help?",
+    "intro": "Guides to booking, paying, tracking and managing your shipments. You can also ask the help chat.",
+    "articleMetaTitle": "{title} · Help",
+    "englishNote": "Help articles are available in English."
   }
 }

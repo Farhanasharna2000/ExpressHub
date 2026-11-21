@@ -23,7 +23,8 @@ function partsFormatter(locale: Locale, timeZone: string | undefined): Intl.Date
         day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone,
       });
     } catch {
-      return partsFormatter(locale, undefined);
+      // An unknown zone falls back to Bangladesh time, like the tracking page does.
+      return partsFormatter(locale, "Asia/Dhaka");
     }
     partCache.set(key, formatter);
   }
