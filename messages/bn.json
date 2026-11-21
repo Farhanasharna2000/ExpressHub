@@ -1,0 +1,89 @@
+{
+  "meta": {
+    "title": "ExpressHub - প্রতিটি ডেলিভারি সংযুক্ত",
+    "description": "ExpressHub-এ আপনার কুরিয়ার ডেলিভারি বুক করুন, ট্র্যাক করুন ও পরিচালনা করুন।"
+  },
+  "shell": {
+    "skipToContent": "মূল বিষয়বস্তুতে যান",
+    "brandHome": "ExpressHub হোম",
+    "workspaceTitle": "ExpressHub ওয়ার্কস্পেস",
+    "workspace": {
+      "CUSTOMER": "গ্রাহক ওয়ার্কস্পেস",
+      "COURIER": "কুরিয়ার ওয়ার্কস্পেস",
+      "ADMIN": "অ্যাডমিন ওয়ার্কস্পেস",
+      "none": "আপনার অ্যাকাউন্ট",
+      "noneMobile": "আপনার ওয়ার্কস্পেস"
+    },
+    "sidebarNote": "প্রতিটি ডেলিভারি শুরু হয় একটি সংযোগ দিয়ে।",
+    "footerTagline": "আপনার দোরগোড়া থেকে তাদের দোরগোড়ায়। আধুনিক এক্সপ্রেস ডেলিভারি প্ল্যাটফর্ম।",
+    "goToDashboard": "আপনার ড্যাশবোর্ডে যান ({name})",
+    "howItWorks": "কীভাবে কাজ করে",
+    "helpCentre": "সহায়তা কেন্দ্র",
+    "signedInAs": "{name} ({email}) হিসেবে সাইন ইন করা আছে",
+    "dashboard": "ড্যাশবোর্ড",
+    "signOut": "সাইন আউট",
+    "signingOut": "সাইন আউট হচ্ছে…",
+    "signOutTitle": "আপনার অ্যাকাউন্ট থেকে সাইন আউট করুন",
+    "signIn": "সাইন ইন",
+    "getStarted": "শুরু করুন",
+    "createAccount": "অ্যাকাউন্ট খুলুন"
+  },
+  "nav": {
+    "overview": "সারসংক্ষেপ",
+    "myShipments": "আমার শিপমেন্ট",
+    "bookShipment": "শিপমেন্ট বুক করুন",
+    "payments": "পেমেন্ট",
+    "developer": "ডেভেলপার",
+    "assignedShipments": "নির্ধারিত শিপমেন্ট",
+    "scanParcel": "পার্সেল স্ক্যান",
+    "shipments": "শিপমেন্ট",
+    "users": "ব্যবহারকারী",
+    "analytics": "অ্যানালিটিক্স",
+    "liveCouriers": "লাইভ কুরিয়ার",
+    "auditLogs": "অডিট লগ",
+    "profile": "প্রোফাইল",
+    "openMenu": "মেনু খুলুন",
+    "closeMenu": "মেনু বন্ধ করুন",
+    "roleNavigation": {
+      "CUSTOMER": "গ্রাহক নেভিগেশন",
+      "COURIER": "কুরিয়ার নেভিগেশন",
+      "ADMIN": "অ্যাডমিন নেভিগেশন"
+    },
+    "mainNavigation": "প্রধান নেভিগেশন"
+  },
+  "language": {
+    "label": "ভাষা",
+    "en": "English",
+    "bn": "বাংলা",
+    "switchTo": "ভাষা পরিবর্তন করে {language} করুন"
+  },
+  "status": {
+    "CREATED": "বুক করা হয়েছে",
+    "PICKED_UP": "পিকআপ হয়েছে",
+    "IN_TRANSIT": "পরিবহনে",
+    "OUT_FOR_DELIVERY": "ডেলিভারির পথে",
+    "DELIVERED": "ডেলিভারি সম্পন্ন",
+    "FAILED": "ব্যর্থ",
+    "RETURNED": "ফেরত পাঠানো হয়েছে",
+    "CANCELLED": "বাতিল",
+    "PENDING": "অপেক্ষমাণ",
+    "PAID": "পরিশোধিত",
+    "REFUND_PENDING": "রিফান্ড অপেক্ষমাণ",
+    "REFUNDED": "রিফান্ড হয়েছে",
+    "COURIER_ASSIGNED": "কুরিয়ার নির্ধারিত",
+    "STATUS_CHANGED": "অবস্থা পরিবর্তিত",
+    "CUSTOMER_CANCELLED": "গ্রাহক বাতিল করেছেন",
+    "HUB_TRANSFER": "হাব স্থানান্তর",
+    "DELIVERY_ATTEMPT": "ডেলিভারির চেষ্টা",
+    "ADMIN": "অ্যাডমিন",
+    "COURIER": "কুরিয়ার",
+    "CUSTOMER": "গ্রাহক",
+    "ACTIVE": "সক্রিয়",
+    "INACTIVE": "নিষ্ক্রিয়",
+    "STRIPE": "Stripe",
+    "SENT": "পাঠানো হয়েছে",
+    "DEAD": "ব্যর্থ",
+    "SKIPPED": "বাদ দেওয়া হয়েছে",
+    "DISMISSED": "বাতিল করা হয়েছে"
+  }
+}

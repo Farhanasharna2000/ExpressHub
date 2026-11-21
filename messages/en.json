@@ -1,0 +1,89 @@
+{
+  "meta": {
+    "title": "ExpressHub - Every delivery connected",
+    "description": "Book, follow, and manage your courier deliveries with ExpressHub."
+  },
+  "shell": {
+    "skipToContent": "Skip to content",
+    "brandHome": "ExpressHub home",
+    "workspaceTitle": "ExpressHub workspace",
+    "workspace": {
+      "CUSTOMER": "Customer workspace",
+      "COURIER": "Courier workspace",
+      "ADMIN": "Admin workspace",
+      "none": "Your account",
+      "noneMobile": "Your workspace"
+    },
+    "sidebarNote": "Every delivery starts with a connection.",
+    "footerTagline": "From your doorstep to theirs. Modern express delivery platform.",
+    "goToDashboard": "Go to your dashboard ({name})",
+    "howItWorks": "How it works",
+    "helpCentre": "Help centre",
+    "signedInAs": "Signed in as {name} ({email})",
+    "dashboard": "Dashboard",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…",
+    "signOutTitle": "Sign out of your account",
+    "signIn": "Sign in",
+    "getStarted": "Get started",
+    "createAccount": "Create account"
+  },
+  "nav": {
+    "overview": "Overview",
+    "myShipments": "My shipments",
+    "bookShipment": "Book a shipment",
+    "payments": "Payments",
+    "developer": "Developer",
+    "assignedShipments": "Assigned shipments",
+    "scanParcel": "Scan parcel",
+    "shipments": "Shipments",
+    "users": "Users",
+    "analytics": "Analytics",
+    "liveCouriers": "Live couriers",
+    "auditLogs": "Audit logs",
+    "profile": "Profile",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "roleNavigation": {
+      "CUSTOMER": "Customer navigation",
+      "COURIER": "Courier navigation",
+      "ADMIN": "Admin navigation"
+    },
+    "mainNavigation": "Main navigation"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "bn": "বাংলা",
+    "switchTo": "Switch language to {language}"
+  },
+  "status": {
+    "CREATED": "Created",
+    "PICKED_UP": "Picked up",
+    "IN_TRANSIT": "In transit",
+    "OUT_FOR_DELIVERY": "Out for delivery",
+    "DELIVERED": "Delivered",
+    "FAILED": "Failed",
+    "RETURNED": "Returned",
+    "CANCELLED": "Cancelled",
+    "PENDING": "Pending",
+    "PAID": "Paid",
+    "REFUND_PENDING": "Refund pending",
+    "REFUNDED": "Refunded",
+    "COURIER_ASSIGNED": "Courier assigned",
+    "STATUS_CHANGED": "Status changed",
+    "CUSTOMER_CANCELLED": "Customer cancelled",
+    "HUB_TRANSFER": "Hub transfer",
+    "DELIVERY_ATTEMPT": "Delivery attempt",
+    "ADMIN": "Admin",
+    "COURIER": "Courier",
+    "CUSTOMER": "Customer",
+    "ACTIVE": "Active",
+    "INACTIVE": "Inactive",
+    "STRIPE": "Stripe",
+    "SENT": "Sent",
+    "DEAD": "Failed",
+    "SKIPPED": "Skipped",
+    "DISMISSED": "Dismissed"
+  }
+}

@@ -7,6 +7,8 @@ import { Navigation } from "./navigation";
 import { useSession } from "@/features/auth/provider";
 import { AccountMenu } from "@/features/auth/forms";
 import { AssistantLauncher } from "@/features/ai/assistant-panel";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "./language-switcher";
 export function DashboardShell({
   children,
   role,
@@ -14,6 +16,7 @@ export function DashboardShell({
   children: ReactNode;
   role?: UserRole;
 }) {
+  const t = useTranslations("shell");
   const { user } = useSession();
   const currentRole = user?.role ?? role;
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -32,22 +35,23 @@ export function DashboardShell({
       <aside className="sidebar" ref={sidebarRef}>
         <Brand />
         <p className="eyebrow">
-          {currentRole
-            ? `${currentRole.toLowerCase()} workspace`
-            : "Your account"}
+          {currentRole ? t(`workspace.${currentRole}`) : t("workspace.none")}
         </p>
         <Navigation role={currentRole} />
         <div className="sidebar-note">
-          Every delivery starts with a connection.
+          {t("sidebarNote")}
         </div>
       </aside>
       <div className="workspace-body">
         <header className="workspace-header">
           <Link href="/" className="workspace-title">
-            <span className="workspace-title-desktop">ExpressHub workspace</span>
-            <span className="workspace-title-mobile">{currentRole ? `${currentRole.toLowerCase()} workspace` : "Your workspace"}</span>
+            <span className="workspace-title-desktop">{t("workspaceTitle")}</span>
+            <span className="workspace-title-mobile">{currentRole ? t(`workspace.${currentRole}`) : t("workspace.noneMobile")}</span>
           </Link>
-          <AccountMenu />
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <AccountMenu />
+          </div>
         </header>
         <main id="main-content" tabIndex={-1}>
           {children}
