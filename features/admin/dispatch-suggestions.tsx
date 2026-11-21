@@ -9,11 +9,14 @@ import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { useResource } from "@/features/shipments/use-resource";
 import { ApiError, errorMessage } from "@/lib/client/api";
-import { dispatchSourceNote, waitingLabel, type DispatchQueue, type DispatchResult, type DispatchSuggestion } from "./dispatch-contracts";
+import { waitingLabel, type DispatchQueue, type DispatchResult, type DispatchSuggestion } from "./dispatch-contracts";
 
+import { useTranslations } from "next-intl";
+import { useFormat } from "@/lib/i18n/use-format";
 // Assigns through the existing endpoint. The shipment has no courier yet, so the expected
 // courier is null; a 409 means someone else assigned it first.
 function useAssign(onDone: () => void) {
+  const t = useTranslations("admin.dispatch");
   const { store } = useSession();
   const [busy, setBusy] = useState<string | null>(null);
   const pending = useRef(false);
@@ -26,11 +29,11 @@ function useAssign(onDone: () => void) {
         method: "PATCH",
         body: { courierId: suggestion.courierId, expectedCourierId: null },
       });
-      toast.success("Courier assigned", `${suggestion.name} will collect ${trackingNumber}.`);
+      toast.success(t("courierAssigned"), t("willCollect", { name: suggestion.name, tracking: trackingNumber }));
       onDone();
     } catch (error) {
       const conflict = error instanceof ApiError && error.status === 409;
-      toast.error(conflict ? "Already assigned" : "Could not assign courier", conflict ? "Someone assigned this shipment first. The list has been refreshed." : errorMessage(error));
+      toast.error(conflict ? t("alreadyAssigned") : t("couldNotAssignCourier"), conflict ? t("someoneAssignedThisShipment") : errorMessage(error));
       if (conflict) onDone();
     } finally {
       pending.current = false;
@@ -41,14 +44,15 @@ function useAssign(onDone: () => void) {
 }
 
 function SuggestionRow({ suggestion, busy, onAssign, primary }: { suggestion: DispatchSuggestion; busy: boolean; onAssign: () => void; primary?: boolean }) {
+  const t = useTranslations("admin.dispatch");
   return (
     <li className="flex flex-wrap items-start justify-between gap-3 rounded-md border bg-background px-3 py-2.5">
       <div className="min-w-0 space-y-0.5">
         <p className="text-sm font-semibold">{suggestion.name}</p>
         <p className="text-xs text-muted-foreground">{suggestion.reason}</p>
       </div>
-      <Button type="button" size="sm" variant={primary ? "default" : "outline"} onClick={onAssign} disabled={busy} aria-label={`Assign ${suggestion.name}`}>
-        {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserCheck aria-hidden="true" />} Assign
+      <Button type="button" size="sm" variant={primary ? "default" : "outline"} onClick={onAssign} disabled={busy} aria-label={t("assignNamed", { name: suggestion.name })}>
+        {busy ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserCheck aria-hidden="true" />} {t("assign")}
       </Button>
     </li>
   );
@@ -57,14 +61,16 @@ function SuggestionRow({ suggestion, busy, onAssign, primary }: { suggestion: Di
 // Admin dashboard: the oldest paid shipments still waiting for a courier, each with the
 // rule-based top pick and a one-click Assign. Hidden when nothing is waiting.
 export function DispatchQueueCard() {
+  const t = useTranslations("admin.dispatch");
+  const f = useFormat();
   const { data, error, reload } = useResource<DispatchQueue>("/admin/dispatch/queue");
   const { assign, busy } = useAssign(reload);
   if (error && !data) {
     return (
       <Card className="shadow-none">
         <CardContent className="flex flex-wrap items-center justify-between gap-3 text-sm">
-          <span className="flex items-center gap-2 text-destructive"><TriangleAlert className="size-4" aria-hidden="true" /> Dispatch suggestions could not be loaded. {errorMessage(error)}</span>
-          <Button type="button" size="sm" variant="outline" onClick={reload}>Try again</Button>
+          <span className="flex items-center gap-2 text-destructive"><TriangleAlert className="size-4" aria-hidden="true" /> {t("loadFailed", { message: errorMessage(error) })}</span>
+          <Button type="button" size="sm" variant="outline" onClick={reload}>{t("tryAgain")}</Button>
         </CardContent>
       </Card>
     );
@@ -74,9 +80,9 @@ export function DispatchQueueCard() {
   return (
     <Card className="border-primary/20 shadow-none" data-testid="dispatch-queue">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base"><Route className="size-4 text-primary" aria-hidden="true" /> Dispatch suggestions</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base"><Route className="size-4 text-primary" aria-hidden="true" /> {t("dispatchSuggestions")}</CardTitle>
         <CardDescription>
-          {data.total} paid {data.total === 1 ? "shipment is" : "shipments are"} waiting for a courier. The best match by workload, area and delivery record is shown; open a shipment for AI-ranked options.
+          {t("queueIntro", { count: data.total })}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -88,12 +94,12 @@ export function DispatchQueueCard() {
                   {shipment.trackingNumber}
                 </Link>
                 <p className="text-xs text-muted-foreground">
-                  {waitingLabel(shipment.waitingHours)} · {shipment.weightKg} kg{shipment.originHub ? ` · from ${shipment.originHub}` : ""}
+                  {f.locale === "en" ? waitingLabel(shipment.waitingHours) : shipment.waitingHours < 1 ? t("waitingUnderHour") : shipment.waitingHours < 48 ? t("waitingHours", { hours: f.digits(shipment.waitingHours) }) : t("waitingDays", { days: f.digits(Math.floor(shipment.waitingHours / 24)) })} · {f.digits(shipment.weightKg)} kg{shipment.originHub ? ` · ${t("fromHub", { hub: shipment.originHub })}` : ""}
                 </p>
                 {shipment.suggestion ? (
                   <p className="text-xs"><span className="font-semibold">{shipment.suggestion.name}</span> <span className="text-muted-foreground">· {shipment.suggestion.reason}</span></p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">No active couriers to suggest.</p>
+                  <p className="text-xs text-muted-foreground">{t("noActiveCouriersTo")}</p>
                 )}
               </div>
               {shipment.suggestion && (
@@ -102,9 +108,9 @@ export function DispatchQueueCard() {
                   size="sm"
                   onClick={() => void assign(shipment.id, shipment.trackingNumber, shipment.suggestion!)}
                   disabled={busy !== null}
-                  aria-label={`Assign ${shipment.suggestion.name} to ${shipment.trackingNumber}`}
+                  aria-label={t("assignTo", { name: shipment.suggestion.name, tracking: shipment.trackingNumber })}
                 >
-                  {busy === `${shipment.id}:${shipment.suggestion.courierId}` ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserCheck aria-hidden="true" />} Assign
+                  {busy === `${shipment.id}:${shipment.suggestion.courierId}` ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserCheck aria-hidden="true" />} {t("assign")}
                 </Button>
               )}
             </li>
@@ -117,6 +123,7 @@ export function DispatchQueueCard() {
 
 // Admin shipment detail: up to three couriers, ranked by AI when it is on, otherwise by rules.
 export function ShipmentDispatchSuggestions({ shipmentId, trackingNumber, onAssigned }: { shipmentId: string; trackingNumber: string; onAssigned: () => void }) {
+  const t = useTranslations("admin.dispatch");
   const { store } = useSession();
   const [result, setResult] = useState<DispatchResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -145,13 +152,13 @@ export function ShipmentDispatchSuggestions({ shipmentId, trackingNumber, onAssi
   return (
     <Card className="border-primary/20 bg-primary/5 shadow-none" data-testid="dispatch-suggestions">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="size-4 text-primary" aria-hidden="true" /> Courier suggestions</CardTitle>
-        <CardDescription>Ranked by workload, area, live location and delivery record. You choose who is assigned.</CardDescription>
+        <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="size-4 text-primary" aria-hidden="true" /> {t("courierSuggestions")}</CardTitle>
+        <CardDescription>{t("rankedByWorkloadArea")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3" aria-live="polite" aria-busy={loading}>
         <Button type="button" variant={result ? "outline" : "default"} size="sm" onClick={() => void suggest()} disabled={loading}>
           {loading ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Sparkles aria-hidden="true" />}
-          {loading ? "Ranking couriers…" : result ? "Suggest again" : "Suggest couriers"}
+          {loading ? t("rankingCouriers") : result ? t("suggestAgain") : t("suggestCouriers")}
         </Button>
         {Boolean(error) && (
           <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
@@ -160,7 +167,7 @@ export function ShipmentDispatchSuggestions({ shipmentId, trackingNumber, onAssi
         )}
         {result && (
           result.suggestions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">There are no active couriers to suggest.</p>
+            <p className="text-sm text-muted-foreground">{t("thereAreNoActive")}</p>
           ) : (
             <>
               <ol className="space-y-2">
@@ -174,7 +181,7 @@ export function ShipmentDispatchSuggestions({ shipmentId, trackingNumber, onAssi
                   />
                 ))}
               </ol>
-              <p className="text-xs text-muted-foreground">{dispatchSourceNote(result)}</p>
+              <p className="text-xs text-muted-foreground">{result.source === "ai" ? t("source.ai", { model: result.model ?? "" }) : t(`source.${result.notice === "AI_DISABLED" || result.notice === "AI_RATE_LIMITED" || result.notice === "AI_FAILED" ? result.notice : "rules"}`)}</p>
             </>
           )
         )}
