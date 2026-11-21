@@ -36,6 +36,8 @@ html[lang="bn"] { line-height: 1.7; }
 .language-switcher button:disabled { cursor: progress; }
 .auth-language { position: absolute; top: 16px; right: 20px; z-index: 5; }
 html[lang="bn"] h1, html[lang="bn"] h2, html[lang="bn"] h3 { letter-spacing: 0; line-height: 1.3; }
+/* Tracking splits Bangla conjuncts apart, and Bangla has no capitals to space out. */
+html[lang="bn"] .eyebrow, html[lang="bn"] .tracker-meta-label, html[lang="bn"] [class*="tracking-"] { letter-spacing: 0; }
 * { box-sizing: border-box; }
 body { margin: 0; }
 a { color: var(--brand); text-underline-offset: 4px; }
