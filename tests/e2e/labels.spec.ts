@@ -6,7 +6,7 @@ test("a customer prints a shipping label and gets a PDF in a new tab", async ({ 
   const customer = await signedInPage("CUSTOMER");
   await customer.goto(`/customer/shipments/${shipment.id}`);
 
-  const label = customer.waitForResponse((response) => response.url().endsWith(`/api/v1/shipments/${shipment.id}/label`));
+  const label = customer.waitForResponse((response) => response.url().endsWith(`/api/v1/shipments/${shipment.id}/label?lang=en`));
   const tab = customer.context().waitForEvent("page");
   await customer.getByRole("button", { name: `Print shipping label for ${shipment.trackingNumber}` }).click();
 

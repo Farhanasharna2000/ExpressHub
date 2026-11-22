@@ -4028,6 +4028,64 @@
           "event": []
         },
         {
+          "name": "Retry every failed notification email",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/notifications/retry-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "notifications",
+                "retry-all"
+              ]
+            },
+            "description": "ADMIN only. Moves every DEAD notification back to PENDING with its attempts reset, so the dispatcher sends it again, and returns how many were queued. Writes one NOTIFICATIONS_RETRIED audit record."
+          },
+          "response": [
+            {
+              "name": "Success example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/notifications/retry-all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "notifications",
+                    "retry-all"
+                  ]
+                },
+                "description": "ADMIN only. Moves every DEAD notification back to PENDING with its attempts reset, so the dispatcher sends it again, and returns how many were queued. Writes one NOTIFICATIONS_RETRIED audit record."
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Failed notifications queued again\",\n  \"data\": {\n    \"retried\": 5\n  }\n}"
+            }
+          ],
+          "event": []
+        },
+        {
           "name": "Read business analytics",
           "request": {
             "method": "GET",

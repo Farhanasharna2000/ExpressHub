@@ -214,6 +214,31 @@ export async function dismissAllDeadNotifications(actor: AuthenticatedUser) {
   });
 }
 
+// Puts every DEAD email back in the queue. Only rows still DEAD are touched, so a row another
+// admin just retried or dismissed is left alone, and the dispatcher picks them up as usual.
+export async function retryAllDeadNotifications(actor: AuthenticatedUser) {
+  const admin = await requireAdmin(actor);
+  return prisma.$transaction(async (tx) => {
+    const dead = await tx.notificationOutbox.findMany({ where: { status: "DEAD" }, select: { id: true } });
+    if (dead.length === 0) return { retried: 0 };
+    const ids = dead.map((row) => row.id);
+    const updated = await tx.notificationOutbox.updateMany({
+      where: { id: { in: ids }, status: "DEAD" },
+      data: { status: "PENDING", attempts: 0, nextAttemptAt: new Date(), lastError: null },
+    });
+    await tx.auditLog.create({
+      data: {
+        actorId: admin.id,
+        entityType: "USER",
+        entityId: admin.id,
+        action: "NOTIFICATIONS_RETRIED",
+        details: { count: updated.count, notificationIds: ids.slice(0, 200) },
+      },
+    });
+    return { retried: updated.count };
+  });
+}
+
 export async function retryNotification(actor: AuthenticatedUser, id: string) {
   const admin = await requireAdmin(actor);
   return prisma.$transaction(async (tx) => {
