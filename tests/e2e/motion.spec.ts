@@ -67,3 +67,34 @@ for (const reducedMotion of [true, false]) {
     await opened?.close();
   });
 }
+
+test("a delivered parcel parks the truck at the end, celebrates once and cleans up", async ({ browser, baseURL, paidShipment, db }) => {
+  const shipment = await paidShipment();
+  await db.shipment.update({ where: { id: shipment.id }, data: { status: "DELIVERED" } });
+  const { page, close } = await motionPage(browser, baseURL);
+  await page.goto(`/track/${shipment.trackingNumber}`);
+  await expect(page.getByRole("heading", { name: "Delivered" }).first()).toBeVisible();
+  // The truck sits on the last step once its ride finishes (10% + 80% of the steps row).
+  const truck = page.locator("[data-anim=truck]");
+  await expect(truck).toBeVisible();
+  await expect.poll(() => truck.evaluate((element) => element.style.left)).toBe("90%");
+  // Confetti appears, then every piece removes itself.
+  await expect(page.locator("[data-confetti]").first()).toBeAttached({ timeout: 5_000 });
+  await expect(page.locator("[data-confetti]")).toHaveCount(0, { timeout: 8_000 });
+  // Opening the same parcel again in this tab does not throw more confetti.
+  await page.reload();
+  await expect(truck).toBeVisible();
+  await page.waitForTimeout(2_500);
+  await expect(page.locator("[data-confetti]")).toHaveCount(0);
+  await close();
+});
+
+test("with reduced motion the truck is in place and there is no confetti", async ({ page, paidShipment, db }) => {
+  const shipment = await paidShipment();
+  await db.shipment.update({ where: { id: shipment.id }, data: { status: "DELIVERED" } });
+  await page.goto(`/track/${shipment.trackingNumber}`);
+  await expect(page.locator("[data-anim=truck]")).toBeVisible();
+  await expect(page.locator("[data-anim=truck]")).toHaveCSS("left", /px$/);
+  await page.waitForTimeout(2_000);
+  await expect(page.locator("[data-confetti]")).toHaveCount(0);
+});

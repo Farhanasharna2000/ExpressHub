@@ -133,4 +133,7 @@ export function timeZoneLabel(timeZone: string, now = new Date(), locale: Locale
 export const journeyProgress = (index: number, steps: number) =>
   index <= 0 || steps < 2 ? 0 : Math.min(1, index / (steps - 1));
 
+// The progress line spans 10% to 90% of the steps row (see .tracking-progress); the truck rides on it.
+export const truckPosition = (progress: number) => `${10 + 80 * Math.min(1, Math.max(0, progress))}%`;
+
 export const reconnectDelay = (attempt: number) => Math.min(30_000, 1_000 * 2 ** Math.max(0, attempt));
