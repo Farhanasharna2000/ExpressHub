@@ -1,0 +1,57 @@
+# Local stack. `docker compose up -d db` is all most people need: it starts the same
+# Postgres image CI uses (pgvector is required by the help chat migration).
+# The `app` profile also builds and runs the production image, which needs the Upstash
+# keys in .env because the rate limiter fails closed in production mode.
+name: expresshub
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: expresshub
+      POSTGRES_PASSWORD: expresshub
+      POSTGRES_DB: expresshub
+    ports:
+      # Bound to this machine only.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U expresshub -d expresshub"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    profiles: ["app", "tools"]
+    build:
+      context: .
+      target: tools
+    environment:
+      DATABASE_URL: postgresql://expresshub:expresshub@db:5432/expresshub?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    profiles: ["app"]
+    build:
+      context: .
+      target: runner
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Overrides the host-style URL in .env: inside the network the database is `db`.
+      DATABASE_URL: postgresql://expresshub:expresshub@db:5432/expresshub?schema=public
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pgdata:

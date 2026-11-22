@@ -1,0 +1,21 @@
+.git
+.github
+node_modules
+.next
+out
+generated
+.env
+.env.*
+!.env.example
+test-results
+playwright-report
+tsconfig.tsbuildinfo
+testing
+# tests/ must stay: tsconfig includes **/*.ts and playwright.config.ts imports from it,
+# so the build's type check fails without it.
+*.md
+.claude
+.vscode
+Dockerfile
+docker-compose.yml
+.dockerignore
