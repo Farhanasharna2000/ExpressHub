@@ -11,9 +11,9 @@ test-results
 playwright-report
 tsconfig.tsbuildinfo
 testing
-tests
+# tests/ must stay: tsconfig includes **/*.ts and playwright.config.ts imports from it,
+# so the build's type check fails without it.
 *.md
-!docs/help/*.md
 .claude
 .vscode
 Dockerfile
