@@ -43,6 +43,10 @@ const pageContentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // The label route shapes Bangla with HarfBuzz (WebAssembly) and reads its fonts from disk at runtime,
+  // neither of which the file tracer can see.
+  serverExternalPackages: ["harfbuzzjs"],
+  outputFileTracingIncludes: { "/api/v1/shipments/[id]/label": ["./assets/fonts/**", "./node_modules/harfbuzzjs/*.wasm"] },
   poweredByHeader: false,
   async headers() {
     return [

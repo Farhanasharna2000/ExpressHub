@@ -44,8 +44,8 @@ async function shipment(customer, courier, status = "IN_TRANSIT", deletedAt = nu
 
 const auth = (who) => ({ authorization: `Bearer ${signAccessToken({ userId: who.id, role: who.role })}` });
 
-async function label(who, shipmentId) {
-  const request = new Request(`http://localhost/api/v1/shipments/${shipmentId}/label`, { headers: auth(who) });
+async function label(who, shipmentId, query = "") {
+  const request = new Request(`http://localhost/api/v1/shipments/${shipmentId}/label${query}`, { headers: auth(who) });
   return labelRoute.GET(request, { params: Promise.resolve({ id: shipmentId }) });
 }
 
@@ -58,6 +58,14 @@ async function lookup(who, trackingNumber) {
 try {
   const [customer, otherCustomer, courier, otherCourier, admin] = [await user("CUSTOMER"), await user("CUSTOMER"), await user("COURIER"), await user("COURIER"), await user("ADMIN")];
   const parcel = await shipment(customer, courier);
+
+  // The label language comes from ?lang=; anything unknown falls back to English.
+  const english = Buffer.from(await (await label(customer, parcel.id)).arrayBuffer());
+  const bangla = Buffer.from(await (await label(customer, parcel.id, "?lang=bn")).arrayBuffer());
+  const unknown = Buffer.from(await (await label(customer, parcel.id, "?lang=xx")).arrayBuffer());
+  assert.equal(bangla.subarray(0, 5).toString("latin1"), "%PDF-");
+  assert.notDeepEqual(bangla, english);
+  assert.equal(unknown.length, english.length);
 
   // The owner, the assigned courier and admins get a PDF; it is never cached.
   for (const who of [customer, courier, admin]) {

@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth/require-user";
 import { handleRouteError } from "@/lib/auth/route-helpers";
 import { labelFileName } from "@/lib/labels/shipping-label";
+import { isLocale } from "@/lib/i18n/config";
 import { enforceUserRateLimit } from "@/lib/http/user-rate-limit";
 import { getShippingLabel } from "@/services/label.service";
 import { shipmentIdSchema } from "@/validators/shipment";
@@ -12,8 +13,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   try {
     const actor = await requireUser(request);
     await enforceUserRateLimit(actor.id, "shipment:label", 60);
+    const lang = new URL(request.url).searchParams.get("lang");
     const id = shipmentIdSchema.parse((await context.params).id);
-    const { trackingNumber, pdf } = await getShippingLabel(actor, id);
+    const { trackingNumber, pdf } = await getShippingLabel(actor, id, isLocale(lang) ? lang : "en");
     return new Response(Buffer.from(pdf), {
       headers: {
         "Content-Type": "application/pdf",

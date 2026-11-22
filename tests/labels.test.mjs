@@ -4,7 +4,7 @@ import { test } from "node:test";
 import jsQR from "jsqr";
 
 const {
-  LABEL_HEIGHT, LABEL_WIDTH, labelDate, labelFileName, labelQrMatrix, labelSafeText, publicTrackingUrl,
+  LABEL_COPY, LABEL_HEIGHT, isBengali, scriptRuns, LABEL_WIDTH, labelDate, labelFileName, labelQrMatrix, labelSafeText, publicTrackingUrl,
   renderShippingLabel, shippingLabelData, wrapLabelText,
 } = await import("../lib/labels/shipping-label.ts");
 const { courierLookupPath, trackingNumberFromScan } = await import("../features/courier/scan-contracts.ts");
@@ -57,7 +57,8 @@ test("the label QR code decodes to the public tracking link, not private data", 
 
 test("label text is limited to what standard PDF fonts can draw", () => {
   assert.equal(labelSafeText("Rahim   Uddin\n"), "Rahim Uddin");
-  assert.equal(labelSafeText("রহিম Uddin"), "???? Uddin");
+  assert.equal(labelSafeText("রহিম Uddin"), "রহিম Uddin");
+  assert.equal(labelSafeText("日本 Uddin"), "?? Uddin");
   assert.equal(labelSafeText("Café “Dhaka” – 12…"), "Café \"Dhaka\" - 12...");
 });
 
@@ -89,4 +90,39 @@ test("scans accept a tracking link or a bare number and nothing else", () => {
   assert.equal(trackingNumberFromScan("https://evil.example/login"), null);
   assert.equal(trackingNumberFromScan(""), null);
   assert.equal(courierLookupPath(TRACK), `/courier/shipments/by-tracking/${TRACK}`);
+});
+
+test("Bangla is kept and split from Latin text into runs", () => {
+  assert.equal(isBengali("র"), true);
+  assert.equal(isBengali("R"), false);
+  assert.deepEqual(scriptRuns("Flat 3, মিরপুর 10"), [
+    { text: "Flat 3, ", bengali: false }, { text: "মিরপুর", bengali: true }, { text: " 10", bengali: false },
+  ]);
+});
+
+test("wrapping a long Bangla word never separates a letter from its vowel sign or conjunct", () => {
+  const measure = (text) => [...text].length * 6;
+  const word = "বাংলাদেশের".repeat(4);
+  for (const line of wrapLabelText(word, measure, 60, 10)) {
+    assert.ok(!/^[\u09be-\u09cd\u0981-\u0983]/u.test(line), `starts with a combining mark: ${line}`);
+    assert.ok(!line.endsWith("\u09cd"), `ends with a virama: ${line}`);
+  }
+});
+
+test("a Bangla label renders with Bangla names, addresses and headings in an embedded font", async () => {
+  const bangla = shippingLabelData({
+    ...shipment,
+    deliveryContactName: "রহিম উদ্দিন",
+    deliveryAddress: "বাড়ি ১২, রোড ৫, গুলশান ১, ঢাকা",
+    pickupContactName: "রিনা আক্তার",
+    originHub: { name: "ঢাকা হাব" },
+  }, "http://localhost:3000");
+  const en = await renderShippingLabel(bangla, "en");
+  const bn = await renderShippingLabel(bangla, "bn");
+  for (const pdf of [en, bn]) assert.equal(Buffer.from(pdf.slice(0, 5)).toString("latin1"), "%PDF-");
+  // Bangla is drawn as vector outlines, so no font file is embedded, and the fixed wording is translated.
+  assert.equal(Buffer.from(bn).includes("NotoSansBengali"), false);
+  assert.notDeepEqual(Buffer.from(en), Buffer.from(bn));
+  assert.equal(LABEL_COPY.bn.deliverTo, "প্রাপক");
+  assert.match(labelDate(new Date("2026-11-16T18:30:00Z"), "bn"), /^১৭ .*২০২৬$/u);
 });
