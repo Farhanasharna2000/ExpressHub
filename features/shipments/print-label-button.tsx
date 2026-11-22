@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { useSession } from "@/features/auth/provider";
 import { errorMessage } from "@/lib/client/api";
+import { useAppLocale } from "@/lib/i18n/use-format";
 import { useTranslations } from "next-intl";
 
 // The API authenticates with an in-memory bearer token, so the PDF is fetched here and
 // shown from a blob URL. The tab is opened during the click so popup blockers allow it.
 export function PrintLabelButton({ shipmentId, trackingNumber }: { shipmentId: string; trackingNumber: string }) {
   const t = useTranslations("label");
+  const locale = useAppLocale();
   const { store } = useSession();
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
@@ -22,7 +24,7 @@ export function PrintLabelButton({ shipmentId, trackingNumber }: { shipmentId: s
     setBusy(true);
     const tab = window.open("", "_blank");
     try {
-      const blob = await store.api.request<Blob>(`/shipments/${encodeURIComponent(shipmentId)}/label`, { responseType: "blob" });
+      const blob = await store.api.request<Blob>(`/shipments/${encodeURIComponent(shipmentId)}/label?lang=${locale}`, { responseType: "blob" });
       const url = URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
       if (tab && !tab.closed) {
         tab.location.href = url;

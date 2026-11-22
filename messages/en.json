@@ -1471,6 +1471,46 @@
         "SHIPMENT_OUT_FOR_DELIVERY": "Out for delivery",
         "SHIPMENT_DELIVERED": "Delivered",
         "SHIPMENT_FAILED": "Failed"
+      },
+      "retryAll": "Retry all",
+      "retryAllLabel": "Retry all failed emails",
+      "allQueued": "{count, number} {count, plural, one {email is} other {emails are}} queued",
+      "allQueuedBody": "They will be sent again in a moment.",
+      "couldNotRetryEmails": "Could not retry emails",
+      "showDetails": "Technical details",
+      "reason": {
+        "ipBlocked": {
+          "title": "Blocked by Brevo's IP allow-list",
+          "hint": "In Brevo, turn off authorised IP blocking, then retry."
+        },
+        "badKey": {
+          "title": "Brevo rejected the API key",
+          "hint": "Check BREVO_API_KEY is an API key (starts with xkeysib-), not an SMTP key."
+        },
+        "senderNotVerified": {
+          "title": "Sender address is not verified",
+          "hint": "Verify the NOTIFICATIONS_FROM address as a sender in Brevo."
+        },
+        "badRecipient": {
+          "title": "The customer's address was refused",
+          "hint": "The address looks invalid. Dismiss this email, or fix the customer's email first."
+        },
+        "quotaOrLimit": {
+          "title": "Brevo's sending limit was reached",
+          "hint": "Wait for the limit to reset or upgrade the plan, then retry."
+        },
+        "providerDown": {
+          "title": "Brevo had a problem on its side",
+          "hint": "This is usually temporary. Retry in a few minutes."
+        },
+        "network": {
+          "title": "Could not reach Brevo",
+          "hint": "A network problem stopped the email. Retry now."
+        },
+        "unknown": {
+          "title": "The email could not be sent",
+          "hint": "See the technical details below, then retry or dismiss."
+        }
       }
     },
     "live": {

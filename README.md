@@ -67,6 +67,15 @@ The home hero (`features/home/hero-showpiece.ts`) goes further:
   at different speeds as the page scrolls, the illustration tilts toward the cursor (up to
   6°), and the hero buttons lean toward it (up to 8px). Phones get the headline and route only.
 
+Smaller extras elsewhere, all inside the same reduced-motion query:
+
+- **Tracking truck and confetti:** a truck rides the progress line (`features/tracking/contracts.ts`
+  `truckPosition`) and bounces gently while the parcel is on its way. When a parcel turns
+  delivered, a confetti burst (`features/tracking/celebrate.ts`) flies from the status icon and
+  removes itself. Opening an already delivered parcel celebrates once per tab session.
+- **Rate gauges:** the on-time and failure KPIs on the admin analytics page have a ring that
+  sweeps from the previous value to the new one when the period changes.
+
 SplitText, MotionPath and DrawSVG are registered in `lib/gsap-hero.ts`, which only the
 home page imports, so no other page loads them.
 
@@ -318,7 +327,10 @@ disagree:
    outside any transaction, with the row id as the provider's `Idempotency-Key`.
 4. Failures are retried with exponential backoff and jitter (about 1, 2, 4 and 8 minutes). After
    5 attempts, or a permanent provider rejection, the row is marked `DEAD` and appears on the admin
-   dashboard with **Retry** and **Dismiss** buttons (and **Dismiss all**). Dismissed emails are never sent and leave an audit record.
+   dashboard with **Retry** and **Dismiss** buttons, plus **Retry all** and **Dismiss all**. Each failed email shows a plain reason
+   and fix hint (blocked IP, wrong API key, unverified sender, refused address, sending limit, provider outage or
+   network problem, in `features/admin/failed-email-reason.ts`), with the raw provider error under "Technical details".
+   Dismissed emails are never sent. Retry all (`POST /api/v1/admin/notifications/retry-all`) and Dismiss all leave an audit record.
 5. `GET /api/v1/internal/notifications/dispatch` is the retry sweeper, protected by `CRON_SECRET`.
    `vercel.json` schedules it once a day, the most the Vercel Hobby plan allows. On Vercel Pro,
    change the schedule to every few minutes (for example `*/5 * * * *`) for faster retries.
@@ -482,8 +494,15 @@ shipments). It downloads a 4 x 6 inch PDF from `GET /api/v1/shipments/{id}/label
 `pdf-lib`, showing the tracking number, sender and recipient details, weight, booking date, hubs and
 a QR code. The QR code holds the **public tracking link**, so a recipient who scans it lands on the
 tracking page, and it is drawn as vector squares so it stays sharp on any printer. Only the owning
-customer, the assigned courier and admins can download a label; anyone else gets 404. Characters the
-standard PDF fonts cannot draw, such as Bangla script, print as `?`.
+customer, the assigned courier and admins can download a label; anyone else gets 404.
+
+The label follows the viewer's language: the print button sends `?lang=en` or `?lang=bn`, and anything
+else falls back to English. Names, addresses and hubs written in Bangla print correctly in either
+language. `pdf-lib` cannot shape Bangla (conjuncts such as "প্র" and "ট্ট" come out garbled), so
+HarfBuzz (`harfbuzzjs`, WebAssembly) shapes the text and each glyph is drawn as a vector outline from
+the Noto Sans Bengali files in `assets/fonts/` (SIL Open Font License), so no font is embedded. Latin
+text, phone numbers and the tracking number keep the standard PDF fonts. Scripts other than Latin and
+Bangla still print as `?`.
 
 Couriers open **Scan parcel** (`/courier/scan`). The camera reads the label's QR code with the
 browser's own `BarcodeDetector` where available, otherwise with `jsQR` loaded on demand, at about 8
@@ -619,7 +638,8 @@ There is no locale in the URL; `i18n/request.ts` reads the cookie on the server,
 - **Formatting:** `lib/i18n/format.ts` and the `useFormat()` hook. Bangla uses Bangla digits (০-৯), `bn-BD` month names, পূর্বাহ্ণ/অপরাহ্ণ for AM/PM, lakh grouping (১২,৩৪,৫৬৭.৫) and ৳ amounts. English output is exactly what it was before. Dashboard count-ups, chart axes and tooltips use the same formatters.
 - **Validation:** Zod's built-in messages switch with the language, and the app's own schema messages map to `known.*` keys. Messages written by the server (API errors) are shown as sent, except known error codes, which map to `errors.codes.*`.
 - **Font:** Noto Sans Bengali through `next/font/google`.
-- **Not translated:** emails, PDF shipping labels, API responses and the OpenAPI document stay in English. Help articles are written in English; Bangla readers see a note saying so.
+- **PDF labels:** the shipping label's fixed wording and date follow the language (see Shipping labels and scanning).
+- **Not translated:** emails, API responses and the OpenAPI document stay in English. Help articles are written in English; Bangla readers see a note saying so.
 
 ### Adding or changing text
 
@@ -858,7 +878,7 @@ covers live courier locations: validation, rounding, freshness, send throttling 
 calculations, CSV formula escaping, the cache and admin-only access.
 `test:proof` covers image type detection, metadata stripping, size limits, the viewing rules,
 multipart limits and the courier upload queue (retry, permanent failure and already-delivered).
-`test:labels` renders a label (including text the PDF fonts cannot draw), checks text wrapping,
+`test:labels` renders English and Bangla labels (including text no font here can draw), checks text wrapping and that Bangla clusters never split,
 decodes the label's QR code back to the public tracking link with `jsQR`, and checks scan parsing.
 `test:imports` covers the CSV parser (quotes, embedded line breaks, BOM, every line ending), header matching,
 row validation codes, Bangla digits, formula escaping in the error report, duplicate detection and the

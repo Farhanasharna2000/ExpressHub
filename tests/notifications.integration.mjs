@@ -12,7 +12,7 @@ process.env.BREVO_API_KEY = "";
 const { default: prisma } = await import("../lib/prisma.ts");
 const { updateShipmentStatus } = await import("../services/shipment.service.ts");
 const { dispatchNotifications, MAX_NOTIFICATION_ATTEMPTS } = await import("../services/notifications/dispatch.ts");
-const { dismissAllDeadNotifications, dismissNotification, enqueueShipmentNotification, notificationDeps, listDeadNotifications, retryNotification } = await import("../services/notifications/outbox.ts");
+const { dismissAllDeadNotifications, dismissNotification, enqueueShipmentNotification, notificationDeps, listDeadNotifications, retryAllDeadNotifications, retryNotification } = await import("../services/notifications/outbox.ts");
 
 const tag = randomBytes(6).toString("hex");
 const users = [];
@@ -175,9 +175,26 @@ try {
   assert.equal(await prisma.auditLog.count({ where: { action: "NOTIFICATION_DISMISSED", shipmentId: parcel.id } }), 1);
   assert.equal((await listDeadNotifications(admin, { page: 1, limit: 100 })).notifications.some((item) => item.id === outbox[0].id), false);
 
+  // Retry all, like dismiss all, touches every DEAD row, so it follows the same guard below.
+  await prisma.notificationOutbox.update({ where: { id: outbox[0].id }, data: { status: "DEAD", attempts: 5, lastError: "Brevo 503: unavailable" } });
+  const foreignDeadForRetry = await prisma.notificationOutbox.count({ where: { status: "DEAD", shipmentId: { notIn: shipments } } });
+  await assert.rejects(retryAllDeadNotifications(customer), (error) => error.status === 403);
+  if (foreignDeadForRetry === 0) {
+    const retried = await retryAllDeadNotifications(admin);
+    assert.ok(retried.retried >= 1);
+    const requeued = (await rows(parcel.id))[0];
+    assert.equal(requeued.status, "PENDING");
+    assert.equal(requeued.attempts, 0);
+    assert.equal(requeued.lastError, null);
+    assert.equal(await prisma.auditLog.count({ where: { action: "NOTIFICATIONS_RETRIED", actorId: admin.id } }), 1);
+    assert.deepEqual(await retryAllDeadNotifications(admin), { retried: 0 });
+  } else {
+    console.info(`Skipped retry-all check: ${foreignDeadForRetry} other DEAD notifications exist in this database.`);
+  }
+
   // Dismiss all touches every DEAD row in the database, so it only runs when this suite's
   // rows are the only DEAD ones (as on CI's fresh database), never on someone's real data.
-  await prisma.notificationOutbox.update({ where: { id: outbox[0].id }, data: { status: "DEAD" } });
+  await prisma.notificationOutbox.update({ where: { id: outbox[0].id }, data: { status: "DEAD", lastError: "Brevo 503: unavailable" } });
   const foreignDead = await prisma.notificationOutbox.count({ where: { status: "DEAD", shipmentId: { notIn: shipments } } });
   if (foreignDead === 0) {
     const all = await dismissAllDeadNotifications(admin);

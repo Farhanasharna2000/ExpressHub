@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { MailWarning, RotateCcw, X } from "lucide-react";
+import { MailWarning, RotateCcw, RotateCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/toast";
 import { errorMessage } from "@/lib/client/api";
 import { useSession } from "@/features/auth/provider";
 import { useFormat } from "@/lib/i18n/use-format";
+import { failureReason } from "@/features/admin/failed-email-reason";
 import { useResource } from "@/features/shipments/use-resource";
 
 import { useTranslations } from "next-intl";
@@ -38,13 +39,13 @@ export function FailedNotificationsCard() {
   const pending = useRef(false);
   if (!data || data.notifications.length === 0) return null;
 
-  async function act(key: string, action: () => Promise<unknown>, success: [string, string], failure: string) {
+  async function act<T>(key: string, action: () => Promise<T>, success: [string, string] | ((result: T) => [string, string]), failure: string) {
     if (pending.current) return;
     pending.current = true;
     setBusyId(key);
     try {
-      await action();
-      toast.success(...success);
+      const result = await action();
+      toast.success(...(typeof success === "function" ? success(result) : success));
     } catch (error) {
       toast.error(failure, errorMessage(error));
     } finally {
@@ -66,6 +67,13 @@ export function FailedNotificationsCard() {
     () => store.api.request("/admin/notifications/dismiss-all", { method: "POST" }),
     [t("failedEmailsDismissed"), t("noneOfThemWill")],
     t("couldNotDismissEmails"),
+  );
+
+  const retryAll = () => act(
+    "retry-all",
+    () => store.api.request<{ retried: number }>("/admin/notifications/retry-all", { method: "POST" }),
+    (result) => [t("allQueued", { count: result?.retried ?? 0 }), t("allQueuedBody")],
+    t("couldNotRetryEmails"),
   );
 
   const retry = (id: string) => act(
@@ -98,9 +106,14 @@ export function FailedNotificationsCard() {
               </Button>
             </div>
           ) : (
-            <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmAll(true)} disabled={busyId !== null}>
-              <X aria-hidden="true" /> {t("dismissAll")}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button type="button" size="sm" variant="outline" onClick={() => void retryAll()} disabled={busyId !== null} aria-label={t("retryAllLabel")}>
+                <RotateCw className={busyId === "retry-all" ? "animate-spin" : undefined} aria-hidden="true" /> {t("retryAll")}
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmAll(true)} disabled={busyId !== null}>
+                <X aria-hidden="true" /> {t("dismissAll")}
+              </Button>
+            </div>
           )}
         </div>
       </CardHeader>
@@ -118,7 +131,14 @@ export function FailedNotificationsCard() {
                 <p className="truncate text-xs text-muted-foreground">
                   {t("meta", { name: notification.recipient.name, attempts: notification.attempts, time: f.dateTime(notification.updatedAt) })}
                 </p>
-                {notification.lastError && <p className="truncate text-xs text-destructive">{notification.lastError}</p>}
+                <p className="text-xs font-medium text-destructive">{t(`reason.${failureReason(notification.lastError)}.title`)}</p>
+                <p className="text-xs text-muted-foreground">{t(`reason.${failureReason(notification.lastError)}.hint`)}</p>
+                {notification.lastError && (
+                  <details className="text-xs text-muted-foreground">
+                    <summary className="w-fit cursor-pointer select-none hover:text-foreground">{t("showDetails")}</summary>
+                    <p className="mt-1 break-words font-mono">{notification.lastError}</p>
+                  </details>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <Button

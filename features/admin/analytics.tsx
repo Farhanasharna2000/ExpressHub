@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRef, useState } from "react";
-import { useCountUpOnce } from "@/lib/gsap";
+import { useEffect, useRef, useState } from "react";
+import { gsap, useCountUpOnce, useGSAP, whenMotionAllowed } from "@/lib/gsap";
 import { Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { useSession } from "@/features/auth/provider";
 import { useFormat } from "@/lib/i18n/use-format";
 import { useResource, useRetryDelay } from "@/features/shipments/use-resource";
 import {
-  PRESETS, analyticsQuery, changeTone, formatChange, formatHours, formatRate, periodLabel, presetRange,
+  GAUGE_LENGTH, GAUGE_RADIUS, PRESETS, analyticsQuery, gaugeOffset, changeTone, formatChange, formatHours, formatRate, periodLabel, presetRange,
   type AnalyticsFilter, type AnalyticsReport, type Granularity,
 } from "./analytics-contracts";
 
@@ -53,15 +53,44 @@ export function useAnalyticsFormat() {
 
 const toneClass = { good: "text-emerald-700", bad: "text-destructive", neutral: "text-muted-foreground" } as const;
 
-function Kpi({ label, value, change, tone, hint }: { label: string; value: string; change: string | null; tone: keyof typeof toneClass; hint: string }) {
+// Ring that fills to a percentage. React renders it already at its final length, so with
+// reduced motion (or before scripts run) it is simply correct; with motion it sweeps from
+// the previous value, or from empty on first show. Decorative: the figure is the text beside it.
+function Gauge({ percent, color }: { percent: number | null; color: string }) {
+  const ring = useRef<SVGCircleElement>(null);
+  const shown = useRef(0);
+  useGSAP(() => {
+    const target = percent ?? 0;
+    const from = shown.current;
+    shown.current = target;
+    if (!ring.current || from === target) return;
+    whenMotionAllowed(() => {
+      const tween = gsap.fromTo(ring.current, { strokeDashoffset: gaugeOffset(from) }, { strokeDashoffset: gaugeOffset(percent), duration: 0.9, ease: "power2.out", clearProps: "strokeDashoffset" });
+      return () => { tween.kill(); };
+    });
+  }, { dependencies: [percent] });
+  // Forget the shown value on unmount (and React Strict Mode's simulated one) so the sweep replays.
+  useEffect(() => () => { shown.current = 0; }, []);
+  return (
+    <svg viewBox="0 0 36 36" className={`size-11 shrink-0 -rotate-90 ${color}`} aria-hidden="true" data-gauge>
+      <circle cx="18" cy="18" r={GAUGE_RADIUS} fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="4" />
+      <circle ref={ring} cx="18" cy="18" r={GAUGE_RADIUS} fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeDasharray={GAUGE_LENGTH} strokeDashoffset={gaugeOffset(percent)} />
+    </svg>
+  );
+}
+
+function Kpi({ label, value, change, tone, hint, gauge, gaugeColor = "text-primary" }: { label: string; value: string; change: string | null; tone: keyof typeof toneClass; hint: string; gauge?: number | null; gaugeColor?: string }) {
   const t = useTranslations("admin.analytics");
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-2xl font-bold" data-count-up>{value}</dd>
-      <dd className={`mt-1 text-xs ${toneClass[tone]}`}>
-        {change ? t("vsPrevious", { change, hint }) : t("noPrevious", { hint })}
-      </dd>
+    <div className="flex items-start justify-between gap-2 rounded-lg border bg-card p-4">
+      <div className="min-w-0">
+        <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+        <dd className="mt-1 text-2xl font-bold" data-count-up>{value}</dd>
+        <dd className={`mt-1 text-xs ${toneClass[tone]}`}>
+          {change ? t("vsPrevious", { change, hint }) : t("noPrevious", { hint })}
+        </dd>
+      </div>
+      {gauge !== undefined && <Gauge percent={gauge} color={gaugeColor} />}
     </div>
   );
 }
@@ -189,9 +218,9 @@ export function AdminAnalyticsView() {
             <Kpi label={t("shipmentsBooked")} value={f.digits(report.summary.booked)} change={change(report.change.booked, "percent")} tone={changeTone(report.change.booked, true)} hint={period} />
             <Kpi label={t("delivered")} value={f.digits(report.summary.delivered)} change={change(report.change.delivered, "percent")} tone={changeTone(report.change.delivered, true)} hint={period} />
             <Kpi label={t("netRevenue")} value={f.money(report.summary.revenue, report.currency)} change={change(report.change.revenue, "percent")} tone={changeTone(report.change.revenue, true)} hint={period} />
-            <Kpi label={t("onTimeWithin", { hours: f.digits(report.onTimeHours) })} value={rate(report.summary.onTimeRate)} change={change(report.change.onTimeRate, "points")} tone={changeTone(report.change.onTimeRate, true)} hint={period} />
+            <Kpi label={t("onTimeWithin", { hours: f.digits(report.onTimeHours) })} value={rate(report.summary.onTimeRate)} change={change(report.change.onTimeRate, "points")} tone={changeTone(report.change.onTimeRate, true)} hint={period} gauge={report.summary.onTimeRate} />
             <Kpi label={t("medianDeliveryTime")} value={hours(report.summary.medianDeliveryHours)} change={change(report.change.medianDeliveryHours, "hours")} tone={changeTone(report.change.medianDeliveryHours, false)} hint={period} />
-            <Kpi label={t("failureRate")} value={rate(report.summary.failureRate)} change={change(report.change.failureRate, "points")} tone={changeTone(report.change.failureRate, false)} hint={period} />
+            <Kpi label={t("failureRate")} value={rate(report.summary.failureRate)} change={change(report.change.failureRate, "points")} tone={changeTone(report.change.failureRate, false)} hint={period} gauge={report.summary.failureRate} gaugeColor="text-destructive" />
           </dl>
 
           {!hasActivity ? (

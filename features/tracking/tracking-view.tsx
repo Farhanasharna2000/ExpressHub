@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { gsap, useGSAP, whenMotionAllowed } from "@/lib/gsap";
-import { CheckCircle2, Circle, Clock3, MapPin, Package, Radio, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Circle, Clock3, MapPin, Package, Radio, Truck, TriangleAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslations } from "next-intl";
 import { useAppLocale } from "@/lib/i18n/use-format";
-import { FINAL_STATUSES, additionalUpdates, journeyProgress, journeyStepTimes, reconnectDelay, timeZoneLabel, trackingShortTime, trackingTime, type PublicTracking, type PublicTrackingEvent } from "./contracts";
+import { FINAL_STATUSES, additionalUpdates, journeyProgress, journeyStepTimes, reconnectDelay, timeZoneLabel, trackingShortTime, trackingTime, truckPosition, type PublicTracking, type PublicTrackingEvent } from "./contracts";
 import { useViewerTimeZone } from "./use-time-zone";
+import { confettiBurst } from "./celebrate";
 import { TrackForm } from "./track-form";
 import { CourierLocationCard } from "@/features/maps/courier-location-card";
 
@@ -92,7 +93,7 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
   const offPath = journeyIndex === -1;
   const progress = journeyProgress(journeyIndex, JOURNEY.length);
   const scope = useRef<HTMLDivElement>(null);
-  useTrackingAnimations(scope, journeyIndex, tracking.events.length);
+  useTrackingAnimations(scope, journeyIndex, tracking.events.length, tracking.status === "DELIVERED", tracking.trackingNumber);
 
   const stepTimes = journeyStepTimes(tracking, JOURNEY);
   // With the progress steps on screen, list only what they cannot show; otherwise everything.
@@ -112,11 +113,12 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
 
       <p className="sr-only" aria-live="polite" role="status">{announcement}</p>
 
-      <Card>
+      <Card className="relative">
+        <div data-confetti-host className="pointer-events-none absolute inset-0 z-10" aria-hidden="true" />
         <CardHeader className="border-b pb-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Package className="size-5" aria-hidden="true" /></span>
+              <span data-anim="status-icon" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Package className="size-5" aria-hidden="true" /></span>
               <div className="space-y-1">
                 <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t("currentStatus")}</p>
                 <h2 data-anim="status" className="origin-left font-semibold">{statusText(tracking.status)}</h2>
@@ -137,6 +139,9 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
               <div className="tracking-progress" aria-hidden="true">
                 <div className="tracking-progress-fill" style={{ transform: `scaleX(${progress})` }} />
               </div>
+              <span data-anim="truck" className="tracking-truck" style={{ left: truckPosition(progress) }} aria-hidden="true">
+                <Truck className="size-4" />
+              </span>
               <ol className="relative grid grid-cols-5 gap-2" aria-label={t("deliveryProgress")}>
                 {JOURNEY.map((step, index) => {
                   const done = index <= journeyIndex;
@@ -189,34 +194,66 @@ export function TrackingView({ initial }: { initial: PublicTracking }) {
 }
 
 // The first render plays an entrance; later renders animate only what changed: the
-// progress line grows to the new step and the newest history entry slides in. React has
-// already put the new status text in the DOM, so nothing waits on an animation.
-function useTrackingAnimations(scope: React.RefObject<HTMLDivElement | null>, journeyIndex: number, eventCount: number) {
-  const previous = useRef<{ index: number; count: number } | null>(null);
+// progress line and the truck grow to the new step and the newest history entry slides in.
+// React has already put the new status text in the DOM, so nothing waits on an animation.
+// A delivered parcel gets a confetti burst: always when it turns delivered while the page is
+// open, and once per tab session when the page is opened on an already delivered parcel.
+function useTrackingAnimations(scope: React.RefObject<HTMLDivElement | null>, journeyIndex: number, eventCount: number, delivered: boolean, trackingNumber: string) {
+  const previous = useRef<{ index: number; count: number; delivered: boolean } | null>(null);
   useGSAP(() => {
     const before = previous.current;
-    previous.current = { index: journeyIndex, count: eventCount };
+    previous.current = { index: journeyIndex, count: eventCount, delivered };
     const fill = scope.current?.querySelector(".tracking-progress-fill");
+    const truck = scope.current?.querySelector<HTMLElement>("[data-anim=truck]");
     const to = journeyProgress(journeyIndex, JOURNEY.length);
+    const celebrate = () => {
+      const host = scope.current?.querySelector<HTMLElement>("[data-confetti-host]");
+      const icon = scope.current?.querySelector<HTMLElement>("[data-anim=status-icon]");
+      if (!host || !icon) return;
+      const hostBox = host.getBoundingClientRect();
+      const iconBox = icon.getBoundingClientRect();
+      return confettiBurst(host, { x: iconBox.left - hostBox.left + iconBox.width / 2, y: iconBox.top - hostBox.top + iconBox.height / 2 });
+    };
     whenMotionAllowed(() => {
+      // While the parcel is on its way the truck idles with a small bounce; it stops on delivery.
+      const bounce = truck && !delivered ? gsap.to(truck.firstElementChild, { y: -1.5, duration: 0.45, repeat: -1, yoyo: true, ease: "sine.inOut" }) : null;
+      let stopConfetti: (() => void) | undefined;
       if (!before) {
         const intro = gsap.timeline({ defaults: { ease: "power3.out" } });
         intro.fromTo("[data-anim=step]", { opacity: 0, y: 10 }, { opacity: 1, y: 0, stagger: 0.08, duration: 0.45, clearProps: "opacity,transform" });
         if (fill) intro.fromTo(fill, { scaleX: 0 }, { scaleX: to, duration: 0.9, ease: "power2.inOut" }, 0.15);
+        if (truck) intro.fromTo(truck, { left: truckPosition(0) }, { left: truckPosition(to), duration: 0.9, ease: "power2.inOut" }, 0.15);
         intro.fromTo(".shipment-timeline > li", { opacity: 0, x: -12 }, { opacity: 1, x: 0, stagger: 0.07, duration: 0.45, clearProps: "opacity,transform" }, 0.2);
-        return;
+        if (delivered && !celebratedThisSession(trackingNumber)) intro.call(() => { stopConfetti = celebrate(); }, undefined, 1.0);
+      } else {
+        if (before.index !== journeyIndex) {
+          const from = journeyProgress(before.index, JOURNEY.length);
+          if (fill) gsap.fromTo(fill, { scaleX: from }, { scaleX: to, duration: 0.7, ease: "power2.inOut" });
+          if (truck) gsap.fromTo(truck, { left: truckPosition(from) }, { left: truckPosition(to), duration: 0.7, ease: "power2.inOut" });
+        }
+        if (eventCount > before.count) {
+          gsap.fromTo(".shipment-timeline > li:first-child", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.5, clearProps: "opacity,transform" });
+          gsap.fromTo("[data-anim=status]", { scale: 1.15 }, { scale: 1, duration: 0.6, ease: "back.out(3)", clearProps: "transform" });
+        }
+        if (delivered && !before.delivered) stopConfetti = celebrate();
       }
-      if (fill && before.index !== journeyIndex) {
-        gsap.fromTo(fill, { scaleX: journeyProgress(before.index, JOURNEY.length) }, { scaleX: to, duration: 0.7, ease: "power2.inOut" });
-      }
-      if (eventCount > before.count) {
-        gsap.fromTo(".shipment-timeline > li:first-child", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.5, clearProps: "opacity,transform" });
-        gsap.fromTo("[data-anim=status]", { scale: 1.15 }, { scale: 1, duration: 0.6, ease: "back.out(3)", clearProps: "transform" });
-      }
+      return () => { bounce?.kill(); stopConfetti?.(); };
     });
     // Reset on unmount (and React Strict Mode's simulated one) so the entrance replays.
     return () => { previous.current = null; };
-  }, { scope, dependencies: [journeyIndex, eventCount] });
+  }, { scope, dependencies: [journeyIndex, eventCount, delivered] });
+}
+
+// Opening an already delivered parcel celebrates once per tab, so reloads do not keep throwing confetti.
+function celebratedThisSession(trackingNumber: string) {
+  const key = `expresshub:celebrated:${trackingNumber}`;
+  try {
+    if (window.sessionStorage.getItem(key)) return true;
+    window.sessionStorage.setItem(key, "1");
+  } catch {
+    // Storage can be blocked; celebrating again is harmless.
+  }
+  return false;
 }
 
 function ConnectionBadge({ connection }: { connection: Connection }) {

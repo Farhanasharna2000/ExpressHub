@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { requireRole, type AuthenticatedUser } from "@/lib/auth/require-user";
 import { AppError } from "@/lib/http/errors";
 import { renderShippingLabel, shippingLabelData } from "@/lib/labels/shipping-label";
+import type { Locale } from "@/lib/i18n/config";
 import prisma from "@/lib/prisma";
 import { appUrl } from "@/services/notifications/outbox";
 
@@ -17,7 +18,7 @@ function visibleTo(actor: AuthenticatedUser): Prisma.ShipmentWhereInput {
   };
 }
 
-export async function getShippingLabel(actor: AuthenticatedUser, shipmentId: string) {
+export async function getShippingLabel(actor: AuthenticatedUser, shipmentId: string, locale: Locale = "en") {
   const shipment = await prisma.shipment.findFirst({
     where: { ...visibleTo(actor), id: shipmentId },
     select: {
@@ -39,7 +40,7 @@ export async function getShippingLabel(actor: AuthenticatedUser, shipmentId: str
   if (shipment.status === "CANCELLED") {
     throw new AppError(409, "Cancelled shipments have no shipping label", "LABEL_UNAVAILABLE");
   }
-  const pdf = await renderShippingLabel(shippingLabelData(shipment, appUrl()));
+  const pdf = await renderShippingLabel(shippingLabelData(shipment, appUrl()), locale);
   return { trackingNumber: shipment.trackingNumber, pdf };
 }
 

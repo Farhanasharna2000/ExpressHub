@@ -235,3 +235,29 @@ test("app URL, request validation and the profile preference", () => {
   assert.deepEqual(updateProfileSchema.parse({ emailNotifications: false }), { emailNotifications: false });
   assert.equal(updateProfileSchema.safeParse({ emailNotifications: "no" }).success, false);
 });
+
+test("a failed email's raw error becomes a reason the admin can act on", async () => {
+  const { failureReason } = await import("../features/admin/failed-email-reason.ts");
+  assert.equal(failureReason(null), "unknown");
+  assert.equal(failureReason("Brevo 401: {\"message\":\"Key not found\"}"), "badKey");
+  assert.equal(failureReason("Brevo 401: We have detected you are using an unrecognised IP address 1.2.3.4"), "ipBlocked");
+  assert.equal(failureReason("Brevo 403: Authorised IPs only"), "ipBlocked");
+  assert.equal(failureReason("Brevo 400: sender is not valid"), "senderNotVerified");
+  assert.equal(failureReason("Brevo 400: invalid email address"), "badRecipient");
+  assert.equal(failureReason("Brevo 400: something odd"), "unknown");
+  assert.equal(failureReason("Brevo 429: too many requests"), "quotaOrLimit");
+  assert.equal(failureReason("Brevo 503: unavailable"), "providerDown");
+  assert.equal(failureReason("TypeError: fetch failed"), "network");
+  assert.equal(failureReason("The operation was aborted due to timeout"), "network");
+  assert.equal(failureReason("something else entirely"), "unknown");
+});
+
+test("every failure reason has English and Bangla wording", async () => {
+  const { readFileSync } = await import("node:fs");
+  for (const locale of ["en", "bn"]) {
+    const reasons = JSON.parse(readFileSync(new URL(`../messages/${locale}.json`, import.meta.url), "utf8")).admin.notifications.reason;
+    for (const code of ["ipBlocked", "badKey", "senderNotVerified", "badRecipient", "quotaOrLimit", "providerDown", "network", "unknown"]) {
+      assert.ok(reasons[code]?.title && reasons[code]?.hint, `${locale} ${code}`);
+    }
+  }
+});

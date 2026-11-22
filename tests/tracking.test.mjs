@@ -5,7 +5,7 @@ import { test } from "node:test";
 
 const { trackingNumberSchema, publicTrackingSchema } = await import("../validators/track.ts");
 const { createTrackingStream, toPublicTracking, trackingSignature } = await import("../services/tracking-stream.ts");
-const { additionalUpdates, eventTitle, journeyProgress, journeyStepTimes, parseTrackingInput, reconnectDelay, timeZoneLabel, trackingPath, trackingShortTime, trackingStatusMessage, trackingTime } = await import("../features/tracking/contracts.ts");
+const { additionalUpdates, eventTitle, journeyProgress, journeyStepTimes, parseTrackingInput, truckPosition, reconnectDelay, timeZoneLabel, trackingPath, trackingShortTime, trackingStatusMessage, trackingTime } = await import("../features/tracking/contracts.ts");
 
 test("the progress line fills between the first and last journey steps", () => {
   assert.equal(journeyProgress(-1, 5), 0);
@@ -208,4 +208,13 @@ test("the history lists only updates the progress steps cannot show", () => {
   // Hub arrival, the attempt, the failure and the earlier transit and delivery runs stay;
   // the latest visit to each step is shown on the bar instead.
   assert.deepEqual(additionalUpdates(eventful, steps).map((event) => event.occurredAt), ["3", "3b", "4", "5", "6"]);
+});
+
+test("the truck rides the progress line between 10% and 90% of the steps row", () => {
+  assert.equal(truckPosition(0), "10%");
+  assert.equal(truckPosition(0.5), "50%");
+  assert.equal(truckPosition(1), "90%");
+  assert.equal(truckPosition(journeyProgress(2, 5)), "50%");
+  assert.equal(truckPosition(-1), "10%");
+  assert.equal(truckPosition(3), "90%");
 });

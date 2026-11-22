@@ -136,3 +136,13 @@ test("dashboard helpers build presets, queries and change labels", async () => {
   assert.equal(formatHours(26.5), "26.5 h");
   assert.match(periodLabel("2026-11-16", "week"), /^Week of /);
 });
+
+test("the rate gauge fills in proportion and cannot overdraw", async () => {
+  const { GAUGE_LENGTH, gaugeOffset } = await import("../features/admin/analytics-contracts.ts");
+  assert.equal(gaugeOffset(0), GAUGE_LENGTH);
+  assert.equal(gaugeOffset(null), GAUGE_LENGTH);
+  assert.ok(Math.abs(gaugeOffset(50) - GAUGE_LENGTH / 2) < 1e-9);
+  assert.equal(gaugeOffset(100), 0);
+  assert.equal(gaugeOffset(250), 0);
+  assert.equal(gaugeOffset(-5), GAUGE_LENGTH);
+});

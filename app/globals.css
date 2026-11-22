@@ -260,6 +260,7 @@ dialog::backdrop { background: #10282099; }
   .shipment-results { min-width: 0; }
   .shipment-results td { vertical-align: top; font-size: .85rem; }
   .tracking-progress { position: absolute; top: 9px; left: 10%; right: 10%; height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .tracking-truck { position: absolute; top: -17px; z-index: 1; display: flex; transform: translateX(-50%); color: var(--brand); pointer-events: none; }
   .tracking-progress-fill { height: 100%; background: var(--brand); transform-origin: left center; }
   .courier-map { position: relative; z-index: 0; height: 320px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #eef2ee; }
   .courier-map-tall { height: 480px; }

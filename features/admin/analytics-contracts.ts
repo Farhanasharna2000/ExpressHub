@@ -75,6 +75,11 @@ export function changeTone(value: number | null, higherIsBetter: boolean): "good
   return value > 0 === higherIsBetter ? "good" : "bad";
 }
 
+export const GAUGE_RADIUS = 15;
+export const GAUGE_LENGTH = 2 * Math.PI * GAUGE_RADIUS;
+// Dash offset that fills a ring to a percentage. Empty when there is no figure yet, and clamped so a stray value cannot overdraw it.
+export const gaugeOffset = (percent: number | null) => GAUGE_LENGTH * (1 - Math.min(100, Math.max(0, percent ?? 0)) / 100);
+
 export const formatRate = (value: number | null) => (value === null ? "—" : `${value}%`);
 export const formatHours = (value: number | null) => (value === null ? "—" : `${value} h`);
 
