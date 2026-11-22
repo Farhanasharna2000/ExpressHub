@@ -141,3 +141,38 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  docker:
+    # Builds both images and boots the stack: the only place the Docker files are exercised.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate the compose file
+        run: docker compose --profile app config --quiet
+
+      - name: Build the tools and app images
+        run: docker compose --profile app build
+
+      - name: Start the database and apply migrations
+        run: |
+          docker compose up -d --wait db
+          docker compose --profile tools run --rm migrate
+
+      - name: Start the app and check readiness
+        run: |
+          docker compose --profile app up -d --wait app
+          curl --fail --silent --show-error http://127.0.0.1:3000/api/health
+          docker compose exec -T app ls docs/help
+          docker compose exec -T app ls assets/fonts
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose --profile app logs --no-color --tail=200
+
+      - name: Tear down
+        if: always()
+        run: docker compose --profile app down -v
