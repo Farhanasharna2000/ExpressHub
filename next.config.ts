@@ -43,6 +43,8 @@ const pageContentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Only the Dockerfile sets DOCKER_BUILD. Vercel and `npm run build` keep the default output.
+  ...(process.env.DOCKER_BUILD === "1" ? { output: "standalone" as const } : {}),
   // The label route shapes Bangla with HarfBuzz (WebAssembly) and reads its fonts from disk at runtime,
   // neither of which the file tracer can see.
   serverExternalPackages: ["harfbuzzjs"],
