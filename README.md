@@ -799,6 +799,49 @@ Copy the listener's signing secret into `STRIPE_WEBHOOK_SECRET` and restart the 
 return URLs, webhook subscriptions. A delivered event is still needed to verify
 end-to-end settlement.
 
+## Docker
+
+Docker is optional. The app runs on Vercel and from `npm run dev` without it.
+The compose file gives you the same pgvector Postgres that CI uses, and can also run the production image.
+
+```bash
+npm run docker:db          # start Postgres only (127.0.0.1:5432)
+npm run docker:migrate     # apply migrations inside the network
+npm run docker:up          # build and run migrate + app on http://localhost:3000
+npm run docker:down        # stop, keep the data
+npm run docker:reset       # stop and delete the database volume
+```
+
+For everyday development, start only the database and keep using `npm run dev`.
+Point `.env` at it:
+
+```text
+DATABASE_URL="postgresql://expresshub:expresshub@localhost:5432/expresshub?schema=public"
+```
+
+Then run `npm run prisma:migrate:deploy`, `npm run prisma:seed:pricing` and `npm run prisma:seed` from the host as in [Local setup](#local-setup).
+
+What the stack contains:
+
+| Service | Image or target | Purpose |
+|---|---|---|
+| `db` | `pgvector/pgvector:pg17` | Postgres with the vector extension the help chat needs. Data lives in the `pgdata` volume. |
+| `migrate` | Dockerfile target `tools` | One-shot `prisma migrate deploy`. Profiles `app` and `tools`. |
+| `app` | Dockerfile target `runner` | The production build as a non-root user, with a healthcheck on `/api/health`. Profile `app`. |
+
+Things to know:
+
+- The app container reads secrets from `.env`, which is never copied into the image.
+  Compose overrides `DATABASE_URL` so the app talks to `db` instead of `localhost`.
+- The app runs with `NODE_ENV=production`, so the rate limiter fails closed without `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
+  Set them in `.env`, or use `npm run dev` for local work.
+- Ports are bound to `127.0.0.1`, so nothing is exposed to your network.
+- The compose passwords are for local use only.
+  Do not reuse this file for a public server without changing them and putting a TLS proxy in front.
+- `DOCKER_BUILD=1` switches Next.js to the standalone output inside the image.
+  Vercel and `npm run build` are unchanged.
+- The `docker` job in CI builds both images, applies the migrations and checks `/api/health` on every pull request.
+
 ## Build and deployment
 
 ```bash
@@ -1035,6 +1078,8 @@ prisma/               Schema, migrations, admin seed, and pricing seed
 proxy.ts              Page-access checks and API CORS handling
 docs/                 OpenAPI specification, Postman collection and help articles (docs/help)
 tests/                Unit, database integration, and Playwright tests
+Dockerfile            Production and tools images (optional, not used by Vercel)
+docker-compose.yml    Local Postgres with pgvector, migrate job and app
 .claude/              Claude Code project skills and agents
 .githooks/            Commit hooks that keep history free of tool attribution
 ```
