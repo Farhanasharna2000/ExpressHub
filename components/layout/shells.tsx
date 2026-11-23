@@ -90,12 +90,6 @@ export function PublicHeaderAuth() {
     <div className="hidden sm:flex items-center gap-3 shrink-0">
       <Link
         href="/login"
-        className="text-xs font-semibold text-[var(--ink)] hover:text-[#196547] px-2.5 py-1.5 rounded-md transition-colors no-underline shrink-0 whitespace-nowrap"
-      >
-        {t("signIn")}
-      </Link>
-      <Link
-        href="/register"
         className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-[#196547] hover:bg-[#135038] text-white text-xs font-semibold shadow-xs transition-colors no-underline shrink-0 whitespace-nowrap"
       >
         <span>{t("getStarted")}</span>

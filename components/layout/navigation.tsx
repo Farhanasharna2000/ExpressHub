@@ -12,7 +12,7 @@ import { useSession } from "@/features/auth/provider";
 import { roleHome } from "@/features/auth/session";
 
 type NavKey = "overview" | "myShipments" | "bookShipment" | "payments" | "developer" | "assignedShipments" | "scanParcel" | "shipments" | "users" | "analytics" | "liveCouriers" | "auditLogs" | "profile";
-type Item = { href: string; label: NavKey | "signIn" | "createAccount"; mobileOnly?: boolean };
+type Item = { href: string; label: NavKey | "getStarted"; mobileOnly?: boolean };
 const navigation: Record<UserRole, Item[]> = {
   CUSTOMER: [
     { href: "/customer", label: "overview" },
@@ -103,8 +103,7 @@ export function Navigation({ role }: { role?: UserRole }) {
     ];
   } else if (status !== "loading") {
     items = [
-      { href: "/login", label: "signIn", mobileOnly: true },
-      { href: "/register", label: "createAccount", mobileOnly: true },
+      { href: "/login", label: "getStarted", mobileOnly: true },
     ];
   }
 
@@ -157,7 +156,7 @@ export function Navigation({ role }: { role?: UserRole }) {
             aria-current={active === item.href ? "page" : undefined}
             onClick={() => setOpenAt(null)}
           >
-            {item.label === "signIn" || item.label === "createAccount" ? ts(item.label) : t(item.label)}
+            {item.label === "getStarted" ? ts(item.label) : t(item.label)}
           </Link>
         ))}
 
